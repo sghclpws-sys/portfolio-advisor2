@@ -1,0 +1,141 @@
+{
+  "updated_at": "2026-04-13",
+  "_source": "sample_portfolio.json",
+  "cash": {
+    "available": 3400000
+  },
+  "accounts": [
+    {
+      "name": "일반계좌 1",
+      "role": "성장형 ETF",
+      "target_weight": 30,
+      "assets": [
+        {
+          "name": "KODEX 미국S&P500",
+          "ticker": "360750",
+          "asset_class": "equity",
+          "currency_exposure": "USD",
+          "amount": 4200000,
+          "pnl_pct": 12.4
+        },
+        {
+          "name": "KODEX 미국나스닥100",
+          "ticker": "379800",
+          "asset_class": "equity",
+          "currency_exposure": "USD",
+          "amount": 3600000,
+          "pnl_pct": 15.8
+        },
+        {
+          "name": "KODEX 인도Nifty50",
+          "ticker": "453810",
+          "asset_class": "equity",
+          "currency_exposure": "USD",
+          "amount": 1800000,
+          "pnl_pct": 8.1
+        }
+      ]
+    },
+    {
+      "name": "연금저축계좌",
+      "role": "올웨더",
+      "target_weight": 25,
+      "assets": [
+        {
+          "name": "TIGER 미국채10년선물",
+          "ticker": "305080",
+          "asset_class": "bond",
+          "currency_exposure": "USD",
+          "amount": 1400000,
+          "pnl_pct": 1.9
+        },
+        {
+          "name": "TIGER 골드선물",
+          "ticker": "319640",
+          "asset_class": "commodity",
+          "currency_exposure": "USD",
+          "amount": 500000,
+          "pnl_pct": 7.2
+        },
+        {
+          "name": "KODEX 미국S&P500",
+          "ticker": "379780",
+          "asset_class": "equity",
+          "currency_exposure": "USD",
+          "amount": 680000,
+          "pnl_pct": 10.5
+        },
+        {
+          "name": "TIGER 국고채30년스트립액티브",
+          "ticker": "437080",
+          "asset_class": "bond",
+          "currency_exposure": "KRW",
+          "amount": 520000,
+          "pnl_pct": -2.1
+        }
+      ]
+    },
+    {
+      "name": "ISA 계좌",
+      "role": "배당·커버드콜",
+      "target_weight": 20,
+      "assets": [
+        {
+          "name": "PLUS 고배당주",
+          "ticker": "161510",
+          "asset_class": "equity_income",
+          "currency_exposure": "KRW",
+          "amount": 1960000,
+          "pnl_pct": 4.2
+        },
+        {
+          "name": "KODEX 금융고배당TOP10 타겟위클리커버드콜",
+          "ticker": "498400",
+          "asset_class": "equity_income",
+          "currency_exposure": "KRW",
+          "amount": 1990000,
+          "pnl_pct": 3.3
+        },
+        {
+          "name": "TIGER 미국AI빅테크10 타겟데일리커버드콜",
+          "ticker": "481180",
+          "asset_class": "equity_income",
+          "currency_exposure": "USD",
+          "amount": 1970000,
+          "pnl_pct": 5.6
+        }
+      ]
+    },
+    {
+      "name": "일반계좌 2",
+      "role": "개별주 장기보유",
+      "target_weight": 25,
+      "assets": [
+        {
+          "name": "Microsoft",
+          "ticker": "MSFT",
+          "asset_class": "equity",
+          "currency_exposure": "USD",
+          "amount": 4400000,
+          "pnl_pct": 21.4
+        },
+        {
+          "name": "NVIDIA",
+          "ticker": "NVDA",
+          "asset_class": "equity",
+          "currency_exposure": "USD",
+          "amount": 5800000,
+          "pnl_pct": 34.8
+        },
+        {
+          "name": "SK하이닉스",
+          "ticker": "000660",
+          "asset_class": "equity",
+          "currency_exposure": "KRW",
+          "amount": 6870000,
+          "pnl_pct": 18.7
+        }
+      ]
+    }
+  ]
+}

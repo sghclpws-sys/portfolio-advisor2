@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portfolio Dashboard</title>
+  <meta name="theme-color" content="#0a0f1e" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b27;
+      --surface2: #1e2535;
+      --surface3: #252d3d;
+      --border: rgba(255,255,255,.07);
+      --border2: rgba(255,255,255,.12);
+      --text: #e8ecf4;
+      --sub: #7a88a0;
+      --sub2: #a0aec0;
+      --accent: #4f8ef7;
+      --accent2: #7eb8ff;
+      --green: #34d399;
+      --red: #f87171;
+      --amber: #fbbf24;
+      --purple: #a78bfa;
+      --sidebar-w: 240px;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Pretendard', -apple-system, sans-serif; font-size: 14px; line-height: 1.5; }
+    a { text-decoration: none; color: inherit; }
+    button, input, textarea, select { font: inherit; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 99px; }
+
+    /* LAYOUT */
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .brand {
+      padding: 12px 10px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .brand-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px;
+      line-height: 1.2;
+      color: #fff;
+      letter-spacing: -.01em;
+    }
+    .brand-title em { font-style: italic; color: var(--accent2); }
+    .brand-sub {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--sub);
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    .nav { display: flex; flex-direction: column; gap: 3px; }
+    .nav-btn {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: var(--sub2);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      text-align: left;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: .15s ease;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .nav-btn .nav-icon { font-size: 15px; opacity: .7; width: 18px; text-align: center; }
+    .nav-btn:hover { background: var(--surface2); color: var(--text); }
+    .nav-btn.active { background: var(--surface3); color: #fff; }
+    .nav-btn.active .nav-icon { opacity: 1; }
+    .nav-section-label {
+      font-size: 10px;
+      color: var(--sub);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 14px 12px 6px;
+    }
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 12px 10px;
+      border-top: 1px solid var(--border);
+      font-size: 11.5px;
+      color: var(--sub);
+      line-height: 1.7;
+    }
+    .sidebar-badge {
+      display: inline-block;
+      background: rgba(79,142,247,.15);
+      color: var(--accent2);
+      border: 1px solid rgba(79,142,247,.25);
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 99px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+
+    /* MAIN */
+    .main { flex: 1; overflow: auto; min-width: 0; }
+    .main-inner { padding: 28px 28px 48px; max-width: 1320px; }
+
+    /* TOPBAR */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .title-block h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 30px;
+      font-weight: 400;
+      letter-spacing: -.02em;
+      color: #fff;
+    }
+    .title-block p { margin-top: 4px; font-size: 13px; color: var(--sub); }
+
+    /* TOOLBAR */
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      border: 0;
+      border-radius: 9px;
+      padding: 9px 14px;
+      cursor: pointer;
+      transition: .15s ease;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); color: #0a0f1e; }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border2);
+    }
+    .btn-secondary:hover { background: var(--surface3); border-color: var(--accent); color: #fff; }
+    .btn-ghost {
+      background: rgba(79,142,247,.12);
+      color: var(--accent2);
+      border: 1px solid rgba(79,142,247,.2);
+    }
+    .btn-ghost:hover { background: rgba(79,142,247,.22); }
+    .btn-danger { background: rgba(248,113,113,.12); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+    .btn-danger:hover { background: rgba(248,113,113,.22); }
+    .btn:active { transform: scale(.97); }
+
+    /* STATUS BAR */
+    .statusbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 11px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: 12.5px;
+      color: var(--sub2);
+    }
+    .status-pill strong { color: var(--text); }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sub); flex-shrink: 0; }
+    .dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot.warn { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+
+    /* GRID */
+    .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
+    .span-12 { grid-column: span 12; }
+    .span-8 { grid-column: span 8; }
+    .span-6 { grid-column: span 6; }
+    .span-4 { grid-column: span 4; }
+    .span-3 { grid-column: span 3; }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sub2);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title .badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: var(--surface2);
+      color: var(--sub);
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 500;
+    }
+
+    /* KPI CARD */
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      opacity: .06;
+      transform: translate(20px, -20px);
+    }
+    .kpi-card.accent::after { background: var(--accent); }
+    .kpi-card.green::after { background: var(--green); }
+    .kpi-card.amber::after { background: var(--amber); }
+    .kpi-card.purple::after { background: var(--purple); }
+    .kpi-label { font-size: 11.5px; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 10px; }
+    .kpi-value {
+      font-family: 'DM Mono', monospace;
+      font-size: 28px;
+      font-weight: 500;
+      color: #fff;
+      letter-spacing: -.02em;
+      line-height: 1;
+    }
+    .kpi-meta { margin-top: 8px; font-size: 12px; color: var(--sub); }
+    .kpi-delta {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .kpi-delta.up { color: var(--green); }
+    .kpi-delta.down { color: var(--red); }
+
+    /* ALLOC ROWS */
+    .alloc { display: flex; flex-direction: column; gap: 11px; }
+    .alloc-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 70px;
+      gap: 12px;
+      align-items: center;
+      font-size: 13.5px;
+    }
+    .alloc-label { color: var(--sub2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .progress {
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .bar {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width .5s cubic-bezier(.34,1.56,.64,1);
+    }
+    .bar.green { background: linear-gradient(90deg, #059669, var(--green)); }
+    .bar.amber { background: linear-gradient(90deg, #b45309, var(--amber)); }
+    .bar.red { background: linear-gradient(90deg, #991b1b, var(--red)); }
+    .alloc-pct { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--sub2); text-align: right; }
+
+    /* FX BOXES */
+    .fx-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .fx-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .fx-box .fx-cur { font-size: 11px; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 6px; }
+    .fx-box .fx-pct { font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: #fff; }
+    .fx-box .fx-amt { font-size: 12px; color: var(--sub); margin-top: 4px; }
+
+    /* TABLE */
+    .table-wrap { overflow: auto; margin: 0 -4px; padding: 0 4px; }
+    table { width: 100%; border-collapse: collapse; min-width: 520px; }
+    th {
+      padding: 9px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      background: var(--surface);
+    }
+    td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13.5px;
+      text-align: left;
+      white-space: nowrap;
+      color: var(--sub2);
+    }
+    td:first-child { color: var(--text); font-weight: 500; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .mono { font-family: 'DM Mono', monospace; }
+
+    /* ITEM CARDS */
+    .list { display: flex; flex-direction: column; gap: 8px; }
+    .item {
+      padding: 14px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: .15s ease;
+    }
+    .item:hover { border-color: var(--border2); }
+    .item-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+    .item-title { font-weight: 600; color: var(--text); font-size: 14px; }
+    .tag {
+      font-size: 11.5px;
+      padding: 3px 9px;
+      border-radius: 99px;
+      font-weight: 500;
+    }
+    .tag-blue { background: rgba(79,142,247,.15); color: var(--accent2); border: 1px solid rgba(79,142,247,.2); }
+    .tag-green { background: rgba(52,211,153,.12); color: var(--green); border: 1px solid rgba(52,211,153,.2); }
+    .tag-red { background: rgba(248,113,113,.12); color: var(--red); border: 1px solid rgba(248,113,113,.2); }
+    .tag-amber { background: rgba(251,191,36,.12); color: var(--amber); border: 1px solid rgba(251,191,36,.2); }
+    .item-meta { font-size: 13px; color: var(--sub); }
+    .item-value { font-size: 13.5px; font-weight: 700; margin-top: 6px; font-family: 'DM Mono', monospace; }
+
+    /* MACRO GRID */
+    .macro-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .macro-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .macro-box .m-label { font-size: 11px; color: var(--sub); font-weight: 600; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px; }
+    .macro-box .m-val { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; color: #fff; }
+    .macro-box .m-src { font-size: 11px; color: var(--sub); margin-top: 6px; }
+    .macro-refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 6px 12px;
+    }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* REBALANCE INPUT */
+    .rebal-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 4px;
+    }
+    .rebal-input-row label { font-size: 13px; color: var(--sub2); white-space: nowrap; }
+    .rebal-input {
+      background: var(--surface3);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 14px;
+      width: 180px;
+    }
+    .rebal-input:focus { outline: none; border-color: var(--accent); }
+
+    /* STRATEGY */
+    .strategy-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .strategy-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .strategy-dot.red { background: var(--red); }
+    .strategy-dot.green { background: var(--green); }
+    .strategy-item-text { font-size: 14px; color: var(--sub2); line-height: 1.6; }
+    .strategy-item-text strong { color: var(--text); }
+
+    /* RISK ITEM */
+    .risk-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .risk-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .risk-content { flex: 1; }
+    .risk-title { font-weight: 600; color: var(--text); font-size: 13.5px; margin-bottom: 4px; }
+    .risk-desc { font-size: 13px; color: var(--sub); line-height: 1.6; }
+    .risk-resolve {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--green);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* SECTION */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* EMPTY STATE */
+    .empty-state {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--sub);
+      background: var(--surface2);
+      border: 1px dashed var(--border2);
+      border-radius: 12px;
+    }
+    .empty-state .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: .5; }
+    .empty-state .empty-title { font-size: 14px; color: var(--sub2); font-weight: 500; margin-bottom: 6px; }
+    .empty-state .empty-desc { font-size: 13px; color: var(--sub); }
+
+    /* MODAL */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      width: min(780px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 40px 100px rgba(0,0,0,.6);
+    }
+    .modal-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: #fff; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: var(--sub); margin-bottom: 16px; line-height: 1.6; }
+    .modal-card textarea {
+      width: 100%;
+      min-height: 300px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      padding: 14px;
+      color: var(--text);
+      resize: vertical;
+      font-family: 'DM Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+    .modal-card textarea:focus { outline: none; border-color: var(--accent); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+    /* SECTION DIVIDER */
+    .section-sep { margin: 8px 0 14px; }
+    .section-sep-label { font-size: 10.5px; color: var(--sub); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+
+    /* COLORS */
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .warning { color: var(--amber); }
+    .muted { color: var(--sub); }
+
+    /* FOOTNOTE */
+    .footnote {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(79,142,247,.07);
+      border: 1px solid rgba(79,142,247,.15);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--sub2);
+      line-height: 1.6;
+    }
+
+    /* DIVIDER */
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+    /* RESPONSIVE */
+    @media (max-width: 1100px) {
+      .span-8, .span-6, .span-4, .span-3 { grid-column: span 12; }
+      .macro-cards { grid-template-columns: 1fr 1fr; }
+      .fx-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 860px) {
+      .app { flex-direction: column; }
+      .sidebar { width: 100%; height: auto; position: relative; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 14px 16px; gap: 10px; }
+      .brand { border: none; margin: 0; padding: 0; }
+      .brand-title { font-size: 18px; }
+      .nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+      .nav-btn { padding: 7px 11px; font-size: 12.5px; }
+      .nav-section-label { display: none; }
+      .sidebar-bottom { display: none; }
+      .main-inner { padding: 16px; }
+      .alloc-row { grid-template-columns: 110px 1fr 60px; }
+      .macro-cards { grid-template-columns: 1fr; }
+      .fx-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ANIMATION */
+    .fade-in { animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-title">Port<em>folio</em></div>
+      <div class="brand-sub">Local Data Only</div>
+    </div>
+    <div class="nav">
+      <div class="nav-section-label">분석</div>
+      <button class="nav-btn active" data-section="overview">
+        <span class="nav-icon">◈</span> 개요
+      </button>
+      <button class="nav-btn" data-section="accounts">
+        <span class="nav-icon">◫</span> 계좌
+      </button>
+      <button class="nav-btn" data-section="rebalance">
+        <span class="nav-icon">⟳</span> 리밸런싱
+      </button>
+      <div class="nav-section-label">시장</div>
+      <button class="nav-btn" data-section="macro">
+        <span class="nav-icon">◉</span> Macro
+      </button>
+      <div class="nav-section-label">운영</div>
+      <button class="nav-btn" data-section="strategy">
+        <span class="nav-icon">◎</span> 전략 메모
+      </button>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-badge">SECURE</div><br>
+      실데이터는 이 페이지에 저장되지 않습니다. 업로드·붙여넣기·localStorage만 사용합니다.
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-inner">
+      <div class="topbar">
+        <div class="title-block">
+          <h2>나의 포트폴리오</h2>
+          <p id="pageSubtitle">실데이터 미로드 상태 · 데이터를 불러와 주세요</p>
+        </div>
+        <div class="toolbar">
+          <input type="file" id="portfolioFileInput" accept=".json" hidden />
+          <button class="btn btn-secondary" id="importJsonBtn">📂 파일 불러오기</button>
+          <button class="btn btn-secondary" id="openPasteModalBtn">📋 JSON 붙여넣기</button>
+          <button class="btn btn-ghost" id="saveLocalBtn">💾 브라우저 저장</button>
+          <button class="btn btn-danger" id="clearLocalBtn">✕ 초기화</button>
+        </div>
+      </div>
+
+      <div class="statusbar">
+        <div class="status-pill"><span class="dot" id="statusDot"></span><span id="dataStatus">저장된 데이터 없음</span></div>
+        <div class="status-pill">기준시점: <strong id="asOfText">—</strong></div>
+        <div class="status-pill">가용현금: <strong id="cashText">—</strong></div>
+        <div class="status-pill">Macro: <strong id="macroStatus">조회 대기</strong></div>
+      </div>
+
+      <!-- OVERVIEW -->
+      <section class="section active fade-in" id="section-overview">
+        <div class="grid">
+          <div class="span-3">
+            <div class="kpi-card accent">
+              <div class="kpi-label">총 자산</div>
+              <div class="kpi-value" id="kpiTotal">—</div>
+              <div class="kpi-meta">현금 포함 전체</div>
+            </div>
+          </div>
+          <div class="span-3">
+            <div class="kpi-card green">
+              <div class="kpi-label">USD 노출</div>
+              <div class="kpi-value" id="kpiUsd">—</div>
+              <div class="kpi-meta">달러 자산 비중</div>
+            </div>
+          </div>
+          <div class="span-3">
+            <div class="kpi-card purple">
+              <div class="kpi-label">계좌 수</div>
+              <div class="kpi-value" id="kpiAccounts">—</div>
+              <div class="kpi-meta">현금 계정 제외</div>
+            </div>
+          </div>
+          <div class="span-3">
+            <div class="kpi-card amber">
+              <div class="kpi-label">가용 현금</div>
+              <div class="kpi-value" id="kpiCash">—</div>
+              <div class="kpi-meta">즉시 투자 가능</div>
+            </div>
+          </div>
+
+          <div class="span-8 card">
+            <div class="card-title">
+              계좌별 비중
+              <span class="badge" id="accountCountBadge">—</span>
+            </div>
+            <div id="accountWeightList" class="alloc">
+              <div class="empty-state">
+                <div class="empty-icon">📊</div>
+                <div class="empty-title">데이터를 불러오세요</div>
+                <div class="empty-desc">JSON 파일 업로드 또는 붙여넣기로 시작합니다</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="span-4 card">
+            <div class="card-title">통화 노출 (FX)</div>
+            <div id="fxExposureBox">
+              <div class="empty-state">
+                <div class="empty-icon">💱</div>
+                <div class="empty-title">데이터 없음</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="span-6 card">
+            <div class="card-title">자산군 배분</div>
+            <div id="assetClassList" class="alloc">
+              <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <div class="empty-title">데이터 없음</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="span-6 card">
+            <div class="card-title">
+              Macro 스냅샷
+              <button class="btn btn-secondary macro-refresh-btn" id="macroRefreshBtn">↻ 갱신</button>
+            </div>
+            <div class="macro-cards">
+              <div class="macro-box">
+                <div class="m-label">BTC (USD)</div>
+                <div class="m-val" id="macroBtc">—</div>
+                <div class="m-src">CoinGecko</div>
+              </div>
+              <div class="macro-box">
+                <div class="m-label">USD/KRW</div>
+                <div class="m-val" id="macroFx">—</div>
+                <div class="m-src">er-api.com</div>
+              </div>
+              <div class="macro-box" style="grid-column: span 2;">
+                <div class="m-label">Fear & Greed Index</div>
+                <div class="m-val" id="macroFng">—</div>
+                <div class="m-src">alternative.me</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACCOUNTS -->
+      <section class="section fade-in" id="section-accounts">
+        <div class="grid">
+          <div class="span-12 card">
+            <div class="card-title">계좌 상세</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>계좌명</th><th>역할</th><th>평가금액</th><th>현재 비중</th><th>목표 비중</th><th>차이</th>
+                  </tr>
+                </thead>
+                <tbody id="accountsTableBody">
+                  <tr><td colspan="6"><div class="empty-state"><div class="empty-title">데이터 없음</div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="span-12 card">
+            <div class="card-title">보유자산 상세</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>계좌</th><th>자산명</th><th>티커</th><th>자산군</th><th>통화</th><th>금액</th><th>수익률</th>
+                  </tr>
+                </thead>
+                <tbody id="assetsTableBody">
+                  <tr><td colspan="7"><div class="empty-state"><div class="empty-title">데이터 없음</div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- REBALANCE -->
+      <section class="section fade-in" id="section-rebalance">
+        <div class="grid">
+          <div class="span-12">
+            <div class="rebal-input-row">
+              <label>💰 추가 투자 예정 금액</label>
+              <input type="number" class="rebal-input" id="addFundInput" placeholder="예: 1000000" min="0" />
+              <button class="btn btn-primary" id="calcRebalBtn">계산</button>
+              <span style="font-size:12px; color:var(--sub);" id="rebalCalcNote">금액 입력 후 계산 버튼을 누르면 추천 배분을 보여줍니다.</span>
+            </div>
+          </div>
+          <div class="span-6 card">
+            <div class="card-title">목표 대비 괴리</div>
+            <div id="gapList" class="list">
+              <div class="empty-state"><div class="empty-icon">⚖️</div><div class="empty-title">데이터 없음</div></div>
+            </div>
+          </div>
+          <div class="span-6 card">
+            <div class="card-title">추가 투자 우선순위</div>
+            <div id="priorityList" class="list">
+              <div class="empty-state"><div class="empty-icon">🎯</div><div class="empty-title">데이터 없음</div></div>
+            </div>
+            <div class="footnote">✔ 기존 자산 매도 없이, 목표비중 부족 계좌에 추가 자금 우선 투입 원칙</div>
+          </div>
+          <div class="span-12 card">
+            <div class="card-title">리밸런싱 메모</div>
+            <div id="rebalanceNotes" class="list">
+              <div class="empty-state"><div class="empty-title">데이터 없음</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MACRO -->
+      <section class="section fade-in" id="section-macro">
+        <div class="grid">
+          <div class="span-4 card">
+            <div class="card-title">BTC</div>
+            <div class="kpi-card" style="background:var(--surface2);border:none;padding:12px 0 0;">
+              <div class="kpi-label">시장 가격</div>
+              <div class="kpi-value" id="macroBtcLarge">—</div>
+              <div class="kpi-meta">CoinGecko 기준</div>
+            </div>
+          </div>
+          <div class="span-4 card">
+            <div class="card-title">USD/KRW</div>
+            <div class="kpi-card" style="background:var(--surface2);border:none;padding:12px 0 0;">
+              <div class="kpi-label">환율</div>
+              <div class="kpi-value" id="macroFxLarge">—</div>
+              <div class="kpi-meta">공개 환율 API</div>
+            </div>
+          </div>
+          <div class="span-4 card">
+            <div class="card-title">심리지수</div>
+            <div class="kpi-card" style="background:var(--surface2);border:none;padding:12px 0 0;">
+              <div class="kpi-label">Fear & Greed</div>
+              <div class="kpi-value" id="macroFngLarge">—</div>
+              <div class="kpi-meta">시장 심리</div>
+            </div>
+          </div>
+          <div class="span-12 card">
+            <div class="card-title">
+              Macro 해석 메모
+              <button class="btn btn-secondary macro-refresh-btn" id="macroRefreshBtn2">↻ 다시 조회</button>
+            </div>
+            <div id="macroInterpretation" class="list">
+              <div class="empty-state">
+                <div class="empty-icon">🌐</div>
+                <div class="empty-title">데이터 조회 후 해석이 표시됩니다</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STRATEGY -->
+      <section class="section fade-in" id="section-strategy">
+        <div class="grid">
+          <div class="span-6 card">
+            <div class="card-title">운영 원칙</div>
+            <div class="list">
+              <div class="strategy-item">
+                <div class="strategy-dot green"></div>
+                <div class="strategy-item-text"><strong>Public repo에는 실 portfolio.json을 올리지 않습니다.</strong><br>Viewer는 UI 전용 — 데이터 소스가 될 수 없습니다.</div>
+              </div>
+              <div class="strategy-item">
+                <div class="strategy-dot green"></div>
+                <div class="strategy-item-text"><strong>데이터 입력은 파일 업로드 / 붙여넣기 / localStorage만 허용합니다.</strong><br>fetch('./portfolio.json') 구조는 사용하지 않습니다.</div>
+              </div>
+              <div class="strategy-item">
+                <div class="strategy-dot green"></div>
+                <div class="strategy-item-text"><strong>추가 자금 중심 리밸런싱을 기본 원칙으로 합니다.</strong><br>❌ 매도 기반 리밸런싱 → ✔ 추가 자금 기반 리밸런싱</div>
+              </div>
+              <div class="strategy-item">
+                <div class="strategy-dot"></div>
+                <div class="strategy-item-text"><strong>Telegram 자동 발송은 private advisor repo에서만 수행합니다.</strong><br>브라우저 데이터는 Actions에서 접근 불가 — 반드시 private JSON 기준.</div>
+              </div>
+              <div class="strategy-item">
+                <div class="strategy-dot"></div>
+                <div class="strategy-item-text"><strong>API 키 / 토큰은 절대 HTML에 포함하지 않습니다.</strong><br>GitHub Actions secrets로만 관리합니다.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="span-6 card">
+            <div class="card-title">해결된 리스크</div>
+            <div class="list">
+              <div class="risk-item">
+                <div class="risk-icon">🔴</div>
+                <div class="risk-content">
+                  <div class="risk-title">계좌 정보 외부 노출</div>
+                  <div class="risk-desc">public repo에 portfolio.json 업로드 시 자산·수익률 전체 노출</div>
+                  <div class="risk-resolve">✓ 해결됨 — public repo에 실데이터 저장 금지</div>
+                </div>
+              </div>
+              <div class="risk-item">
+                <div class="risk-icon">🔴</div>
+                <div class="risk-content">
+                  <div class="risk-title">private repo 무력화</div>
+                  <div class="risk-desc">private repo라도 public 배포 시 의미 없어짐</div>
+                  <div class="risk-resolve">✓ 해결됨 — Viewer/Advisor 완전 분리</div>
+                </div>
+              </div>
+              <div class="risk-item">
+                <div class="risk-icon">🔴</div>
+                <div class="risk-content">
+                  <div class="risk-title">Telegram 자동화 충돌</div>
+                  <div class="risk-desc">localStorage 기반 구조와 GitHub Actions 간 데이터 접근 불가</div>
+                  <div class="risk-resolve">✓ 해결됨 — private advisor에서만 발송</div>
+                </div>
+              </div>
+              <div class="risk-item">
+                <div class="risk-icon">🟡</div>
+                <div class="risk-content">
+                  <div class="risk-title">Service Worker 캐시 리스크</div>
+                  <div class="risk-desc">삭제한 JSON이 브라우저 캐시에 잔존할 수 있음</div>
+                  <div class="risk-resolve">✓ 해결됨 — 민감 JSON 캐시 제외 처리</div>
+                </div>
+              </div>
+              <div class="risk-item">
+                <div class="risk-icon">🟡</div>
+                <div class="risk-content">
+                  <div class="risk-title">Viewer / Advisor 데이터 불일치</div>
+                  <div class="risk-desc">각각 다른 기준 데이터로 동작할 위험</div>
+                  <div class="risk-resolve">✓ 해결됨 — private portfolio.json을 단일 기준으로</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="span-12 card">
+            <div class="card-title">운영 Flow</div>
+            <div style="display:flex; gap:0; align-items:center; flex-wrap:wrap; padding: 8px 0;">
+              <div style="padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--sub2);">① 계좌 업데이트</div>
+              <div style="padding:0 10px;color:var(--sub);font-size:16px;">→</div>
+              <div style="padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--sub2);">② portfolio.json 수정 (private)</div>
+              <div style="padding:0 10px;color:var(--sub);font-size:16px;">→</div>
+              <div style="padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--sub2);">③ GitHub Actions 실행</div>
+              <div style="padding:0 10px;color:var(--sub);font-size:16px;">→</div>
+              <div style="padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--sub2);">④ Telegram 확인</div>
+              <div style="padding:0 10px;color:var(--sub);font-size:16px;">→</div>
+              <div style="padding:12px 16px;background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.2);border-radius:10px;font-size:13px;color:var(--accent2);">⑤ Viewer 업로드 (선택)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- PASTE MODAL -->
+<div class="modal" id="pasteModal">
+  <div class="modal-card">
+    <div class="modal-title">portfolio.json 붙여넣기</div>
+    <div class="modal-sub">
+      실제 portfolio.json을 public repo에 올리지 말고, 여기 붙여넣거나 파일 업로드로만 사용하세요.<br>
+      <strong style="color:var(--amber);">이 창을 닫으면 입력 내용은 사라집니다.</strong> 브라우저 저장 버튼을 눌러야 유지됩니다.
+    </div>
+    <textarea id="portfolioJsonTextarea" placeholder='{"accounts":[{"name":"ISA","role":"절세","target_weight":30,"assets":[{"name":"TIGER 미국S&P500","ticker":"360750","asset_class":"equity","currency_exposure":"USD","amount":5000000,"pnl_pct":12.4}]}],"cash":{"available":1000000}}'></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="closePasteModalBtn">닫기</button>
+      <button class="btn btn-primary" id="applyPasteBtn">✓ 적용</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'portfolio_v2';
+let portfolioData = null;
+
+// NAV
+const navBtns = document.querySelectorAll('.nav-btn');
+const sections = document.querySelectorAll('.section');
+navBtns.forEach(btn => btn.addEventListener('click', () => {
+  navBtns.forEach(b => b.classList.remove('active'));
+  sections.forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  const sec = document.getElementById(`section-${btn.dataset.section}`);
+  sec.classList.add('active');
+  sec.classList.remove('fade-in');
+  void sec.offsetWidth;
+  sec.classList.add('fade-in');
+}));
+
+// FORMAT
+function formatKRW(n) {
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+  const v = Number(n);
+  if (Math.abs(v) >= 100000000) return (v / 100000000).toFixed(1) + '억원';
+  if (Math.abs(v) >= 10000) return (v / 10000).toFixed(0) + '만원';
+  return new Intl.NumberFormat('ko-KR').format(v) + '원';
+}
+function formatKRWFull(n) {
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+  return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(Number(n)) + '원';
+}
+function formatPct(n) {
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+  return `${Number(n).toFixed(1)}%`;
+}
+function escapeHtml(t) {
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function assetSum(acc) { return (acc.assets||[]).reduce((s,a)=>s+Number(a.amount||0),0); }
+function totalVal(data) { return (data.accounts||[]).reduce((s,a)=>s+assetSum(a),0)+Number(data.cash?.available||0); }
+
+function validatePortfolioData(data) {
+  if (!data || typeof data !== 'object') throw new Error('root invalid');
+  if (!Array.isArray(data.accounts)) throw new Error('accounts missing');
+  if (!data.cash || Number.isNaN(Number(data.cash.available))) throw new Error('cash.available missing');
+}
+
+function setDataStatus(text, state) {
+  document.getElementById('dataStatus').textContent = text;
+  const dot = document.getElementById('statusDot');
+  dot.className = 'dot' + (state === 'ok' ? ' ok' : state === 'warn' ? ' warn' : '');
+}
+
+function clearDashboard() {
+  const emptyHtml = `<div class="empty-state"><div class="empty-title">데이터 없음</div></div>`;
+  const emptyTr6 = `<tr><td colspan="6">${emptyHtml}</td></tr>`;
+  const emptyTr7 = `<tr><td colspan="7">${emptyHtml}</td></tr>`;
+  document.getElementById('pageSubtitle').textContent = '실데이터 미로드 상태 · 데이터를 불러와 주세요';
+  document.getElementById('asOfText').textContent = '—';
+  document.getElementById('cashText').textContent = '—';
+  ['kpiTotal','kpiUsd','kpiAccounts','kpiCash'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('accountCountBadge').textContent = '—';
+  document.getElementById('accountWeightList').innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">데이터를 불러오세요</div></div>`;
+  document.getElementById('fxExposureBox').innerHTML = emptyHtml;
+  document.getElementById('assetClassList').innerHTML = emptyHtml;
+  document.getElementById('accountsTableBody').innerHTML = emptyTr6;
+  document.getElementById('assetsTableBody').innerHTML = emptyTr7;
+  document.getElementById('gapList').innerHTML = emptyHtml;
+  document.getElementById('priorityList').innerHTML = emptyHtml;
+  document.getElementById('rebalanceNotes').innerHTML = emptyHtml;
+  document.getElementById('rebalCalcNote').textContent = '금액 입력 후 계산 버튼을 누르면 추천 배분을 보여줍니다.';
+}
+
+function getBarColor(pct) {
+  if (pct >= 40) return 'red';
+  if (pct >= 25) return 'amber';
+  return '';
+}
+
+function analyzePortfolio(data) {
+  const total = totalVal(data);
+  const accounts = (data.accounts||[]).map(acc => {
+    const value = assetSum(acc);
+    const weight = total > 0 ? value / total * 100 : 0;
+    const target = Number(acc.target_weight || 0);
+    const gap = weight - target;
+    return { ...acc, value, weight, target, gap };
+  });
+  let usd=0, krw=0, other=0;
+  const clsMap = {};
+  accounts.forEach(acc => {
+    (acc.assets||[]).forEach(a => {
+      const amt = Number(a.amount||0);
+      const fx = a.currency_exposure||'OTHER';
+      if (fx==='USD') usd+=amt; else if (fx==='KRW') krw+=amt; else other+=amt;
+      const cls = a.asset_class||'unknown';
+      clsMap[cls] = (clsMap[cls]||0) + amt;
+    });
+  });
+  const fxTotal = usd+krw+other;
+  const fx = { usd,krw,other,usdPct:fxTotal?usd/fxTotal*100:0,krwPct:fxTotal?krw/fxTotal*100:0,otherPct:fxTotal?other/fxTotal*100:0 };
+  const assetClasses = Object.entries(clsMap).map(([name,value])=>({name,value,pct:total?value/total*100:0})).sort((a,b)=>b.value-a.value);
+  const deficits = accounts.filter(a=>a.gap<0).sort((a,b)=>a.gap-b.gap);
+  return { total, accounts, fx, assetClasses, deficits };
+}
+
+function renderDashboard(data) {
+  const R = analyzePortfolio(data);
+  const asOf = data._source||data.updated_at||'사용자 업로드';
+
+  document.getElementById('pageSubtitle').textContent = asOf;
+  document.getElementById('asOfText').textContent = data.updated_at||'—';
+  document.getElementById('cashText').textContent = formatKRW(Number(data.cash?.available||0));
+  document.getElementById('kpiTotal').textContent = formatKRW(R.total);
+  document.getElementById('kpiUsd').textContent = formatPct(R.fx.usdPct);
+  document.getElementById('kpiAccounts').textContent = String((data.accounts||[]).length);
+  document.getElementById('kpiCash').textContent = formatKRW(Number(data.cash?.available||0));
+  document.getElementById('accountCountBadge').textContent = `${(data.accounts||[]).length}개`;
+
+  // Account weights
+  document.getElementById('accountWeightList').innerHTML =
+    R.accounts.sort((a,b)=>b.value-a.value).map(acc => {
+      const color = getBarColor(acc.weight);
+      return `<div class="alloc-row">
+        <div class="alloc-label" title="${escapeHtml(acc.name)}">${escapeHtml(acc.name)}</div>
+        <div class="progress"><div class="bar ${color}" style="width:${Math.min(acc.weight,100)}%"></div></div>
+        <div class="alloc-pct">${formatPct(acc.weight)}</div>
+      </div>`;
+    }).join('') || '<div class="empty-state"><div class="empty-title">계좌 없음</div></div>';
+
+  // FX
+  const fxItems = [
+    { cur:'USD', pct: R.fx.usdPct, amt: R.fx.usd },
+    { cur:'KRW', pct: R.fx.krwPct, amt: R.fx.krw },
+    ...(R.fx.other > 0 ? [{ cur:'OTHER', pct: R.fx.otherPct, amt: R.fx.other }] : [])
+  ];
+  document.getElementById('fxExposureBox').innerHTML =
+    `<div class="fx-grid">${fxItems.map(f=>`
+      <div class="fx-box">
+        <div class="fx-cur">${f.cur}</div>
+        <div class="fx-pct">${formatPct(f.pct)}</div>
+        <div class="fx-amt">${formatKRW(f.amt)}</div>
+      </div>`).join('')}</div>`;
+
+  // Asset classes
+  const maxCls = Math.max(...R.assetClasses.map(c=>c.pct), 1);
+  document.getElementById('assetClassList').innerHTML =
+    R.assetClasses.map(cls => `<div class="alloc-row">
+      <div class="alloc-label">${escapeHtml(cls.name)}</div>
+      <div class="progress"><div class="bar" style="width:${cls.pct/maxCls*100}%"></div></div>
+      <div class="alloc-pct">${formatPct(cls.pct)}</div>
+    </div>`).join('') || '<div class="empty-state"><div class="empty-title">데이터 없음</div></div>';
+
+  // Accounts table
+  document.getElementById('accountsTableBody').innerHTML =
+    R.accounts.map(acc => {
+      const gc = acc.gap > 0 ? 'positive' : acc.gap < 0 ? 'negative' : '';
+      return `<tr>
+        <td>${escapeHtml(acc.name)}</td>
+        <td class="muted">${escapeHtml(acc.role||'—')}</td>
+        <td class="mono">${formatKRWFull(acc.value)}</td>
+        <td class="mono">${formatPct(acc.weight)}</td>
+        <td class="mono">${formatPct(acc.target)}</td>
+        <td class="mono ${gc}">${acc.gap>0?'+':''}${formatPct(acc.gap)}</td>
+      </tr>`;
+    }).join('');
+
+  // Assets table
+  const assetRows = [];
+  R.accounts.forEach(acc => {
+    (acc.assets||[]).forEach(a => {
+      const pc = a.pnl_pct;
+      const pc_class = pc>0?'positive':pc<0?'negative':'';
+      assetRows.push(`<tr>
+        <td class="muted">${escapeHtml(acc.name)}</td>
+        <td>${escapeHtml(a.name||'')}</td>
+        <td class="mono muted">${escapeHtml(a.ticker||'—')}</td>
+        <td class="muted">${escapeHtml(a.asset_class||'—')}</td>
+        <td class="muted">${escapeHtml(a.currency_exposure||'—')}</td>
+        <td class="mono">${formatKRWFull(a.amount)}</td>
+        <td class="mono ${pc_class}">${(pc===null||pc===undefined)?'—':(pc>0?'+':'')+formatPct(pc)}</td>
+      </tr>`);
+    });
+  });
+  document.getElementById('assetsTableBody').innerHTML = assetRows.join('') ||
+    '<tr><td colspan="7"><div class="empty-state"><div class="empty-title">자산 없음</div></div></td></tr>';
+
+  // Gap list
+  document.getElementById('gapList').innerHTML =
+    R.accounts.sort((a,b)=>Math.abs(b.gap)-Math.abs(a.gap)).map(acc => {
+      const tagClass = acc.gap<0?'tag-red':acc.gap>0?'tag-green':'tag-blue';
+      const status = acc.gap<0?'목표 미달':acc.gap>0?'목표 초과':'목표 부합';
+      const gc = acc.gap>0?'positive':acc.gap<0?'negative':'';
+      return `<div class="item">
+        <div class="item-top">
+          <div class="item-title">${escapeHtml(acc.name)}</div>
+          <span class="tag ${tagClass}">${status}</span>
+        </div>
+        <div class="item-meta">현재 ${formatPct(acc.weight)} / 목표 ${formatPct(acc.target)}</div>
+        <div class="item-value ${gc}">차이 ${acc.gap>0?'+':''}${formatPct(acc.gap)}</div>
+      </div>`;
+    }).join('') || '<div class="empty-state"><div class="empty-title">계좌 없음</div></div>';
+
+  // Priority list
+  document.getElementById('priorityList').innerHTML =
+    R.deficits.length
+      ? R.deficits.map((acc,i)=>`<div class="item">
+          <div class="item-top">
+            <div class="item-title">${i+1}. ${escapeHtml(acc.name)}</div>
+            <span class="tag tag-amber">${formatPct(Math.abs(acc.gap))} 부족</span>
+          </div>
+          <div class="item-meta">역할: ${escapeHtml(acc.role||'—')}</div>
+        </div>`).join('')
+      : '<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">현재 목표 대비 부족한 계좌 없음</div></div>';
+
+  // Rebalance notes
+  const notes = [];
+  if (R.fx.usdPct >= 70) notes.push('USD 노출이 70% 이상입니다. 환율 변동성이 포트폴리오 전체 수익률에 큰 영향을 줍니다.');
+  if (R.assetClasses.find(x=>x.name.toLowerCase().includes('crypto')&&x.pct>=10)) notes.push('크립토 비중이 높아지면 변동성 관리 기준을 별도로 세우는 것이 좋습니다.');
+  if ((data.cash?.available||0) > 0) notes.push(`가용 현금 ${formatKRW(Number(data.cash.available))}이 있습니다. 목표 부족 계좌부터 순차 투입하는 방식이 적합합니다.`);
+  if (!notes.length) notes.push('현재 포트폴리오에서 즉시 수정이 필요한 특이사항은 제한적입니다. Macro 환경과 목표 대비 괴리를 정기적으로 점검하세요.');
+  document.getElementById('rebalanceNotes').innerHTML = notes.map(n=>`<div class="item"><div class="item-meta">${escapeHtml(n)}</div></div>`).join('');
+}
+
+function applyPortfolioData(parsed, label) {
+  validatePortfolioData(parsed);
+  portfolioData = parsed;
+  renderDashboard(portfolioData);
+  setDataStatus(label, 'ok');
+}
+
+function loadPortfolioFromLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    applyPortfolioData(parsed, '브라우저 저장 데이터');
+  } catch(err) {
+    console.error(err);
+    setDataStatus('저장 데이터 손상', 'warn');
+  }
+}
+
+// FILE IMPORT
+document.getElementById('importJsonBtn').addEventListener('click', () => document.getElementById('portfolioFileInput').click());
+document.getElementById('portfolioFileInput').addEventListener('change', async(e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    applyPortfolioData(parsed, `파일: ${file.name}`);
+  } catch(err) {
+    console.error(err);
+    alert('JSON 파일 형식이 올바르지 않습니다.');
+    setDataStatus('파일 불러오기 실패', 'warn');
+  }
+  e.target.value = '';
+});
+
+// SAVE / CLEAR
+document.getElementById('saveLocalBtn').addEventListener('click', () => {
+  if (!portfolioData) { alert('먼저 데이터를 불러와 주세요.'); return; }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolioData));
+  setDataStatus('브라우저 저장 완료', 'ok');
+});
+document.getElementById('clearLocalBtn').addEventListener('click', () => {
+  if (!confirm('저장된 데이터를 삭제하고 대시보드를 초기화하겠습니까?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  portfolioData = null;
+  clearDashboard();
+  setDataStatus('저장 데이터 삭제됨');
+});
+
+// PASTE MODAL
+const pasteModal = document.getElementById('pasteModal');
+document.getElementById('openPasteModalBtn').addEventListener('click', () => pasteModal.classList.add('open'));
+document.getElementById('closePasteModalBtn').addEventListener('click', () => pasteModal.classList.remove('open'));
+pasteModal.addEventListener('click', e => { if (e.target === pasteModal) pasteModal.classList.remove('open'); });
+document.getElementById('applyPasteBtn').addEventListener('click', () => {
+  const raw = document.getElementById('portfolioJsonTextarea').value.trim();
+  if (!raw) { alert('JSON 내용을 입력해 주세요.'); return; }
+  try {
+    const parsed = JSON.parse(raw);
+    applyPortfolioData(parsed, '붙여넣기 데이터');
+    pasteModal.classList.remove('open');
+  } catch(err) {
+    console.error(err);
+    alert('붙여넣은 JSON 형식이 올바르지 않습니다.\n\n' + err.message);
+  }
+});
+
+// REBALANCE CALCULATOR
+document.getElementById('calcRebalBtn').addEventListener('click', () => {
+  if (!portfolioData) { alert('먼저 포트폴리오 데이터를 불러와 주세요.'); return; }
+  const addFund = Number(document.getElementById('addFundInput').value) || 0;
+  if (addFund <= 0) {
+    document.getElementById('rebalCalcNote').textContent = '0원 이상의 금액을 입력해 주세요.';
+    return;
+  }
+  const R = analyzePortfolio(portfolioData);
+  const newTotal = R.total + addFund;
+  // Distribute to deficit accounts proportionally to gap magnitude
+  const deficits = R.accounts.filter(a => a.gap < 0);
+  if (!deficits.length) {
+    document.getElementById('rebalCalcNote').textContent = '목표 대비 부족한 계좌가 없어 특정 추천은 없습니다.';
+    return;
+  }
+  const totalGap = deficits.reduce((s, a) => s + Math.abs(a.gap), 0);
+  const alloc = deficits.map(acc => {
+    const share = Math.abs(acc.gap) / totalGap;
+    const amount = Math.round(addFund * share / 10000) * 10000;
+    return { name: acc.name, amount, gap: acc.gap };
+  });
+  const note = `추가 ${formatKRW(addFund)} 배분 제안 → ` + alloc.map(a => `${a.name}: ${formatKRW(a.amount)}`).join(', ');
+  document.getElementById('rebalCalcNote').textContent = note;
+
+  // Update priority list with amounts
+  document.getElementById('priorityList').innerHTML =
+    alloc.map((a, i) => `<div class="item">
+      <div class="item-top">
+        <div class="item-title">${i+1}. ${escapeHtml(a.name)}</div>
+        <span class="tag tag-amber">${formatPct(Math.abs(a.gap))} 부족</span>
+      </div>
+      <div class="item-value positive">→ 추천 배분: ${formatKRW(a.amount)}</div>
+    </div>`).join('');
+});
+
+// MACRO
+async function fetchMacroData(showSpin) {
+  if (showSpin) {
+    ['macroRefreshBtn','macroRefreshBtn2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<span class="spin">↻</span> 조회 중...';
+    });
+  }
+  let btcText='—', fxText='—', fngText='—';
+  const notes = [];
+
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+    const j = await r.json();
+    const btc = j?.bitcoin?.usd;
+    if (btc) { btcText = '$' + new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(btc); notes.push(`BTC ${btcText}`); }
+  } catch(e) { console.error(e); }
+
+  try {
+    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    const j = await r.json();
+    const krw = j?.rates?.KRW;
+    if (krw) { fxText = new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(krw); notes.push(`USD/KRW ${fxText}`); }
+  } catch(e) { console.error(e); }
+
+  try {
+    const r = await fetch('https://api.alternative.me/fng/?limit=1');
+    const j = await r.json();
+    const val = j?.data?.[0]?.value;
+    const lbl = j?.data?.[0]?.value_classification;
+    if (val) { fngText = `${val} (${lbl})`; notes.push(`F&G ${fngText}`); }
+  } catch(e) { console.error(e); }
+
+  ['macroBtc','macroBtcLarge'].forEach(id=>document.getElementById(id).textContent=btcText);
+  ['macroFx','macroFxLarge'].forEach(id=>document.getElementById(id).textContent=fxText);
+  ['macroFng','macroFngLarge'].forEach(id=>document.getElementById(id).textContent=fngText);
+  document.getElementById('macroStatus').textContent = notes.length ? '조회 완료' : '일부 실패';
+
+  const macroLines = [];
+  if (fxText !== '—') macroLines.push(`USD/KRW ${fxText} 기준 — 원화 대비 달러 민감도를 함께 점검하세요.`);
+  if (fngText !== '—') macroLines.push(`심리지수 ${fngText} — 시장 과열·위축 구간을 보조적으로 확인하세요.`);
+  if (btcText !== '—') macroLines.push(`BTC ${btcText} — 크립토 익스포저와 위험자산 선호도 점검에 참고하세요.`);
+  document.getElementById('macroInterpretation').innerHTML = macroLines.length
+    ? macroLines.map(l=>`<div class="item"><div class="item-meta">${escapeHtml(l)}</div></div>`).join('')
+    : '<div class="empty-state"><div class="empty-title">Macro 데이터를 불러오지 못했습니다</div></div>';
+
+  ['macroRefreshBtn','macroRefreshBtn2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '↻ 갱신';
+  });
+}
+
+document.getElementById('macroRefreshBtn').addEventListener('click', ()=>fetchMacroData(true));
+document.getElementById('macroRefreshBtn2').addEventListener('click', ()=>fetchMacroData(true));
+
+// INIT
+clearDashboard();
+loadPortfolioFromLocal();
+fetchMacroData(false);
+</script>
+</body>
+</html>
