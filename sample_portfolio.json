@@ -1,141 +1,130 @@
 {
   "updated_at": "2026-04-13",
-  "_source": "sample_portfolio.json",
-  "cash": {
-    "available": 3400000
-  },
+  "_source": "public_sample",
   "accounts": [
     {
-      "name": "일반계좌 1",
-      "role": "성장형 ETF",
+      "name": "Brokerage Account A",
+      "type": "taxable",
+      "role": "growth_etf",
       "target_weight": 30,
       "assets": [
         {
-          "name": "KODEX 미국S&P500",
-          "ticker": "360750",
-          "asset_class": "equity",
+          "name": "US Large Cap ETF",
+          "ticker": "ETF001",
+          "asset_class": "equity_us",
           "currency_exposure": "USD",
-          "amount": 4200000,
-          "pnl_pct": 12.4
+          "weight": 0.45
         },
         {
-          "name": "KODEX 미국나스닥100",
-          "ticker": "379800",
-          "asset_class": "equity",
+          "name": "US Tech ETF",
+          "ticker": "ETF002",
+          "asset_class": "equity_us",
           "currency_exposure": "USD",
-          "amount": 3600000,
-          "pnl_pct": 15.8
+          "weight": 0.35
         },
         {
-          "name": "KODEX 인도Nifty50",
-          "ticker": "453810",
-          "asset_class": "equity",
+          "name": "International ETF",
+          "ticker": "ETF003",
+          "asset_class": "equity_global",
           "currency_exposure": "USD",
-          "amount": 1800000,
-          "pnl_pct": 8.1
+          "weight": 0.20
         }
       ]
     },
     {
-      "name": "연금저축계좌",
-      "role": "올웨더",
+      "name": "Retirement Account",
+      "type": "pension",
+      "role": "balanced",
       "target_weight": 25,
+      "annual_limit": 6000000,
+      "deposited_this_year": 0,
       "assets": [
         {
-          "name": "TIGER 미국채10년선물",
-          "ticker": "305080",
-          "asset_class": "bond",
+          "name": "US Treasury ETF",
+          "ticker": "BOND001",
+          "asset_class": "bond_us",
           "currency_exposure": "USD",
-          "amount": 1400000,
-          "pnl_pct": 1.9
+          "weight": 0.45
         },
         {
-          "name": "TIGER 골드선물",
-          "ticker": "319640",
+          "name": "Gold ETF",
+          "ticker": "CMDTY001",
           "asset_class": "commodity",
           "currency_exposure": "USD",
-          "amount": 500000,
-          "pnl_pct": 7.2
+          "weight": 0.20
         },
         {
-          "name": "KODEX 미국S&P500",
-          "ticker": "379780",
-          "asset_class": "equity",
+          "name": "US Equity ETF",
+          "ticker": "ETF004",
+          "asset_class": "equity_us",
           "currency_exposure": "USD",
-          "amount": 680000,
-          "pnl_pct": 10.5
-        },
-        {
-          "name": "TIGER 국고채30년스트립액티브",
-          "ticker": "437080",
-          "asset_class": "bond",
-          "currency_exposure": "KRW",
-          "amount": 520000,
-          "pnl_pct": -2.1
+          "weight": 0.35
         }
       ]
     },
     {
-      "name": "ISA 계좌",
-      "role": "배당·커버드콜",
+      "name": "Tax-Advantaged Account",
+      "type": "isa",
+      "role": "income",
       "target_weight": 20,
+      "annual_limit": 20000000,
+      "deposited_this_year": 0,
       "assets": [
         {
-          "name": "PLUS 고배당주",
-          "ticker": "161510",
+          "name": "Dividend ETF",
+          "ticker": "INC001",
           "asset_class": "equity_income",
           "currency_exposure": "KRW",
-          "amount": 1960000,
-          "pnl_pct": 4.2
+          "weight": 0.40
         },
         {
-          "name": "KODEX 금융고배당TOP10 타겟위클리커버드콜",
-          "ticker": "498400",
-          "asset_class": "equity_income",
-          "currency_exposure": "KRW",
-          "amount": 1990000,
-          "pnl_pct": 3.3
-        },
-        {
-          "name": "TIGER 미국AI빅테크10 타겟데일리커버드콜",
-          "ticker": "481180",
+          "name": "Covered Call ETF",
+          "ticker": "INC002",
           "asset_class": "equity_income",
           "currency_exposure": "USD",
-          "amount": 1970000,
-          "pnl_pct": 5.6
+          "weight": 0.35
+        },
+        {
+          "name": "REIT ETF",
+          "ticker": "REIT001",
+          "asset_class": "reit",
+          "currency_exposure": "USD",
+          "weight": 0.25
         }
       ]
     },
     {
-      "name": "일반계좌 2",
-      "role": "개별주 장기보유",
+      "name": "Brokerage Account B",
+      "type": "taxable",
+      "role": "individual_stocks",
       "target_weight": 25,
       "assets": [
         {
-          "name": "Microsoft",
-          "ticker": "MSFT",
-          "asset_class": "equity",
+          "name": "US Mega Cap Stock",
+          "ticker": "STOCK001",
+          "asset_class": "equity_us",
           "currency_exposure": "USD",
-          "amount": 4400000,
-          "pnl_pct": 21.4
+          "weight": 0.50
         },
         {
-          "name": "NVIDIA",
-          "ticker": "NVDA",
-          "asset_class": "equity",
+          "name": "Semiconductor Stock",
+          "ticker": "STOCK002",
+          "asset_class": "equity_us",
           "currency_exposure": "USD",
-          "amount": 5800000,
-          "pnl_pct": 34.8
+          "weight": 0.30
         },
         {
-          "name": "SK하이닉스",
-          "ticker": "000660",
-          "asset_class": "equity",
+          "name": "Korea Large Cap Stock",
+          "ticker": "STOCK003",
+          "asset_class": "equity_kr",
           "currency_exposure": "KRW",
-          "amount": 6870000,
-          "pnl_pct": 18.7
+          "weight": 0.20
         }
       ]
     }
-  ]
+  ],
+  "cash": {
+    "enabled": true,
+    "note": "Public sample does not include real cash amounts."
+  }
 }
