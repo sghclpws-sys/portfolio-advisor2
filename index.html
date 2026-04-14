@@ -1556,27 +1556,24 @@ async function fetchFRED() {
 }
 
 async function fetchIndices() {
-  // yfinance 대신 간단히 CoinGecko에서 가져올 수 없으니 — TradingView 위젯이 담당
-  // 나스닥/S&P는 FRED나 Yahoo Finance 비공식 엔드포인트 시도
-  try {
-    // S&P500 (SPY 기준 — 비공식)
-    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=5d');
-    const d = await r.json();
-    const prices = d.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
-    if(prices && prices.length >= 2) {
-      const last = prices[prices.length-1], prev = prices[prices.length-2], first = prices[0];
-      M.sp500 = { price:last, change1d:(last-prev)/prev, change5d:(last-first)/first };
-    }
-  } catch(e) {}
-  try {
-    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?interval=1d&range=5d');
-    const d = await r.json();
-    const prices = d.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
-    if(prices && prices.length >= 2) {
-      const last = prices[prices.length-1], prev = prices[prices.length-2], first = prices[0];
-      M.nasdaq = { price:last, change1d:(last-prev)/prev, change5d:(last-first)/first };
-    }
-  } catch(e) {}
+  // stooq.com — CORS 허용, GitHub Pages에서 정상 작동
+  // CSV 형식: Date,Open,High,Low,Close,Volume
+  async function fetchStooq(symbol) {
+    const url = `https://stooq.com/q/d/l/?s=${symbol}&i=d`;
+    const r = await fetch(url);
+    const text = await r.text();
+    const lines = text.trim().split('\n').filter(l => l && !l.startsWith('Date'));
+    if(lines.length < 2) return null;
+    const parse = l => parseFloat(l.split(',')[4]); // Close 컬럼
+    const last  = parse(lines[lines.length-1]);
+    const prev  = parse(lines[lines.length-2]);
+    const first = parse(lines[0]);
+    if(!last || !prev) return null;
+    return { price:last, change1d:(last-prev)/prev, change5d:(last-first)/first };
+  }
+
+  try { M.sp500  = await fetchStooq('%5Egspc'); } catch(e) {}
+  try { M.nasdaq = await fetchStooq('%5Eixic'); } catch(e) {}
   renderHome();
 }
 
