@@ -465,7 +465,7 @@ body {
     <div class="page-title" id="pageTitle">지금 상태</div>
     <div class="topbar-right">
       <span class="live-tag"><span class="live-dot"></span>LIVE</span>
-      <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ 시세 갱신</button>
+      <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ 시세 갱신</button><button class="btn btn-outline btn-sm" onclick="openIndexModal()" style="margin-left:4px;font-size:11px">✎ 수동입력</button>
     </div>
   </div>
 
@@ -722,6 +722,35 @@ body {
 <div class="modal-overlay" id="dataModal">
   <div class="modal">
     <div class="modal-hd">
+  <!-- 수동 지수 입력 모달 -->
+  <div class="modal-bg" id="indexModal" style="display:none" onclick="if(event.target===this)closeIndexModal()">
+    <div class="modal-box" style="max-width:340px">
+      <div><div class="modal-title">지수 수동 입력</div><div class="modal-sub">API 미작동 시 직접 입력</div></div>
+      <div style="display:grid;gap:10px;margin:16px 0">
+        <div>
+          <div class="calc-lbl" style="margin-bottom:4px">S&P 500 현재가</div>
+          <input class="calc-input" id="manualSP" type="number" placeholder="예: 5200" style="width:100%">
+        </div>
+        <div>
+          <div class="calc-lbl" style="margin-bottom:4px">S&P 500 전일가</div>
+          <input class="calc-input" id="manualSPPrev" type="number" placeholder="예: 5180" style="width:100%">
+        </div>
+        <div>
+          <div class="calc-lbl" style="margin-bottom:4px">나스닥 현재가</div>
+          <input class="calc-input" id="manualNAS" type="number" placeholder="예: 16200" style="width:100%">
+        </div>
+        <div>
+          <div class="calc-lbl" style="margin-bottom:4px">나스닥 전일가</div>
+          <input class="calc-input" id="manualNASPrev" type="number" placeholder="예: 16100" style="width:100%">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="applyManualIndex()">적용</button>
+        <button class="btn btn-outline" onclick="closeIndexModal()">취소</button>
+      </div>
+    </div>
+  </div>
+
       <div><div class="modal-title">포트폴리오 데이터 업데이트</div><div class="modal-sub">portfolio.json 전체 내용을 붙여넣으세요</div></div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
@@ -1556,24 +1585,34 @@ async function fetchFRED() {
 }
 
 async function fetchIndices() {
-  // stooq.com — CORS 허용, GitHub Pages에서 정상 작동
-  // CSV 형식: Date,Open,High,Low,Close,Volume
-  async function fetchStooq(symbol) {
-    const url = `https://stooq.com/q/d/l/?s=${symbol}&i=d`;
-    const r = await fetch(url);
-    const text = await r.text();
-    const lines = text.trim().split('\n').filter(l => l && !l.startsWith('Date'));
-    if(lines.length < 2) return null;
-    const parse = l => parseFloat(l.split(',')[4]); // Close 컬럼
-    const last  = parse(lines[lines.length-1]);
-    const prev  = parse(lines[lines.length-2]);
-    const first = parse(lines[0]);
-    if(!last || !prev) return null;
-    return { price:last, change1d:(last-prev)/prev, change5d:(last-first)/first };
+  // Yahoo Finance를 corsproxy.io 경유 — GitHub Pages CORS 우회
+  // corsproxy 실패 시 allorigins fallback
+  async function fetchYahoo(yahooSymbol) {
+    const target = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=5d`;
+    const proxies = [
+      `https://corsproxy.io/?${encodeURIComponent(target)}`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    ];
+    for(const url of proxies) {
+      try {
+        const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+        if(!r.ok) continue;
+        const d = await r.json();
+        const prices = d.chart?.result?.[0]?.indicators?.quote?.[0]?.close?.filter(Boolean);
+        if(!prices || prices.length < 2) continue;
+        const last = prices[prices.length-1], prev = prices[prices.length-2], first = prices[0];
+        return { price:last, change1d:(last-prev)/prev, change5d:(last-first)/first };
+      } catch(e) { continue; }
+    }
+    return null;
   }
 
-  try { M.sp500  = await fetchStooq('%5Egspc'); } catch(e) {}
-  try { M.nasdaq = await fetchStooq('%5Eixic'); } catch(e) {}
+  const [sp, nas] = await Promise.allSettled([
+    fetchYahoo('%5EGSPC'),
+    fetchYahoo('%5EIXIC'),
+  ]);
+  if(sp.value)  M.sp500  = sp.value;
+  if(nas.value) M.nasdaq = nas.value;
   renderHome();
 }
 
@@ -1633,6 +1672,20 @@ function renderCrypto() {
     const pStr=p>=1e8?'₩'+(p/1e8).toFixed(2)+'억':p>=1e4?'₩'+Math.round(p/1e4)+'만':'₩'+Math.round(p).toLocaleString();
     return `<div class="crypto-item"><div class="crypto-top"><span class="crypto-icon">${c.icon}</span><div><div class="crypto-name">${c.name}</div><div class="crypto-sym">${c.sym}</div></div></div><div class="crypto-price">${pStr}</div><div class="crypto-chg ${chg>=0?'pos':'neg'}">${pct(chg)}</div></div>`;
   }).join('');
+}
+
+function openIndexModal() { document.getElementById('indexModal').style.display='flex'; }
+function closeIndexModal() { document.getElementById('indexModal').style.display='none'; }
+function applyManualIndex() {
+  const sp   = parseFloat(document.getElementById('manualSP').value);
+  const spP  = parseFloat(document.getElementById('manualSPPrev').value);
+  const nas  = parseFloat(document.getElementById('manualNAS').value);
+  const nasP = parseFloat(document.getElementById('manualNASPrev').value);
+  if(sp && spP)  M.sp500  = { price:sp,  change1d:(sp-spP)/spP,   change5d:(sp-spP)/spP };
+  if(nas && nasP) M.nasdaq = { price:nas, change1d:(nas-nasP)/nasP, change5d:(nas-nasP)/nasP };
+  closeIndexModal();
+  renderHome();
+  showToast('✓ 지수 수동 적용 완료');
 }
 
 async function refreshAll() {
