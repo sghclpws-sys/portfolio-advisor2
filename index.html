@@ -594,9 +594,16 @@ body {
   <!-- ══ REBALANCE ══ -->
   <div class="content page" id="page-rebalance">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent)">"계좌를 나눠서 역할을 분리하고, 전체로 보면 하나의 포트폴리오"</div>
-      <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--green)">"매도보다 추가자금으로 조정한다 — 세금은 수익률"</div>
+      <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent)">🎯 <b>리스크 75 / 방어 25</b> — 일반계좌=성장, ISA=세금알파, 연금=방어버킷</div>
+      <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--green)">⚖️ <b>머튼비중 γ≈2.5</b> — 채권+금+현금 합계 20~25% · BTC 5~8% · 개별주→ETF 희석</div>
     </div>
+
+    <!-- 자산군 목표비중 현황 -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-hd"><div class="card-title">자산군별 목표 비중 현황</div><div style="font-size:11px;color:var(--text3)">머튼비중 기준 · IRP 채권 제외</div></div>
+      <div class="card-body" id="classRebalBody" style="padding:0"></div>
+    </div>
+
     <div class="card" style="margin-bottom:14px">
       <div class="card-hd"><div><div class="card-title">추가자금 리밸런싱 계산기</div><div class="card-sub">매도 없이 추가 매수만으로 목표 비중 최적화</div></div><button class="btn btn-primary btn-sm" onclick="calcRebal()">계산</button></div>
       <div class="card-body">
@@ -742,6 +749,62 @@ const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#ea
 const CLS_COLOR = { equity_us:'#2563eb', equity_kr:'#059669', bond_us:'#7c3aed', commodity:'#d97706', reit:'#0891b2', crypto:'#ea580c', cash:'#9ca3af', irp:'#65a30d', 기타:'#d1d5db' };
 const CLS_LABEL = { equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', irp:'IRP', fund:'펀드' };
 const ACCT_PURPOSE = { taxable:'성장 극대화', isa:'세제+캐시플로우', pension:'안정+복리', irp:'장기 안정', crypto_exchange:'암호화폐' };
+
+// ══════════════════════════════════════════
+// STRATEGY — 머튼비중 + 효용법칙 기반 확정 기준
+// (2026-04 Claude+GPT 협의 결정)
+// γ ≈ 2.2~2.8 (중간 이하 위험회피)
+// 인적자본 = 채권 역할 → 금융자산 공격 비중 정당화
+// ══════════════════════════════════════════
+const STRATEGY = {
+  // 전체 버킷 목표
+  RISK_BUCKET_TARGET: 75,    // 리스크 버킷 (개별주+ETF+BTC)
+  DEFENSE_BUCKET_TARGET: 25, // 방어 버킷 (채권+금+현금)
+
+  // 자산군별 목표 비중 (총자산 대비 %)
+  // 방어 버킷 분해: 채권 8~10 + 금 4~6 + 현금 5~7 = 합계 20~25
+  CLASS_TARGETS: {
+    equity_us_individual: { min: 24, max: 25, label: '미국 개별주',   color: '#2563eb',
+      note: '신규자금 ETF 우선. INTC·LGHH 손익통산 정리 검토.' },
+    equity_us_etf:        { min: 28, max: 30, label: '미국 ETF(주식)', color: '#0891b2',
+      note: '일반계좌 신규자금 100% ETF. 분산효율 최우선.' },
+    equity_kr:            { min: 1,  max: 2,  label: '국내주식',       color: '#059669',
+      note: '현수준 유지. 추가 편입 불필요.' },
+    isa_income:           { min: 16, max: 18, label: 'ISA (배당+성장)', color: '#7c3aed',
+      note: '배당ETF 70% / 성장ETF 30%. 잔여납입 배당ETF+리츠 우선.' },
+    bond_us:              { min: 8,  max: 10, label: '채권(미국채)',    color: '#65a30d',
+      note: '연금저축 내 채권ETF 증액. IRP 납입으로 우선 해결.' },
+    commodity:            { min: 4,  max: 6,  label: '금/원자재',      color: '#d97706',
+      note: '연금저축 내 골드+WTI 유지. 목표 미달 시 추가매수.' },
+    reit:                 { min: 2,  max: 3,  label: '리츠',           color: '#0891b2',
+      note: 'ISA 내 RISE 글로벌리얼티 비중 확대. 비과세 혜택 활용.' },
+    crypto:               { min: 5,  max: 8,  label: 'BTC',            color: '#ea580c',
+      note: '현재 14.8% → 목표 5~8%. 1차 10~12%로 단계 축소. 급매도 지양.' },
+    pension_tdf:          { min: 18, max: 20, label: '연금/TDF',       color: '#d97706',
+      note: 'TDF = 자동 리밸런싱 엔진. 연금저축 채권+금 20% 이상 유지.' },
+    cash:                 { min: 5,  max: 7,  label: '현금',           color: '#9ca3af',
+      note: '기회비용 감안 최소화. 리밸런싱 여력 확보 수준 유지.' },
+  },
+
+  // 계좌 역할 정의
+  ACCT_ROLE: {
+    taxable:          { role: '성장 엔진',   bucket: 'risk',    note: '개별주 유지 + ETF 희석. 장기보유로 세금 이연.' },
+    isa:              { role: '세금 알파',   bucket: 'risk',    note: '배당 비과세 극대화. 배당70/성장30.' },
+    pension:          { role: '방어 버킷',   bucket: 'defense', note: '채권+금 합계 20% 이상. TDF 자동 리밸런싱.' },
+    irp:              { role: '방어 버킷',   bucket: 'defense', note: '세액공제 + 안전자산 역할.' },
+    crypto_exchange:  { role: '위성 자산',   bucket: 'risk',    note: '목표 5~8%. 단계적 축소.' },
+  },
+
+  // 리밸런싱 판단 임계값
+  THRESHOLDS: {
+    btc_overweight: 12,     // BTC 이 비중 초과 시 HIGH 경고
+    btc_target_max: 8,      // BTC 목표 상한
+    defense_min: 17,        // 방어버킷(채권+금+현금) 최소 합계
+    bond_critical: 5,       // 채권이 이 미만이면 CRITICAL
+    individual_max: 27,     // 개별주 이 초과 시 경고
+    deviation_alert: 5,     // 목표 괴리 경고 기준
+  }
+};
 const PAGE_TITLES = { home:'지금 상태', accounts:'계좌 현황', rebalance:'리밸런싱', macro:'매크로', strategy:'전략' };
 
 // ══════════════════════════════════════════
@@ -803,21 +866,54 @@ function classBreakdown() {
 }
 
 // ══════════════════════════════════════════
-// RULE ENGINE — 액션 자동 도출 (핵심)
+// RULE ENGINE — 머튼비중 + 효용법칙 기반
+// 2026-04 확정 전략 적용
 // ══════════════════════════════════════════
+function getAssetClassWeights() {
+  if(!P) return {};
+  const tot = totalWithCash();
+  const cb = classBreakdown();
+
+  // 개별주 vs ETF 분리 (taxable 계좌 내 stock vs etf)
+  let indivUs = 0, etfUs = 0, incomeIsa = 0;
+  P.accounts.forEach(a => {
+    (a.assets||[]).forEach(h => {
+      if(h.asset_class === 'equity_us') {
+        if(a.type === 'isa') incomeIsa += (h.amount||0);
+        else if(h.asset_type === 'stock') indivUs += (h.amount||0);
+        else etfUs += (h.amount||0);
+      }
+    });
+  });
+
+  // 방어자산 합계
+  const bond = (cb.bond_us||0);
+  const commodity = (cb.commodity||0);
+  const cashAmt = P.cash?.available || 0;
+  const defenseTotal = bond + commodity + cashAmt;
+
+  return {
+    equity_us_individual: tot ? (indivUs/tot)*100 : 0,
+    equity_us_etf:        tot ? (etfUs/tot)*100  : 0,
+    equity_kr:            tot ? ((cb.equity_kr||0)/tot)*100 : 0,
+    isa_income:           tot ? ((cb.equity_us||0)/tot)*100 : 0, // ISA 전체
+    bond_us:              tot ? (bond/tot)*100 : 0,
+    commodity:            tot ? (commodity/tot)*100 : 0,
+    reit:                 tot ? ((cb.reit||0)/tot)*100 : 0,
+    crypto:               tot ? ((cb.crypto||0)/tot)*100 : 0,
+    cash:                 tot ? (cashAmt/tot)*100 : 0,
+    defense_total:        tot ? (defenseTotal/tot)*100 : 0,
+  };
+}
+
 function runRuleEngine() {
   if(!P) return [];
   const actions = [];
   const tot = totalWithCash();
   const signals = getSignals();
   const sigIds = signals.map(s => s.id);
-
-  const acctMap = {};
-  P.accounts.forEach(a => { acctMap[a.type] = acctMap[a.type] || a; acctMap[a.name] = a; });
-
-  // 각 계좌 비중 계산
-  const acctWeights = {};
-  P.accounts.forEach(a => { acctWeights[a.name] = tot ? (acctVal(a)/tot)*100 : 0; });
+  const T = STRATEGY.THRESHOLDS;
+  const cw = getAssetClassWeights();
 
   // ISA 납입 여유
   const isa = P.accounts.find(a => a.type === 'isa');
@@ -827,110 +923,148 @@ function runRuleEngine() {
   const pension = P.accounts.filter(a => a.type === 'pension');
   const pensionRemain = pension.reduce((s,a) => s + Math.max(0,(a.annual_limit||0)-(a.deposited_this_year||0)), 0);
 
-  // BTC 비중
-  const cryptoAcct = P.accounts.find(a => a.type === 'crypto_exchange');
-  const cryptoVal = cryptoAcct ? acctVal(cryptoAcct) : 0;
-  const cryptoWeight = tot ? (cryptoVal/tot)*100 : 0;
-  const cryptoTarget = cryptoAcct?.target_weight || 5;
+  // IRP 납입 여유
+  const irp = P.accounts.find(a => a.type === 'irp');
+  const irpRemain = irp ? Math.max(0,(irp.annual_limit||0)-(irp.deposited_this_year||0)) : 0;
 
-  // RULE 1: 나스닥 하락 + 주식 비중 목표 이하 → DCA
-  if(sigIds.includes('NASDAQ_DROP') || sigIds.includes('SP500_DROP')) {
-    const equityUs = classBreakdown().equity_us || 0;
-    const equityUsPct = tot ? (equityUs/tot)*100 : 0;
-    const equityTarget = 55;
-    if(equityUsPct <= equityTarget + 3) {
-      const cash = P.cash?.available || 0;
-      const dca = Math.min(cash * 0.3, 2000000);
-      actions.push({
-        priority: 'HIGH',
-        account: '일반계좌1 / 우리투자',
-        title: '나스닥100 · S&P500 분할매수',
-        reason: `나스닥 ${M.nasdaq?.change5d ? (M.nasdaq.change5d*100).toFixed(1)+'%' : '하락'} · US Equity ${equityUsPct.toFixed(1)}% (목표 ${equityTarget}%) · DCA 적기`,
-        amount: dca > 0 ? dca : 0
-      });
-    }
-  }
+  const btcWeight = cw.crypto;
+  const bondWeight = cw.bond_us;
+  const defenseWeight = cw.defense_total;
+  const indivWeight = cw.equity_us_individual;
 
-  // RULE 2: 극도의 공포 → 전체 DCA
-  if(sigIds.includes('EXTREME_FEAR')) {
+  // ── RULE 1: BTC 과다 비중 (최우선) ──────────────────
+  if(btcWeight > T.btc_overweight) {
+    const cryptoAcct = P.accounts.find(a => a.type === 'crypto_exchange');
+    const btcAsset = cryptoAcct?.assets?.find(h => h.asset_type === 'crypto');
+    const pnlPct = btcAsset?.pnl_pct || 0;
+    const stage1Target = 12; // 1차 목표
+    const excessAmt = Math.round((btcWeight - stage1Target) / 100 * tot);
     actions.push({
       priority: 'HIGH',
-      account: '전체 계좌',
-      title: '분할매수 적극 검토',
-      reason: `Fear & Greed ${M.fg?.score} — 역사적 과매도 구간. 공격적 DCA 타이밍.`,
-      amount: 0
+      account: '업비트 (BTC)',
+      title: `BTC 과다 — 1차 축소 필요 (${btcWeight.toFixed(1)}% → ${stage1Target}%)`,
+      reason: `현재 ${btcWeight.toFixed(1)}% · 머튼 최적 5~8% · σ=60~70% 고분산 자산 과대 편입. 수익률 ${pnlPct>0?'+':''}${pnlPct?.toFixed(1)||'—'}% · 전량 매도 아닌 단계 축소 권장`,
+      amount: excessAmt
     });
-  }
-
-  // RULE 3: USD 강세 → 익스포저 현황 안내
-  if(sigIds.includes('USD_STRONG')) {
-    actions.push({
-      priority: 'LOW',
-      account: '전체',
-      title: 'USD 익스포저 유지',
-      reason: `USD/KRW ${M.fx?.toFixed(0)||'—'}원 · 현재 해외자산 ${usdExposure().toFixed(0)}% · 환차익 발생 중 — 비중 유지 권장`,
-      amount: 0
-    });
-  }
-
-  // RULE 4: ISA 납입 여유 + 변동성 → ISA 추가납입
-  if(isaRemain > 500000 && (sigIds.includes('NASDAQ_DROP') || sigIds.includes('EXTREME_FEAR'))) {
-    actions.push({
-      priority: 'MEDIUM',
-      account: '미래에셋 ISA',
-      title: `ISA 추가 납입 검토`,
-      reason: `잔여 한도 ${fmtF(isaRemain)} · 변동성 확대 구간 — 커버드콜 프리미엄 증가 예상 · 비과세 혜택`,
-      amount: Math.min(isaRemain, 1000000)
-    });
-  }
-
-  // RULE 5: 연금 납입 여유
-  if(pensionRemain > 0) {
-    actions.push({
-      priority: 'MEDIUM',
-      account: '미래에셋 연금저축',
-      title: '연금저축 납입 잔여분 확인',
-      reason: `올해 잔여 납입 가능액 ${fmtF(pensionRemain)} · 세액공제 혜택 (연 600만원 한도)`,
-      amount: pensionRemain
-    });
-  }
-
-  // RULE 6: BTC 급변
-  if(sigIds.includes('BTC_DROP') || sigIds.includes('BTC_SURGE')) {
-    const btcChg = M.btc?.krw_24h_change || 0;
-    const dir = btcChg > 0 ? '급등' : '급락';
+  } else if(btcWeight > T.btc_target_max) {
     actions.push({
       priority: 'MEDIUM',
       account: '업비트 (BTC)',
-      title: `BTC ${dir} — 포지션 점검`,
-      reason: `24h ${pct(btcChg)} · 현재 비중 ${cryptoWeight.toFixed(1)}% (목표 ${cryptoTarget}%) · 헤지 성격 유지`,
+      title: `BTC 목표비중 초과 — 추가 축소 검토 (${btcWeight.toFixed(1)}% → 5~8%)`,
+      reason: `머튼 최적 5~8% 대비 ${(btcWeight - T.btc_target_max).toFixed(1)}%p 초과. 신규자금 다른 자산 배치로 희석`,
       amount: 0
     });
   }
 
-  // RULE 7: 괴리율 초과 계좌
-  P.accounts.forEach(a => {
-    const w = acctWeights[a.name] || 0;
-    const t = a.target_weight || 0;
-    const dev = w - t;
-    if(dev < -7) {
-      actions.push({
-        priority: 'MEDIUM',
-        account: a.name,
-        title: `비중 목표 대비 부족 — 추가 매수 검토`,
-        reason: `현재 ${w.toFixed(1)}% vs 목표 ${t}% (괴리 ${dev.toFixed(1)}%)`,
-        amount: 0
-      });
-    }
-  });
+  // ── RULE 2: 채권 부족 (방어버킷 핵심) ───────────────
+  if(bondWeight < T.bond_critical) {
+    const gap = T.bond_critical - bondWeight;
+    const needAmt = Math.round(gap / 100 * tot);
+    actions.push({
+      priority: 'HIGH',
+      account: '미래에셋 연금저축',
+      title: `채권 긴급 부족 — 연금저축에 미국채 ETF 매수 (현재 ${bondWeight.toFixed(1)}%)`,
+      reason: `목표 8~10% 대비 극히 미달. 방어버킷 취약. TIGER 미국채10년·30년 추가. 연금저축 내 매수 시 세금 없음`,
+      amount: needAmt
+    });
+  } else if(bondWeight < 8) {
+    actions.push({
+      priority: 'MEDIUM',
+      account: '미래에셋 연금저축 / IRP',
+      title: `채권 목표 미달 — 납입 및 매수 확대 (${bondWeight.toFixed(1)}% → 8~10%)`,
+      reason: `IRP 잔여한도 ${fmtF(irpRemain)} · 연금 잔여 ${fmtF(pensionRemain)} 채권 ETF 우선 배치 권장`,
+      amount: Math.min(pensionRemain + irpRemain, Math.round((8-bondWeight)/100*tot))
+    });
+  }
 
-  // RULE 8: 신호 없음
+  // ── RULE 3: 방어버킷 전체 부족 ──────────────────────
+  if(defenseWeight < T.defense_min) {
+    actions.push({
+      priority: 'HIGH',
+      account: '연금 / 현금',
+      title: `방어버킷 부족 — 채권+금+현금 합계 ${defenseWeight.toFixed(1)}% (목표 20~25%)`,
+      reason: `머튼 γ≈2.5 기준 안전자산 25% 필요. 연금 납입 + ETF 재배분 병행 필요`,
+      amount: Math.round((T.defense_min - defenseWeight) / 100 * tot)
+    });
+  }
+
+  // ── RULE 4: 개별주 과다 ──────────────────────────────
+  if(indivWeight > T.individual_max) {
+    actions.push({
+      priority: 'MEDIUM',
+      account: '미래에셋/삼성증권 일반계좌',
+      title: `개별주 비중 과다 — ETF로 신규자금 전환 (${indivWeight.toFixed(1)}% → 24~25%)`,
+      reason: `메가캡 집중은 준ETF 구조지만 단일종목 리스크 잔존. 신규자금 100% ETF 배치로 자연 희석. 매도 불필요`,
+      amount: 0
+    });
+  }
+
+  // ── RULE 5: 연금 납입 여유 (세액공제) ───────────────
+  if(pensionRemain > 0 || irpRemain > 0) {
+    const totalRemain = pensionRemain + irpRemain;
+    actions.push({
+      priority: pensionRemain > 2000000 ? 'MEDIUM' : 'LOW',
+      account: '미래에셋 연금저축 / IRP',
+      title: `세액공제 납입 잔여 ${fmtF(totalRemain)} — 채권+방어자산 배치`,
+      reason: `연금저축 잔여 ${fmtF(pensionRemain)} · IRP 잔여 ${fmtF(irpRemain)} · 납입 → 채권 ETF 매수 → 채권비중+세액공제 동시 해결`,
+      amount: totalRemain
+    });
+  }
+
+  // ── RULE 6: ISA 납입 여유 → 배당ETF 우선 ───────────
+  if(isaRemain > 500000) {
+    actions.push({
+      priority: 'LOW',
+      account: '미래에셋 ISA',
+      title: `ISA 잔여한도 ${fmtF(isaRemain)} — 배당ETF·리츠 우선 납입`,
+      reason: `ISA = 세금 알파 계좌. 배당 비과세 극대화 원칙. 성장ETF보다 배당ETF(TIGER코리아배당, PLUS고배당)·RISE리츠 우선`,
+      amount: Math.min(isaRemain, 2000000)
+    });
+  }
+
+  // ── RULE 7: 시장 신호 연계 DCA ──────────────────────
+  if(sigIds.includes('NASDAQ_DROP') || sigIds.includes('EXTREME_FEAR')) {
+    const cash = P.cash?.available || 0;
+    const dca = Math.min(cash * 0.3, 2000000);
+    actions.push({
+      priority: 'MEDIUM',
+      account: '우리투자증권 / 미래에셋 ISA',
+      title: '시장 하락 — ETF 분할매수 타이밍',
+      reason: `${sigIds.includes('EXTREME_FEAR') ? `Fear&Greed ${M.fg?.score} 공포 구간 ·` : '나스닥 하락 ·'} 신규자금 S&P500·나스닥100 ETF DCA · 개별주 추가 매수 지양`,
+      amount: dca
+    });
+  }
+
+  // ── RULE 8: BTC 급변 ────────────────────────────────
+  if(sigIds.includes('BTC_DROP') || sigIds.includes('BTC_SURGE')) {
+    const btcChg = M.btc?.krw_24h_change || 0;
+    actions.push({
+      priority: 'LOW',
+      account: '업비트 (BTC)',
+      title: `BTC ${btcChg > 0 ? '급등' : '급락'} — 비중 점검 (현재 ${btcWeight.toFixed(1)}%)`,
+      reason: `24h ${pct(btcChg)} · 목표 5~8% 대비 ${btcWeight > 8 ? '과다 — 축소 기회 검토' : '정상 범위 유지'}`,
+      amount: 0
+    });
+  }
+
+  // ── RULE 9: 원자재/금 부족 ──────────────────────────
+  if(cw.commodity < 3) {
+    actions.push({
+      priority: 'LOW',
+      account: '미래에셋 연금저축',
+      title: `금/원자재 부족 (${cw.commodity.toFixed(1)}% → 목표 4~6%)`,
+      reason: `헤징 기능 저하. 연금저축 내 TIGER 골드선물·HANARO 금채굴 추가 매수. 올웨더 구조 강화`,
+      amount: 0
+    });
+  }
+
+  // ── RULE 10: 신호 없음 ──────────────────────────────
   if(actions.length === 0) {
     actions.push({
       priority: 'INFO',
       account: '전체',
-      title: '현재 이상 없음 — 기존 전략 유지',
-      reason: '시장 안정 구간 · 추가 액션 불필요 · DCA 계획대로 진행',
+      title: '포트폴리오 정상 — 기존 전략 유지',
+      reason: '리스크 75 / 방어 25 구조 정상. 추가 액션 불필요. DCA 계획대로 진행',
       amount: 0
     });
   }
@@ -1207,19 +1341,89 @@ function renderAccounts() {
 // ══════════════════════════════════════════
 // REBALANCE
 // ══════════════════════════════════════════
+function renderClassRebal() {
+  if(!P) return;
+  const tot = totalWithCash();
+  const cb = classBreakdown();
+  const cw = getAssetClassWeights();
+  const T = STRATEGY.THRESHOLDS;
+  const CT = STRATEGY.CLASS_TARGETS;
+
+  // 자산군별 현재 비중 계산
+  const rows = [
+    { key:'equity_us_individual', cur: cw.equity_us_individual },
+    { key:'equity_us_etf',        cur: cw.equity_us_etf },
+    { key:'equity_kr',            cur: cw.equity_kr },
+    { key:'isa_income',           cur: (() => { let v=0; P.accounts.filter(a=>a.type==='isa').forEach(a=>(a.assets||[]).forEach(h=>{v+=h.amount||0;})); return tot?(v/tot)*100:0; })() },
+    { key:'bond_us',              cur: cw.bond_us },
+    { key:'commodity',            cur: cw.commodity },
+    { key:'reit',                 cur: tot?((cb.reit||0)/tot)*100:0 },
+    { key:'crypto',               cur: cw.crypto },
+    { key:'cash',                 cur: cw.cash },
+  ];
+
+  const el = document.getElementById('classRebalBody');
+  if(!el) return;
+
+  // 버킷 합계
+  const riskBucket = cw.equity_us_individual + cw.equity_us_etf + cw.equity_kr + cw.crypto +
+    (() => { let v=0; P.accounts.filter(a=>a.type==='isa').forEach(a=>(a.assets||[]).forEach(h=>{v+=h.amount||0;})); return tot?(v/tot)*100:0; })();
+  const defenseBucket = cw.bond_us + cw.commodity + cw.cash;
+
+  const bucketBar = `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg);font-size:11px">
+      <span style="color:var(--text3)">전체버킷</span>
+      <span style="color:var(--accent);font-weight:600">리스크 ${riskBucket.toFixed(1)}%</span>
+      <span style="color:var(--text3)">/</span>
+      <span style="color:${defenseBucket < T.defense_min ? 'var(--red)' : 'var(--green)'};font-weight:600">방어 ${defenseBucket.toFixed(1)}%</span>
+      <span style="flex:1"></span>
+      <span style="color:var(--text3)">목표 리스크 ${STRATEGY.RISK_BUCKET_TARGET}% / 방어 ${STRATEGY.DEFENSE_BUCKET_TARGET}%</span>
+    </div>`;
+
+  const tableRows = rows.map(({key, cur}) => {
+    const def = CT[key]; if(!def) return '';
+    const midTarget = (def.min + def.max) / 2;
+    const dev = cur - midTarget;
+    const inRange = cur >= def.min && cur <= def.max;
+    const isLow = cur < def.min;
+    const pillCls = inRange ? 'pill-b' : isLow ? 'pill-r' : 'pill-y';
+    const pillTxt = inRange ? '✓ 정상' : isLow ? `▼ ${(def.min-cur).toFixed(1)}%p 부족` : `▲ ${(cur-def.max).toFixed(1)}%p 초과`;
+    const barW = Math.min(100, (cur / (def.max * 1.5)) * 100);
+    const barColor = inRange ? 'var(--accent)' : isLow ? 'var(--red)' : 'var(--yellow)';
+    return `<div style="padding:9px 14px;border-bottom:1px solid var(--border);font-size:12px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <span style="width:7px;height:7px;border-radius:50%;background:${def.color};display:inline-block;flex-shrink:0"></span>
+        <span style="flex:1;font-weight:500">${def.label}</span>
+        <span style="color:var(--text2);min-width:40px;text-align:right">${cur.toFixed(1)}%</span>
+        <span style="color:var(--text3);min-width:60px;text-align:right;font-size:11px">목표 ${def.min}~${def.max}%</span>
+        <span class="pill ${pillCls}" style="min-width:80px;text-align:center">${pillTxt}</span>
+      </div>
+      <div style="height:3px;background:var(--border);border-radius:2px;margin:0 15px">
+        <div style="height:3px;width:${barW.toFixed(0)}%;background:${barColor};border-radius:2px;transition:width .3s"></div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px;padding-left:15px">${def.note}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = bucketBar + tableRows;
+}
+
 function renderRebal() {
   if(!P) return;
+  renderClassRebal();
   const tot = totalWithCash();
   document.getElementById('rebalBody').innerHTML = P.accounts.map((a,i) => {
     const v=acctVal(a), r=tot?(v/tot)*100:0, t=a.target_weight||0, dev=r-t;
-    const dc=Math.abs(dev)<2?'pill-b':dev>0?'pill-g':'pill-r';
+    const role = STRATEGY.ACCT_ROLE[a.type] || {};
+    const bucketColor = role.bucket === 'defense' ? 'var(--green)' : 'var(--accent)';
+    const dc=Math.abs(dev)<2?'pill-b':dev>0?'pill-y':'pill-r';
     const dl=Math.abs(dev)<2?'±OK':(dev>0?'+':'')+dev.toFixed(1)+'%';
     const ac=dev<-5?'pill-g':Math.abs(dev)<2?'pill-b':'pill-y';
     const al=dev<-5?'추가매수':Math.abs(dev)<2?'유지':'검토';
     const c=COLORS[i%COLORS.length];
     return `<tr>
       <td><span style="display:inline-flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block;flex-shrink:0"></span>${a.name}</span></td>
-      <td style="color:var(--text2)">${ACCT_PURPOSE[a.type]||a.role||'—'}</td>
+      <td><span style="color:${bucketColor};font-size:11px;font-weight:600">${role.role||ACCT_PURPOSE[a.type]||a.role||'—'}</span></td>
       <td>${fmt(v)}</td>
       <td>${r.toFixed(1)}%</td>
       <td style="color:var(--text2)">${t}%</td>
@@ -1249,8 +1453,41 @@ function calcRebal() {
 
 async function runAI() {
   const panel=document.getElementById('aiPanel'), content=document.getElementById('aiContent');
-  panel.style.display='block'; content.textContent='분석 중...';
-  try { const r=await callClaude('현재 포트폴리오 리밸런싱 제안을 계좌별로 구체적으로 해줘. 매도 최소화, 추가자금 우선 원칙 적용.'); content.textContent=r; }
+  panel.style.display='block'; content.textContent='머튼비중 기준으로 분석 중...';
+  const tot = totalWithCash();
+  const cw = getAssetClassWeights();
+  const T = STRATEGY.THRESHOLDS;
+  const summary = `총자산 ${fmtF(Math.round(tot))}
+자산군 현재비중:
+- 미국개별주: ${cw.equity_us_individual.toFixed(1)}% (목표 24~25%)
+- 미국ETF: ${cw.equity_us_etf.toFixed(1)}% (목표 28~30%)
+- 채권(미국채): ${cw.bond_us.toFixed(1)}% (목표 8~10%) ← IRP 제외
+- 금/원자재: ${cw.commodity.toFixed(1)}% (목표 4~6%)
+- BTC: ${cw.crypto.toFixed(1)}% (목표 5~8%)
+- 현금: ${cw.cash.toFixed(1)}% (목표 5~7%)
+- 방어버킷 합계: ${(cw.bond_us+cw.commodity+cw.cash).toFixed(1)}% (목표 20~25%)
+
+연금납입 잔여: ${fmtF((P?.accounts?.filter(a=>a.type==='pension')||[]).reduce((s,a)=>s+Math.max(0,(a.annual_limit||0)-(a.deposited_this_year||0)),0))}
+ISA납입 잔여: ${fmtF(Math.max(0,((P?.accounts?.find(a=>a.type==='isa')?.annual_limit||0))-(P?.accounts?.find(a=>a.type==='isa')?.deposited_this_year||0)))}`;
+
+  const prompt = `아래는 나의 포트폴리오 현황이야. 머튼비중(γ≈2.5) + 효용법칙 기반의 확정된 전략을 기준으로 구체적인 리밸런싱 제안을 해줘.
+
+확정 전략:
+- 리스크 버킷 75% / 방어 버킷 25%
+- 계좌 역할: 일반계좌=성장엔진(ETF 희석), ISA=세금알파(배당70%/성장30%), 연금=방어버킷(채권+금 20%이상), BTC=위성자산
+- 실행 원칙: 매도 최소화, 신규자금+납입으로 조정, 세금 효율 최우선
+- BTC 과다 시: 전량 매도 아닌 단계적 축소 (1차 목표 10~12%)
+- 채권 부족: 연금저축 내 TIGER 미국채10년·30년 매수 최우선
+
+현황:
+${summary}
+
+위 현황 기준으로:
+1. 가장 시급한 조치 2~3가지 (계좌명, 구체적 금액, 매수 종목 포함)
+2. 이번 달 신규자금 배치 추천
+3. 연간 전략 방향 한 줄 요약`;
+
+  try { const r=await callClaude(prompt); content.textContent=r; }
   catch(e) { content.textContent='AI 응답 오류 (Claude API 키 미설정)'; }
 }
 
