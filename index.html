@@ -1420,13 +1420,12 @@ function renderRebal() {
 // ══════════════════════════════════════════
 const ASSET_TARGETS = {
   current: { equity_us:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
-  merton:  { equity_us:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7, fund:5 }
+  merton:  { equity_us:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7 }
 };
 const ASSET_LABEL_KO = {
   equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채',
-  commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', fund:'펀드·TDF'
+  commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
 };
-// 각 자산군에서 추가매수할 때 연금저축 내 종목 힌트
 const ASSET_BUY_HINT = {
   bond_us:   '→ 연금저축: TIGER 미국채10년선물 / TIGER 미국30년국채',
   commodity: '→ 연금저축: TIGER 골드선물(H) / KODEX WTI',
@@ -1435,6 +1434,33 @@ const ASSET_BUY_HINT = {
   equity_kr: '→ ISA: TIGER 코리아배당다우존스',
   crypto:    '→ 업비트 BTC 보유 중',
 };
+
+// TDF Look-through 비율 정의 (종목 id 기준)
+// 출처: 미래에셋·한화 TDF 글라이드패스 2026년 기준 추정치
+const TDF_LOOKTHROUGH = {
+  tdf2055:      { equity_us: 0.75, equity_kr: 0.10, bond_us: 0.10, commodity: 0.03, cash: 0.02 },
+  tdf2050:      { equity_us: 0.70, equity_kr: 0.10, bond_us: 0.15, commodity: 0.03, cash: 0.02 },
+  mirae_tdf2050:{ equity_us: 0.70, equity_kr: 0.10, bond_us: 0.15, commodity: 0.03, cash: 0.02 },
+  hanwha_tdf2050:{ equity_us: 0.68, equity_kr: 0.10, bond_us: 0.17, commodity: 0.03, cash: 0.02 },
+};
+
+// TDF Look-through 분해 함수
+function expandTdfLookthrough(assets) {
+  const result = [];
+  (assets||[]).forEach(h => {
+    const lt = TDF_LOOKTHROUGH[h.id];
+    if (lt && (h.asset_type === 'fund' || h.asset_class === 'fund' || h.asset_class === 'irp')) {
+      // TDF를 내부 자산군별로 분해
+      Object.entries(lt).forEach(([cls, ratio]) => {
+        result.push({ ...h, asset_class: cls, amount: h.amount * ratio, _tdf_source: h.name });
+      });
+    } else {
+      result.push(h);
+    }
+  });
+  return result;
+}
+
 let _assetMode = 'current';
 
 function setAssetTarget(mode) {
@@ -1453,10 +1479,18 @@ function renderAssetCls() {
   const tot = totalWithCash();
   const target = ASSET_TARGETS[_assetMode];
 
-  // 자산군별 금액 집계
+  // 자산군별 금액 집계 (TDF Look-through 분해 적용)
   const cls = {};
+  let tdfTotal = 0;
+  const tdfDetails = [];
   getActiveAccounts().forEach(a => {
-    (a.assets||[]).forEach(h => {
+    const expanded = expandTdfLookthrough(a.assets);
+    expanded.forEach(h => {
+      if (h._tdf_source) {
+        tdfTotal += h.amount;
+        const existing = tdfDetails.find(d => d.name === h._tdf_source);
+        if (!existing) tdfDetails.push({ name: h._tdf_source });
+      }
       cls[h.asset_class] = (cls[h.asset_class]||0) + h.amount;
     });
   });
@@ -1471,8 +1505,8 @@ function renderAssetCls() {
     </span>`;
   }).join('');
 
-  // 자산군 행 렌더링
-  const ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','fund','cash'];
+  // 자산군 행 렌더링 (fund 버킷 없음 — TDF는 look-through 분해됨)
+  const ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
   const rows = ORDER.map(k => {
     const val = cls[k]||0;
     const cur = tot ? (val/tot)*100 : 0;
@@ -1534,11 +1568,14 @@ function renderAssetCls() {
     return (cur - (target[k]||0)) > 5;
   });
   const modeLabel = _assetMode==='merton'?'머튼 비중':'현재 설정';
+  const tdfNote = tdfDetails.length
+    ? `<span style="color:var(--text3)"> · TDF Look-through 적용: ${tdfDetails.map(d=>d.name).join(', ')} (${fmtF(Math.round(tdfTotal))})</span>`
+    : '';
   document.getElementById('assetClsSummary').innerHTML =
     `<b>${modeLabel} 기준</b> &nbsp;|&nbsp;` +
     (buyItems.length ? `<span style="color:var(--green)">추가매수 필요: ${buyItems.map(k=>ASSET_LABEL_KO[k]||k).join(', ')}</span>` : '<span style="color:var(--text3)">추가매수 필요 없음</span>') +
     (sellItems.length ? `&nbsp;&nbsp;<span style="color:var(--red)">초과 자산군: ${sellItems.map(k=>ASSET_LABEL_KO[k]||k).join(', ')}</span>` : '') +
-    `&nbsp;&nbsp;|&nbsp; 총자산 ${fmtF(tot)}`;
+    `&nbsp;&nbsp;|&nbsp; 총자산 ${fmtF(tot)}` + tdfNote;
 }
 
 function calcRebal() {
