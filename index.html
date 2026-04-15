@@ -616,6 +616,29 @@ body {
         <div id="aiContent" style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap"></div>
       </div>
     </div>
+
+    <!-- ══ 자산군 단위 리밸런싱 ══ -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-hd">
+        <div>
+          <div class="card-title">자산군 단위 리밸런싱</div>
+          <div class="card-sub">계좌 구분 없이 전체 포트폴리오 자산군 기준 · 머튼 비중 포함</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:10px;color:var(--text3)">목표 기준:</span>
+          <button class="btn btn-sm" id="btnTargetCurrent" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer" onclick="setAssetTarget('current')">현재설정</button>
+          <button class="btn btn-sm" id="btnTargetMerton" style="background:var(--bg);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer" onclick="setAssetTarget('merton')">머튼비중</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <!-- 목표 비중 표시 -->
+        <div id="assetTargetBadges" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)"></div>
+        <!-- 자산군 바 리스트 -->
+        <div id="assetClsBody" style="display:flex;flex-direction:column;gap:2px"></div>
+        <!-- 하단 요약 -->
+        <div id="assetClsSummary" style="margin-top:14px;padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.8"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ══ MACRO ══ -->
@@ -1389,6 +1412,133 @@ function renderRebal() {
     </tr>`;
   }).join('');
   calcRebal();
+  renderAssetCls();
+}
+
+// ══════════════════════════════════════════
+// 자산군 단위 리밸런싱
+// ══════════════════════════════════════════
+const ASSET_TARGETS = {
+  current: { equity_us:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
+  merton:  { equity_us:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7, fund:5 }
+};
+const ASSET_LABEL_KO = {
+  equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채',
+  commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', fund:'펀드·TDF'
+};
+// 각 자산군에서 추가매수할 때 연금저축 내 종목 힌트
+const ASSET_BUY_HINT = {
+  bond_us:   '→ 연금저축: TIGER 미국채10년선물 / TIGER 미국30년국채',
+  commodity: '→ 연금저축: TIGER 골드선물(H) / KODEX WTI',
+  reit:      '→ ISA: RISE 글로벌리얼티인컴',
+  equity_us: '→ ISA / 연금저축: KODEX S&P500 / KODEX 나스닥100',
+  equity_kr: '→ ISA: TIGER 코리아배당다우존스',
+  crypto:    '→ 업비트 BTC 보유 중',
+};
+let _assetMode = 'current';
+
+function setAssetTarget(mode) {
+  _assetMode = mode;
+  document.getElementById('btnTargetCurrent').style.cssText = mode==='current'
+    ? 'background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer'
+    : 'background:var(--bg);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer';
+  document.getElementById('btnTargetMerton').style.cssText = mode==='merton'
+    ? 'background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer'
+    : 'background:var(--bg);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer';
+  renderAssetCls();
+}
+
+function renderAssetCls() {
+  if(!P) return;
+  const tot = totalWithCash();
+  const target = ASSET_TARGETS[_assetMode];
+
+  // 자산군별 금액 집계
+  const cls = {};
+  getActiveAccounts().forEach(a => {
+    (a.assets||[]).forEach(h => {
+      cls[h.asset_class] = (cls[h.asset_class]||0) + h.amount;
+    });
+  });
+  cls.cash = (P.cash?.available||0);
+
+  // 목표 배지
+  const badgeEl = document.getElementById('assetTargetBadges');
+  badgeEl.innerHTML = Object.entries(target).map(([k,t]) => {
+    const c = CLS_COLOR[k]||'#9ca3af';
+    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid ${c}22;background:${c}11;font-size:10px;font-weight:600;color:${c}">
+      <span>${ASSET_LABEL_KO[k]||k}</span><span style="color:${c}aa">${t}%</span>
+    </span>`;
+  }).join('');
+
+  // 자산군 행 렌더링
+  const ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','fund','cash'];
+  const rows = ORDER.map(k => {
+    const val = cls[k]||0;
+    const cur = tot ? (val/tot)*100 : 0;
+    const tgt = target[k]||0;
+    const dev = cur - tgt;
+    const devAmt = (dev/100)*tot;
+    const col = CLS_COLOR[k]||'#9ca3af';
+    const label = ASSET_LABEL_KO[k]||k;
+    const hint = ASSET_BUY_HINT[k]||'';
+
+    const pillCls = Math.abs(dev)<2 ? 'neu' : dev>3 ? 'neg' : dev<-3 ? 'pos' : 'neu';
+    const pillTxt = Math.abs(dev)<2 ? '±OK' : (dev>0?'+':'')+dev.toFixed(1)+'%';
+    const action = dev < -5 ? '추가매수' : dev > 5 ? '초과' : Math.abs(dev)<2 ? '유지' : '점검';
+    const actionColor = dev < -5 ? 'var(--green)' : dev > 5 ? 'var(--red)' : 'var(--text3)';
+
+    // 바 너비 (현재 vs 목표)
+    const maxPct = Math.max(cur, tgt, 1);
+    const barScale = Math.min(100, (cur/Math.max(tot>0?100:1,1))*100);
+
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0"></span>
+        <span style="width:72px;font-size:12px;font-weight:600;flex-shrink:0">${label}</span>
+        <div style="flex:1;position:relative;height:6px;background:var(--bg);border-radius:4px;overflow:visible">
+          <!-- 목표선 -->
+          ${tgt>0?`<div style="position:absolute;top:-3px;bottom:-3px;width:2px;background:${col}55;border-radius:1px;left:${Math.min(tgt,100)}%" title="목표 ${tgt}%"></div>`:''}
+          <!-- 현재 바 -->
+          <div style="height:100%;width:${Math.min(cur,100)}%;background:${col};border-radius:4px;opacity:.85;transition:width .5s"></div>
+        </div>
+        <span style="width:38px;text-align:right;font-size:12px;font-weight:700">${cur.toFixed(1)}%</span>
+        <span style="width:30px;text-align:right;font-size:11px;color:var(--text3)">${tgt}%</span>
+        <span style="width:52px;text-align:right;font-size:11px;font-weight:600;color:${pillCls==='pos'?'var(--green)':pillCls==='neg'?'var(--red)':'var(--text3)'}">${pillTxt}</span>
+        <span style="width:48px;text-align:right;font-size:11px;font-weight:600;color:${actionColor}">${action}</span>
+        <span style="width:90px;text-align:right;font-size:11px;color:var(--text2)">${fmtF(Math.abs(devAmt))}</span>
+      </div>
+      ${action==='추가매수'&&hint ? `<div style="font-size:10px;color:var(--accent);margin-left:18px;margin-top:3px">${hint}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('assetClsBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding-bottom:6px;border-bottom:2px solid var(--border);font-size:10px;font-weight:600;color:var(--text3)">
+      <span style="width:8px;flex-shrink:0"></span>
+      <span style="width:72px">자산군</span>
+      <div style="flex:1"></div>
+      <span style="width:38px;text-align:right">현재%</span>
+      <span style="width:30px;text-align:right">목표%</span>
+      <span style="width:52px;text-align:right">편차</span>
+      <span style="width:48px;text-align:right">액션</span>
+      <span style="width:90px;text-align:right">금액차</span>
+    </div>${rows}`;
+
+  // 요약
+  const buyItems = ORDER.filter(k => {
+    const cur = tot ? ((cls[k]||0)/tot)*100 : 0;
+    return (cur - (target[k]||0)) < -3;
+  });
+  const sellItems = ORDER.filter(k => {
+    const cur = tot ? ((cls[k]||0)/tot)*100 : 0;
+    return (cur - (target[k]||0)) > 5;
+  });
+  const modeLabel = _assetMode==='merton'?'머튼 비중':'현재 설정';
+  document.getElementById('assetClsSummary').innerHTML =
+    `<b>${modeLabel} 기준</b> &nbsp;|&nbsp;` +
+    (buyItems.length ? `<span style="color:var(--green)">추가매수 필요: ${buyItems.map(k=>ASSET_LABEL_KO[k]||k).join(', ')}</span>` : '<span style="color:var(--text3)">추가매수 필요 없음</span>') +
+    (sellItems.length ? `&nbsp;&nbsp;<span style="color:var(--red)">초과 자산군: ${sellItems.map(k=>ASSET_LABEL_KO[k]||k).join(', ')}</span>` : '') +
+    `&nbsp;&nbsp;|&nbsp; 총자산 ${fmtF(tot)}`;
 }
 
 function calcRebal() {
