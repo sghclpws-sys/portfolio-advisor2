@@ -135,43 +135,6 @@ body {
 .status-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
 .status-updated { font-size: 11px; color: var(--text3); white-space: nowrap; }
 
-/* ── 신호등 그리드 ── */
-.signal-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.signal-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 14px 14px 12px;
-  box-shadow: var(--sh);
-  position: relative;
-  overflow: hidden;
-}
-.signal-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 3px;
-}
-.signal-card.ok::before { background: var(--green); }
-.signal-card.warn::before { background: var(--yellow); }
-.signal-card.danger::before { background: var(--red); }
-.signal-card.neutral::before { background: var(--border2); }
-.signal-name { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
-.signal-value { font-size: 17px; font-weight: 700; letter-spacing: -.3px; line-height: 1; }
-.signal-change { font-size: 11px; font-weight: 600; margin-top: 4px; }
-.signal-status { font-size: 10px; color: var(--text3); margin-top: 3px; }
-.signal-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  position: absolute; top: 14px; right: 14px;
-}
-.ok .signal-dot { background: var(--green); }
-.warn .signal-dot { background: var(--yellow); }
-.danger .signal-dot { background: var(--red); }
-.neutral .signal-dot { background: var(--border2); }
 
 /* ── 메인 그리드 ── */
 .main-grid {
@@ -483,15 +446,6 @@ body {
       <div class="status-updated" id="statusTime" style="color:var(--text3)">—</div>
     </div>
 
-    <!-- 신호등 -->
-    <div class="signal-grid" id="signalGrid">
-      <div class="signal-card neutral"><div class="signal-dot"></div><div class="signal-name">S&P500</div><div class="signal-value skel" style="height:20px;width:80px"></div></div>
-      <div class="signal-card neutral"><div class="signal-dot"></div><div class="signal-name">나스닥</div><div class="signal-value skel" style="height:20px;width:80px"></div></div>
-      <div class="signal-card neutral"><div class="signal-dot"></div><div class="signal-name">USD/KRW</div><div class="signal-value skel" style="height:20px;width:80px"></div></div>
-      <div class="signal-card neutral"><div class="signal-dot"></div><div class="signal-name">Bitcoin</div><div class="signal-value skel" style="height:20px;width:80px"></div></div>
-      <div class="signal-card neutral"><div class="signal-dot"></div><div class="signal-name">Fear&Greed</div><div class="signal-value skel" style="height:20px;width:80px"></div></div>
-    </div>
-
     <!-- 메인 그리드 -->
     <div class="main-grid">
       <div class="left-col">
@@ -501,7 +455,7 @@ body {
           <div class="card-hd">
             <div>
               <div class="card-title">지금 할 일</div>
-              <div class="card-sub">Rule Engine 기반 자동 도출 · 매크로 + 포트폴리오 연동</div>
+              <div class="card-sub">룰 기반 자동 도출 · SAA 드리프트 감지 · 세금 효율 순서 반영</div>
             </div>
             <button class="btn btn-outline btn-sm" onclick="recalcActions()">↻ 재계산</button>
           </div>
@@ -512,9 +466,9 @@ body {
           </div>
         </div>
 
-        <!-- 포트폴리오 현황 요약 -->
+                <!-- 포트폴리오 현황 요약 -->
         <div class="card">
-          <div class="card-hd"><div class="card-title">포트폴리오 현황</div></div>
+          <div class="card-hd"><div class="card-title">포트폴리오 현황</div><span style="font-size:10px;color:var(--text3)">계좌별 목표 대비</span></div>
           <div class="card-body">
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
               <div>
@@ -564,11 +518,13 @@ body {
           </div>
         </div>
 
-        <!-- 리밸런싱 요약 -->
+        <!-- 리밸런싱 트리거 -->
         <div class="card">
           <div class="card-hd">
-            <div class="card-title">목표 괴리율</div>
-            <span style="font-size:10px;color:var(--text3)">±5% 기준</span>
+            <div>
+              <div class="card-title">리밸런싱 트리거</div>
+              <div class="card-sub">자산군 ±5% 이탈 시 RED</div>
+            </div>
           </div>
           <div class="card-body" id="deviationList">
             <div class="empty" style="padding:20px"><div class="empty-icon">⇌</div>데이터 로딩 중</div>
@@ -595,8 +551,14 @@ body {
   <!-- ══ REBALANCE ══ -->
   <div class="content page" id="page-rebalance">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-      <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent)">"계좌를 나눠서 역할을 분리하고, 전체로 보면 하나의 포트폴리오"</div>
-      <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--green)">"매도보다 추가자금으로 조정한다 — 세금은 수익률"</div>
+      <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent)">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:2px">SAA RULE</div>
+        ±5% 드리프트 감지 시 즉시 실행 · ISA→연금→일반 순서 · 감정 개입 금지
+      </div>
+      <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--green)">
+        <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:2px">EXECUTION RULE</div>
+        추가자금 우선 → 세제 계좌 교체 → 최후 수단만 일반계좌 매도
+      </div>
     </div>
     <div class="card" style="margin-bottom:14px">
       <div class="card-hd"><div><div class="card-title">추가자금 리밸런싱 계산기</div><div class="card-sub">매도 없이 추가 매수만으로 목표 비중 최적화</div></div><button class="btn btn-primary btn-sm" onclick="calcRebal()">계산</button></div>
@@ -631,12 +593,23 @@ body {
         </div>
       </div>
       <div class="card-body">
-        <!-- 목표 비중 표시 -->
         <div id="assetTargetBadges" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)"></div>
-        <!-- 자산군 바 리스트 -->
         <div id="assetClsBody" style="display:flex;flex-direction:column;gap:2px"></div>
-        <!-- 하단 요약 -->
         <div id="assetClsSummary" style="margin-top:14px;padding:12px 14px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.8"></div>
+      </div>
+    </div>
+
+        <!-- ══ 리밸런싱 히스토리 (NEW) ══ -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-hd">
+        <div class="card-title">📋 리밸런싱 실행 기록</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="logRebalancing()">오늘 실행 기록</button>
+          <button class="btn btn-outline btn-sm" onclick="clearRebalHistory()">초기화</button>
+        </div>
+      </div>
+      <div class="card-body" id="rebalHistoryList">
+        <div style="text-align:center;color:var(--text3);font-size:12px;padding:16px">리밸런싱 기록이 없습니다</div>
       </div>
     </div>
   </div>
@@ -682,6 +655,7 @@ body {
       <div class="card-body"><div class="crypto-grid" id="cryptoGrid"><div class="skel" style="height:70px"></div><div class="skel" style="height:70px"></div><div class="skel" style="height:70px"></div></div></div>
     </div>
   </div>
+
 
   <!-- ══ STRATEGY ══ -->
   <div class="content page" id="page-strategy">
@@ -1086,13 +1060,41 @@ function runRuleEngine() {
     }
   });
 
-  // RULE 8: 신호 없음
+  // RULE 8: SAA Drift 트리거 (핵심 — 자산군 기준)
+  const BAND = 5;
+  const bd = classBreakdown();
+  const assetTarget = ASSET_TARGETS.current;
+  const ORDER_CHECK = ['equity_us','bond_us','equity_kr','commodity','reit','crypto'];
+  ORDER_CHECK.forEach(k => {
+    const curPct = tot ? ((bd[k]||0)/tot)*100 : 0;
+    const tgtPct = assetTarget[k]||0;
+    const dev = curPct - tgtPct;
+    if (dev > BAND) {
+      actions.push({
+        priority: 'HIGH',
+        account: 'SAA 드리프트 감지',
+        title: `${ASSET_LABEL_KO[k]||k} 비중 초과 +${dev.toFixed(1)}% — 매도/축소`,
+        reason: `현재 ${curPct.toFixed(1)}% vs 목표 ${tgtPct}% · 허용 밴드 ±${BAND}% 초과 · ISA/연금 내 전환 우선`,
+        amount: Math.round((dev/100)*tot)
+      });
+    } else if (dev < -BAND) {
+      actions.push({
+        priority: 'HIGH',
+        account: 'SAA 드리프트 감지',
+        title: `${ASSET_LABEL_KO[k]||k} 비중 미달 ${dev.toFixed(1)}% — 매수/확대`,
+        reason: `현재 ${curPct.toFixed(1)}% vs 목표 ${tgtPct}% · 허용 밴드 ±${BAND}% 이탈 · ${ASSET_BUY_HINT[k]||'추가 매수'}`,
+        amount: Math.round((-dev/100)*tot)
+      });
+    }
+  });
+
+  // RULE 9: 신호 없음
   if(actions.length === 0) {
     actions.push({
       priority: 'INFO',
       account: '전체',
       title: '현재 이상 없음 — 기존 전략 유지',
-      reason: '시장 안정 구간 · 추가 액션 불필요 · DCA 계획대로 진행',
+      reason: '시장 안정 구간 · SAA 정상 범위 · DCA 계획대로 진행',
       amount: 0
     });
   }
@@ -1141,7 +1143,6 @@ function getPortfolioStatus() {
 // ══════════════════════════════════════════
 function renderHome() {
   renderStatusBanner();
-  renderSignalGrid();
   renderActionList();
   renderPortfolioSummary();
   renderDonut();
@@ -1330,9 +1331,52 @@ function renderTaxStatus() {
 }
 
 function renderDeviationList() {
-  if(!P) return;
+  if(!P) {
+    document.getElementById('deviationList').innerHTML = '<div class="empty" style="padding:16px"><div class="empty-icon">⇌</div>데이터 없음</div>';
+    return;
+  }
+  // 자산군 기준 트리거 (계좌 기준 아닌 자산군 기준으로 강화)
   const tot = totalWithCash();
-  document.getElementById('deviationList').innerHTML = getActiveAccounts().map((a,i) => {
+  const bd = { ...classBreakdown(), cash: P?.cash?.available||0 };
+  const target = ASSET_TARGETS.current;
+  const BAND = 5;
+  const ORDER = ['equity_us','bond_us','equity_kr','commodity','reit','crypto'];
+  
+  const triggered = ORDER.filter(k => {
+    const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
+    return Math.abs(cur - (target[k]||0)) > BAND;
+  });
+  
+  const triggerBanner = triggered.length > 0
+    ? `<div style="background:var(--red-l);border:1px solid var(--red);border-radius:7px;padding:8px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--red)">
+        ⚠ 리밸런싱 트리거 ${triggered.length}개 — ${triggered.map(k=>ASSET_LABEL_KO[k]||k).join(', ')}
+       </div>`
+    : `<div style="background:var(--green-l);border:1px solid var(--green);border-radius:7px;padding:8px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:var(--green)">
+        ✓ 전 자산군 허용 밴드(±${BAND}%) 내 — 리밸런싱 불필요
+       </div>`;
+  
+  const rows = ORDER.map(k => {
+    const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
+    const tgt = target[k]||0;
+    const dev = cur - tgt;
+    const isTrigger = Math.abs(dev) > BAND;
+    const col = CLS_COLOR[k]||'#9ca3af';
+    const devColor = isTrigger ? (dev>0?'var(--red)':'var(--green)') : 'var(--text3)';
+    const action = isTrigger ? (dev>0?'매도':'매수') : '유지';
+    const actionBg = isTrigger ? (dev>0?'var(--red-l)':'var(--green-l)') : 'var(--bg)';
+    const actionColor = isTrigger ? (dev>0?'var(--red)':'var(--green)') : 'var(--text3)';
+    return `<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></span>
+      <span style="flex:1;font-weight:${isTrigger?700:500}">${ASSET_LABEL_KO[k]||k}</span>
+      <span style="color:var(--text2);font-size:11px">${cur.toFixed(1)}%→${tgt}%</span>
+      <span style="font-weight:700;color:${devColor};font-size:11px">${dev>0?'+':''}${dev.toFixed(1)}%</span>
+      <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${actionBg};color:${actionColor}">${action}</span>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('deviationList').innerHTML = triggerBanner + rows;
+  return; // old code below removed
+  const _unused = getActiveAccounts().map((a,i) => {
     const v = acctVal(a), w = tot?(v/tot)*100:0, t = a.target_weight||0, dev = w-t;
     const c = COLORS[i%COLORS.length];
     const pillCls = Math.abs(dev)<2?'pill-b':dev>0?'pill-g':'pill-r';
@@ -1343,7 +1387,7 @@ function renderDeviationList() {
       <span style="color:var(--text2)">${w.toFixed(1)}%→${t}%</span>
       <span class="pill ${pillCls}">${pillTxt}</span>
     </div>`;
-  }).join('');
+  }); // dead code
 }
 
 function recalcActions() { renderActionList(); renderStatusBanner(); renderSignalGrid(); showToast('↻ 액션 재계산 완료'); }
@@ -1413,6 +1457,7 @@ function renderRebal() {
   }).join('');
   calcRebal();
   renderAssetCls();
+  renderRebalHistory();
 }
 
 // ══════════════════════════════════════════
@@ -1709,6 +1754,57 @@ function showAIKeyPrompt() {
     renderAIPage();
   }
 }
+
+
+// ══════════════════════════════════════════
+// 리밸런싱 히스토리
+// ══════════════════════════════════════════
+function logRebalancing() {
+  if (!P) { showToast('⚠ 포트폴리오 데이터 없음'); return; }
+  const history = JSON.parse(localStorage.getItem('rebal_history') || '[]');
+  const tot = totalWithCash();
+  const bd = classBreakdown();
+  const entry = {
+    date: new Date().toLocaleDateString('ko-KR'),
+    total: tot,
+    allocation: Object.fromEntries(
+      Object.entries(bd).map(([k,v]) => [k, tot ? +((v/tot)*100).toFixed(1) : 0])
+    ),
+    note: `총자산 ${fmt(tot)} · USD ${usdExposure().toFixed(0)}%`
+  };
+  history.unshift(entry);
+  if (history.length > 12) history.pop();
+  localStorage.setItem('rebal_history', JSON.stringify(history));
+  renderRebalHistory();
+  showToast('✓ 리밸런싱 기록 저장');
+}
+
+function clearRebalHistory() {
+  if (!confirm('리밸런싱 기록을 초기화할까요?')) return;
+  localStorage.removeItem('rebal_history');
+  renderRebalHistory();
+}
+
+function renderRebalHistory() {
+  const el = document.getElementById('rebalHistoryList');
+  if (!el) return;
+  const history = JSON.parse(localStorage.getItem('rebal_history') || '[]');
+  if (!history.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:12px;padding:16px">리밸런싱 기록이 없습니다</div>';
+    return;
+  }
+  el.innerHTML = history.map((entry, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span style="font-size:10px;font-weight:600;color:var(--text3);min-width:80px">${entry.date}</span>
+      <span style="font-weight:600;min-width:90px">${fmt(entry.total)}</span>
+      <div style="flex:1;display:flex;flex-wrap:wrap;gap:4px">
+        ${Object.entries(entry.allocation||{}).filter(([k,v])=>v>0).map(([k,v])=>`
+          <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${CLS_COLOR[k]||'#9ca3af'}22;color:${CLS_COLOR[k]||'#9ca3af'};font-weight:600">${ASSET_LABEL_KO[k]||k} ${v}%</span>`).join('')}
+      </div>
+      <span style="font-size:10px;color:var(--text3)">${entry.note||''}</span>
+    </div>`).join('');
+}
+
 
 // ══════════════════════════════════════════
 // MACRO PAGE
