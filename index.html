@@ -415,6 +415,7 @@ body {
     <div class="nav-section">전략</div>
     <div class="nav-item" data-page="analytics"><span class="nav-icon">◈</span>투자 분석</div>
     <div class="nav-item" data-page="strategy"><span class="nav-icon">◫</span>WM 전략</div>
+    <div class="nav-item" data-page="ai"><span class="nav-icon">✦</span>AI 어드바이저</div>
   </div>
   <div class="sidebar-footer">
     <div class="data-date">포트폴리오 기준일<br><span id="dataDate">데이터 없음</span></div>
@@ -586,9 +587,13 @@ body {
       </div>
     </div>
     <div class="card">
-      <div class="card-hd"><div class="card-title">계좌별 목표 vs 현재</div></div>
+      <div class="card-hd"><div class="card-title">계좌별 목표 vs 현재</div><button class="btn btn-outline btn-sm" onclick="runAI()">✦ AI 제안</button></div>
       <table class="rtable"><thead><tr><th>계좌</th><th>목적</th><th>평가금액</th><th>현재</th><th>목표</th><th>괴리</th><th>액션</th></tr></thead>
-      <tbody id="rebalBody"></tbody></table>      </div>
+      <tbody id="rebalBody"></tbody></table>
+      <div id="aiPanel" style="display:none;padding:16px 18px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px">✦ AI 리밸런싱 제안</div>
+        <div id="aiContent" style="font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap"></div>
+      </div>
     </div>
 
     <!-- ══ 자산군 단위 리밸런싱 ══ -->
@@ -625,7 +630,8 @@ body {
         <div style="text-align:center;color:var(--text3);font-size:12px;padding:16px">리밸런싱 기록이 없습니다</div>
       </div>
     </div>
-  
+  </div>
+
   <!-- ══ MACRO ══ -->
   <div class="content page" id="page-macro">
     <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
@@ -917,6 +923,38 @@ body {
     </div>
   </div>
 
+<!-- ══ AI ADVISOR ══ -->
+  <div class="content page" id="page-ai">
+    <div style="max-width:780px;margin:0 auto">
+      <div id="aiCtxBanner" style="background:var(--accent-l);border:1px solid #bfdbfe;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--accent);display:flex;align-items:center;gap:8px">
+        <span style="font-size:14px">✦</span>
+        <span id="aiCtxText">포트폴리오 데이터를 불러오는 중...</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px">
+        <button class="btn btn-outline btn-sm" onclick="aiQuick('지금 시장 상황에서 가장 중요한 액션이 뭐야?')">🎯 지금 액션</button>
+        <button class="btn btn-outline btn-sm" onclick="aiQuick('ISA 잔여 한도를 어떻게 활용하면 좋을까?')">💰 ISA 전략</button>
+        <button class="btn btn-outline btn-sm" onclick="aiQuick('현재 포트폴리오에서 리스크가 가장 큰 부분은?')">⚠️ 리스크 점검</button>
+        <button class="btn btn-outline btn-sm" onclick="aiQuick('추가 자금 500만원이 생기면 어디에 넣을까?')">➕ 추가 투자</button>
+        <button class="btn btn-outline btn-sm" onclick="aiQuick('연금저축과 IRP 세액공제 현황을 정리해줘')">📋 세제 정리</button>
+        <button class="btn btn-outline btn-sm" onclick="aiQuick('BTC 비중이 적정한지 평가해줘')">₿ BTC 점검</button>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 270px)">
+        <div id="aiChatLog" style="flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:2px">✦</div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px 12px 12px 3px;padding:12px 14px;font-size:13px;line-height:1.7;max-width:600px;color:var(--text)">
+              안녕하세요! 포트폴리오 데이터와 실시간 시장 정보를 바탕으로 질문에 답변드릴게요.<br>위 버튼을 누르거나 직접 질문해보세요.
+            </div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding:12px 14px;display:flex;gap:8px;align-items:flex-end">
+          <textarea id="aiInput" placeholder="질문을 입력하세요... (Enter 전송, Shift+Enter 줄바꿈)" style="flex:1;border:1px solid var(--border2);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;resize:none;outline:none;height:44px;max-height:120px;overflow-y:auto;line-height:1.5;color:var(--text);background:var(--surface);transition:border-color .12s" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIMsg()}" oninput="this.style.height='44px';this.style.height=Math.min(this.scrollHeight,120)+'px'" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+          <button class="btn btn-primary" onclick="sendAIMsg()" style="height:44px;padding:0 18px;flex-shrink:0" id="aiSendBtn">전송</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main -->
 </div><!-- /app -->
 
@@ -951,7 +989,7 @@ const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#ea
 const CLS_COLOR = { equity_us:'#2563eb', equity_kr:'#059669', bond_us:'#7c3aed', commodity:'#d97706', reit:'#0891b2', crypto:'#ea580c', cash:'#9ca3af', irp:'#65a30d', 기타:'#d1d5db' };
 const CLS_LABEL = { equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', irp:'IRP', fund:'펀드' };
 const ACCT_PURPOSE = { taxable:'일반계좌', isa:'ISA', pension:'연금저축', irp:'IRP', crypto_exchange:'암호화폐' };
-const PAGE_TITLES = { home:'지금 상태', accounts:'계좌 현황', rebalance:'리밸런싱', macro:'매크로', strategy:'WM 전략', analytics:'투자 분석' };
+const PAGE_TITLES = { home:'지금 상태', accounts:'계좌 현황', rebalance:'리밸런싱', macro:'매크로', strategy:'WM 전략', analytics:'투자 분석', ai:'AI 어드바이저' };
 
 function getAccountRole(a) {
   if (a.display_role) return a.display_role;
@@ -1047,6 +1085,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
     if(id === 'accounts') renderAccounts();
     if(id === 'rebalance') renderRebal();
     if(id === 'macro') renderMacroPage();
+    if(id === 'ai') renderAIPage();
     if(id === 'strategy') renderWMStrategy();
     if(id === 'analytics') renderAnalyticsPage();
   });
@@ -2023,7 +2062,120 @@ function calcRebal() {
     </div>`).join('') || '<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">모든 계좌가 목표 비중에 근접합니다</div>';
 }
 
+async function runAI() {
+  const panel=document.getElementById('aiPanel'), content=document.getElementById('aiContent');
+  panel.style.display='block'; content.textContent='분석 중...';
+  try {
+    const reply = await callGemini([{role:'user', content:'현재 포트폴리오 리밸런싱 제안을 계좌별로 구체적으로 해줘. 매도 최소화, 추가자금 우선 원칙 적용.'}]);
+    content.textContent = reply;
+  } catch(e) {
+    content.textContent = e.message === 'NO_KEY' ? 'AI 어드바이저 탭에서 Gemini API 키를 먼저 설정해주세요.' : `오류: ${e.message}`;
+  }
+}
+
 // ══════════════════════════════════════════
+// AI ADVISOR PAGE
+// ══════════════════════════════════════════
+let aiHistory = [];
+
+function renderAIPage() {
+  const hasKey = !!localStorage.getItem('geminiApiKey');
+  const banner = document.getElementById('aiCtxBanner');
+  const el = document.getElementById('aiCtxText');
+
+  if(!hasKey) {
+    banner.style.background = 'var(--yellow-l)';
+    banner.style.color = 'var(--yellow)';
+    banner.style.borderColor = '#fde68a';
+    el.innerHTML = '⚠ Gemini API 키 미설정 — <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);font-weight:700">aistudio.google.com</a>에서 무료 발급 후 <button onclick="showAIKeyPrompt()" style="background:var(--yellow);color:#fff;border:none;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px">키 입력</button>';
+    return;
+  }
+
+  if(!P) {
+    banner.style.background = 'var(--yellow-l)';
+    banner.style.color = 'var(--yellow)';
+    el.innerHTML = '⚠ 포트폴리오 데이터 없음 — 사이드바에서 데이터를 먼저 업데이트해주세요';
+    return;
+  }
+
+  const tot = totalWithCash();
+  const usd = usdExposure().toFixed(0);
+  const sig = getSignals();
+  const sigTxt = sig.length ? sig.map(s=>s.label).join(', ') : '없음';
+  banner.style.background = 'var(--accent-l)';
+  banner.style.color = 'var(--accent)';
+  banner.style.borderColor = '#bfdbfe';
+  el.innerHTML = `✦ Gemini 연동됨 · 총자산 ${fmtF(tot)} · USD ${usd}% · 시그널: ${sigTxt} &nbsp;<button onclick="showAIKeyPrompt()" style="background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:5px;padding:1px 7px;font-size:10px;cursor:pointer;margin-left:4px">키 변경</button>`;
+}
+
+function aiQuick(msg) {
+  document.getElementById('aiInput').value = msg;
+  sendAIMsg();
+}
+
+function appendAIMsg(role, text, isLoading) {
+  const log = document.getElementById('aiChatLog');
+  const isBot = role === 'bot';
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:10px;align-items:flex-start' + (isBot ? '' : ';flex-direction:row-reverse');
+  div.innerHTML = isBot
+    ? `<div style="width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:2px">✦</div>
+       <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px 12px 12px 3px;padding:12px 14px;font-size:13px;line-height:1.7;max-width:600px;color:var(--text);white-space:pre-wrap">${isLoading ? '<span class="skel" style="display:inline-block;width:80px;height:14px;border-radius:4px"></span>' : text}</div>`
+    : `<div style="background:var(--accent);color:#fff;border-radius:12px 12px 3px 12px;padding:12px 14px;font-size:13px;line-height:1.7;max-width:520px;white-space:pre-wrap">${text}</div>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  return div;
+}
+
+async function sendAIMsg() {
+  const input = document.getElementById('aiInput');
+  const msg = input.value.trim();
+  if(!msg) return;
+
+  // Gemini API 키 확인
+  if(!localStorage.getItem('geminiApiKey')) {
+    showAIKeyPrompt();
+    return;
+  }
+
+  input.value = ''; input.style.height = '44px';
+  const btn = document.getElementById('aiSendBtn');
+  btn.disabled = true; btn.textContent = '...';
+
+  appendAIMsg('user', msg, false);
+  const botDiv = appendAIMsg('bot', '', true);
+
+  aiHistory.push({ role:'user', content: msg });
+
+  try {
+    const reply = await callGemini(aiHistory);
+    aiHistory.push({ role:'assistant', content: reply });
+    const bubble = botDiv.querySelector('div:last-child');
+    bubble.textContent = reply;
+  } catch(e) {
+    const bubble = botDiv.querySelector('div:last-child');
+    if(e.message === 'NO_KEY') {
+      bubble.textContent = 'Gemini API 키가 설정되지 않았어요. 아래 버튼으로 키를 입력해주세요.';
+      showAIKeyPrompt();
+    } else {
+      bubble.textContent = `오류: ${e.message}`;
+      console.error('[Gemini]', e);
+    }
+    aiHistory.pop();
+  }
+
+  btn.disabled = false; btn.textContent = '전송';
+  document.getElementById('aiChatLog').scrollTop = 999999;
+}
+
+function showAIKeyPrompt() {
+  const key = prompt('Gemini API 키를 입력하세요.\n(aistudio.google.com에서 무료 발급)');
+  if(key?.trim()) {
+    localStorage.setItem('geminiApiKey', key.trim());
+    showToast('✓ Gemini API 키 저장 완료');
+    renderAIPage();
+  }
+}
 
 
 // ══════════════════════════════════════════
@@ -3287,6 +3439,95 @@ async function refreshAll() {
 
 // ══════════════════════════════════════════
 // AI
+// ══════════════════════════════════════════
+function buildCtx() {
+  if(!P) return '포트폴리오 데이터 없음';
+  const tot=totalWithCash();
+  let s=`총자산 ${fmtF(tot)} · USD익스포저 ${usdExposure().toFixed(0)}%\n`;
+  s+=`매크로: BTC ${M.btc?fmtF(M.btc.krw):'—'}, USD/KRW ${M.fx?Math.round(M.fx):'—'}, F&G ${M.fg?.score||'—'}(${M.fg?.label||'—'}), 미국채10Y ${M.rates.t10y?.value?.toFixed(2)||'—'}%\n`;
+  // 투자 분석 컨텍스트 추가
+  try {
+    const _rf = parseFloat(document.getElementById('an-rf')?.value||4.5)/100;
+    const _lambda = parseFloat(document.getElementById('an-lambda')?.value||3);
+    const _mu = parseFloat(document.getElementById('an-mu')?.value||10)/100;
+    const _sigma = parseFloat(document.getElementById('an-sigma')?.value||18)/100;
+    const _w = getCurrentWeights();
+    if(_w) {
+      const {mu_p,sigma_p} = calcPortfolioStats(_w);
+      const _sr = sharpeRatio(mu_p,sigma_p,_rf);
+      const _u = calcUtility(mu_p,sigma_p,_lambda);
+      const _wstar = mertonWeight(_mu,_rf,_lambda,_sigma)*100;
+      s+=`분석: λ=${_lambda}, SR=${_sr.toFixed(2)}, U=${(_u*100).toFixed(2)}%, μ_p=${(mu_p*100).toFixed(1)}%, σ_p=${(sigma_p*100).toFixed(1)}%, Merton w*=${_wstar.toFixed(0)}%\n\n`;
+    }
+  } catch(e) { s+='\n'; }
+  getActiveAccounts().forEach(a=>{const v=acctVal(a),r=tot?((v/tot)*100).toFixed(1):0;s+=`[${a.name}] ${getAccountRole(a)} ${fmtF(v)}(${r}%) 목표${a.target_weight||0}%\n`;});
+  // SAA GAP 정보
+  try {
+    var bd2=classBreakdown(); bd2.cash=(P.cash&&P.cash.available)||0;
+    var prof=WM_PROFILES[INVESTOR_PROFILE_SCORE-1];
+    s+='\nSAA갭: ';
+    ['equity_us','bond_us','commodity'].forEach(function(k){
+      var cur=tot?((bd2[k]||0)/tot)*100:0;
+      var taa=0; TAA_HOUSE_VIEW.views.forEach(function(v){if(v.asset===k)taa=v.adj;});
+      var tgt=(prof.saa[k]||0)+taa;
+      var gap=cur-tgt;
+      if(Math.abs(gap)>=3) s+=ASSET_LABEL_KO[k]+'='+(gap>0?'+':'')+gap.toFixed(1)+'%p ';
+    });
+    s+='\n';
+  } catch(e){}
+  return s;
+}
+const SYS=`당신은 SONG의 전담 Private Wealth Manager입니다. UBS/GS/JPM 수준의 WM 서비스를 제공합니다.
+
+[투자자 프로필]
+- 30대 중반, CFA 보유, risk-on 성향, 미국 주식 우상향 전제
+- Risk Profile: Growth (4/5등급) · 목표수익률 9%/yr · 허용 MDD -35%
+- 원화 약세 헤지 → USD 익스포저 확대 전략
+- 매도 최소화 / 추가자금으로 비중 조정 (세금 = 수익률)
+- DCA 원칙, 레버리지 없음
+- 계좌: 미래에셋(개별주/ISA/연금ETF/연금TDF), 삼성증권(개별주), 유진/SK(국내주식), IRP, 업비트(BTC)
+
+[WM 프레임워크]
+SAA 목표 (Growth등급): 미국주식55% · 국내주식10% · 미국채10% · 원자재8% · 리츠5% · BTC5% · 현금7%
+TAA House View (2026-04-17): 채권·원자재 비중확대 / 리츠 비중축소 / 주식 중립
+자산군 역할: 미국주식=성장엔진 / 채권=방어완충 / 원자재=헤지 / BTC=위성 / 현금=유동성
+실행순서: ISA 먼저 → 연금 → 신규자금 → 일반계좌(최후)
+
+[당신의 역할]
+1. SAA·TAA 관점에서 현재 포트폴리오 갭 분석 및 조정 우선순위 제안
+2. 시나리오 분석: 금리·환율·지정학 변화 시 포트폴리오 영향
+3. 세금 최적화: 해외주식 22% 양도세, ISA 비과세, 연금 세액공제
+4. 종목 수준 판단: AMZN/MSFT/AAPL/TSLA/META/GOOGL 개별 포지션
+5. 정성적 판단: 뉴스·정책 맥락 반영한 전략 조정
+
+답변 원칙:
+- CFA 수준의 전문 용어 사용 가능 (투자자가 CFA 보유)
+- 구체적 금액/비율로 답변, 추상적 조언 금지
+- 매도 제안 시 반드시 세금 영향 명시
+- SAA·TAA 프레임 기준으로 판단 근거 제시
+- 불확실한 것은 솔직하게 불확실하다고 명시
+
+현재 포트폴리오 및 시장 데이터: `;
+async function callGemini(messages) {
+  const key = localStorage.getItem('geminiApiKey') || '';
+  if(!key) throw new Error('NO_KEY');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`;
+  const contents = [];
+  // system 프롬프트를 첫 user/model 쌍으로 삽입
+  contents.push({ role:'user', parts:[{ text: SYS + buildCtx() }] });
+  contents.push({ role:'model', parts:[{ text: '네, 포트폴리오 데이터를 확인했습니다. 무엇이든 질문해주세요.' }] });
+  messages.forEach(m => {
+    contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts:[{ text: m.content }] });
+  });
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents, generationConfig: { temperature:0.4, maxOutputTokens:1000 } })
+  });
+  if(!r.ok) { const err=await r.json(); throw new Error(err.error?.message||`HTTP ${r.status}`); }
+  const d = await r.json();
+  return d.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 받지 못했어요.';
+}
 
 // ══════════════════════════════════════════
 // DATA MODAL
