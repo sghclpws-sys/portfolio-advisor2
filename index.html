@@ -2112,116 +2112,134 @@ function runAnalytics() {
 
 // ① 파라미터 해석 배너
 function renderParamBanner(lambda, mu, rf, sigma) {
-  const el = document.getElementById('an-param-banner');
+  var el = document.getElementById('an-param-banner');
   if (!el) return;
-  const excessRet = (mu - rf) * 100;
-  const mertonW = mertonWeight(mu, rf, lambda, sigma) * 100;
-  const riskProfile = lambda <= 2 ? '초공격형' : lambda <= 3.5 ? '공격형' : lambda <= 5 ? '중립형' : lambda <= 7 ? '보수형' : '초보수형';
+  var excessRet = (mu - rf) * 100;
+  var mertonW   = mertonWeight(mu, rf, lambda, sigma) * 100;
+  var riskProfile = lambda <= 2 ? '초공격형' : lambda <= 3.5 ? '공격형'
+                  : lambda <= 5 ? '중립형'   : lambda <= 7   ? '보수형' : '초보수형';
 
-  // 파라미터 현실성 경고
-  const warnings = [];
-  if (mu > 0.09) warnings.push({ msg: `μ=${(mu*100).toFixed(0)}% — 현재 밸류에이션(CAPE 고점권) 감안 시 7~9% 권장`, level: 'warn' });
-  if (mu < 0.06) warnings.push({ msg: `μ=${(mu*100).toFixed(0)}% — 과소추정 가능성`, level: 'warn' });
-  if (sigma < 0.17) warnings.push({ msg: `σ=${(sigma*100).toFixed(0)}% — 나스닥/성장주 포트 기준 20~22% 권장`, level: 'warn' });
-  if (mertonW > 100) warnings.push({ msg: `w*=${mertonW.toFixed(0)}% — 레버리지 구간, 현실에서 상한 100% 적용`, level: 'danger' });
+  var warnings = [];
+  if (mu > 0.09)    warnings.push({ msg: 'μ=' + (mu*100).toFixed(0) + '% — CAPE 고점권 감안 시 7~9% 권장', level: 'warn' });
+  if (mu < 0.06)    warnings.push({ msg: 'μ=' + (mu*100).toFixed(0) + '% — 과소추정 가능', level: 'warn' });
+  if (sigma < 0.17) warnings.push({ msg: 'σ=' + (sigma*100).toFixed(0) + '% — 성장주 포트 기준 20~22% 권장', level: 'warn' });
+  if (mertonW > 100) warnings.push({ msg: 'w*=' + mertonW.toFixed(0) + '% — 레버리지 구간, 상한 100% 적용', level: 'danger' });
 
-  // w* 민감도: σ ±3%, μ ±1% 변화 시 w* 변동
-  const wSensitivity = [
+  var sens = [
     { label: 'μ +1%', w: mertonWeight(mu+0.01, rf, lambda, sigma)*100 },
     { label: 'μ −1%', w: mertonWeight(mu-0.01, rf, lambda, sigma)*100 },
     { label: 'σ +3%', w: mertonWeight(mu, rf, lambda, sigma+0.03)*100 },
     { label: 'σ −3%', w: mertonWeight(mu, rf, lambda, sigma-0.03)*100 },
   ];
 
-  el.innerHTML = \`
-    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px">
-      <span style="font-weight:700">λ=${lambda}</span> → <span style="color:var(--accent);font-weight:700">${riskProfile}</span>
-      <span style="color:var(--text3)">|</span>
-      <span>(μ−r_f) = <b>${excessRet.toFixed(1)}%</b></span>
-      <span style="color:var(--text3)">|</span>
-      <span>SR(주식) = <b>${((mu-rf)/sigma).toFixed(2)}</b></span>
-      <span style="color:var(--text3)">|</span>
-      <span>Merton <b style="color:var(--accent)">w* = ${mertonW.toFixed(1)}%</b> 주식 / ${Math.max(0,100-mertonW).toFixed(1)}% 무위험</span>
-    </div>
-    \${warnings.length > 0 ? \`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
-      \${warnings.map(w => \`<span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px;background:\${w.level==='danger'?'var(--red-l)':'var(--yellow-l)'};color:\${w.level==='danger'?'var(--red)':'var(--yellow)'}">⚠ \${w.msg}</span>\`).join('')}
-    </div>\` : ''}
-    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">w* 민감도:</span>
-      \${wSensitivity.map(s => {
-        const delta = s.w - mertonW;
-        return \`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg);color:\${delta>0?'var(--green)':delta<0?'var(--red)':'var(--text2)'}">
-          \${s.label} → <b>\${s.w.toFixed(1)}%</b> (\${delta>0?'+':''}\${delta.toFixed(1)}%p)</span>\`;
-      }).join('')}
-    </div>\`;
+  var warnHTML = '';
+  if (warnings.length > 0) {
+    warnHTML = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'
+      + warnings.map(function(w) {
+          var bg  = w.level === 'danger' ? 'var(--red-l)'  : 'var(--yellow-l)';
+          var col = w.level === 'danger' ? 'var(--red)'    : 'var(--yellow)';
+          return '<span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px;background:'
+               + bg + ';color:' + col + '">⚠ ' + w.msg + '</span>';
+        }).join('') + '</div>';
+  }
+
+  var sensHTML = sens.map(function(s) {
+    var delta = s.w - mertonW;
+    var col   = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text2)';
+    return '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg);color:' + col + '">'
+         + s.label + ' → <b>' + s.w.toFixed(1) + '%</b>'
+         + ' (' + (delta > 0 ? '+' : '') + delta.toFixed(1) + '%p)</span>';
+  }).join('');
+
+  el.innerHTML =
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px">'
+    + '<span style="font-weight:700">λ=' + lambda + '</span>'
+    + ' → <span style="color:var(--accent);font-weight:700">' + riskProfile + '</span>'
+    + '<span style="color:var(--text3)">|</span>'
+    + '<span>(μ−r_f) = <b>' + excessRet.toFixed(1) + '%</b></span>'
+    + '<span style="color:var(--text3)">|</span>'
+    + '<span>SR(주식단독) = <b>' + ((mu-rf)/sigma).toFixed(2) + '</b></span>'
+    + '<span style="color:var(--text3)">|</span>'
+    + '<span>Merton <b style="color:var(--accent)">w* = ' + mertonW.toFixed(1) + '%</b>'
+    + ' 주식 / ' + Math.max(0, 100-mertonW).toFixed(1) + '% 무위험</span>'
+    + '</div>'
+    + warnHTML
+    + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+    + '<span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">w* 민감도:</span>'
+    + sensHTML + '</div>';
 }
 
 // ② 머튼 최적 비중
 function renderMertonSection(lambda, mu, rf, sigma) {
-  const el = document.getElementById('an-merton-body');
-  const badge = document.getElementById('an-merton-badge');
+  var el    = document.getElementById('an-merton-body');
+  var badge = document.getElementById('an-merton-badge');
   if (!el) return;
 
-  const wStar = mertonWeight(mu, rf, lambda, sigma);
-  const wStarPct = wStar * 100;
-  const wRfPct = 100 - wStarPct;
+  var wStar    = mertonWeight(mu, rf, lambda, sigma);
+  var wStarPct = wStar * 100;
+  var wRfPct   = 100 - wStarPct;
 
-  // 현재 포트폴리오 주식 비중
-  const curWeights = getCurrentWeights();
-  const curEqPct = curWeights ? ((curWeights.equity_us||0) + (curWeights.equity_kr||0)) * 100 : null;
+  var curWeights = getCurrentWeights();
+  var curEqPct   = curWeights ? ((curWeights.equity_us||0) + (curWeights.equity_kr||0)) * 100 : null;
 
-  badge.textContent = `w* = ${wStarPct.toFixed(1)}%`;
+  badge.textContent = 'w* = ' + wStarPct.toFixed(1) + '%';
   badge.style.background = wStarPct > 80 ? 'var(--orange-l)' : wStarPct > 60 ? 'var(--green-l)' : 'var(--accent-l)';
-  badge.style.color = wStarPct > 80 ? 'var(--orange)' : wStarPct > 60 ? 'var(--green)' : 'var(--accent)';
+  badge.style.color      = wStarPct > 80 ? 'var(--orange)'   : wStarPct > 60 ? 'var(--green)'   : 'var(--accent)';
 
-  const diffPct = curEqPct !== null ? wStarPct - curEqPct : null;
-  const diffText = diffPct !== null
-    ? `<div style="margin-top:8px;padding:8px 12px;border-radius:7px;font-size:11px;font-weight:600;background:${Math.abs(diffPct)<5?'var(--green-l)':'var(--yellow-l)'};color:${Math.abs(diffPct)<5?'var(--green)':'var(--yellow)'}">
-        현재 주식 비중 ${curEqPct.toFixed(1)}% vs Merton w* ${wStarPct.toFixed(1)}%
-        → 편차 ${diffPct>0?'+':''}${diffPct.toFixed(1)}%p
-        ${Math.abs(diffPct) < 5 ? '✓ 최적 범위' : diffPct > 0 ? '→ 주식 추가 매수 여력' : '→ 주식 비중 과다'}
-       </div>` : '';
+  var diffHTML = '';
+  if (curEqPct !== null) {
+    var diffPct  = wStarPct - curEqPct;
+    var diffBg   = Math.abs(diffPct) < 5 ? 'var(--green-l)' : 'var(--yellow-l)';
+    var diffCol  = Math.abs(diffPct) < 5 ? 'var(--green)'   : 'var(--yellow)';
+    var diffMsg  = Math.abs(diffPct) < 5 ? '✓ 최적 범위'
+                 : diffPct > 0 ? '→ 주식 추가 매수 여력' : '→ 주식 비중 과다';
+    diffHTML = '<div style="margin-top:8px;padding:8px 12px;border-radius:7px;font-size:11px;font-weight:600;background:' + diffBg + ';color:' + diffCol + '">'
+             + '현재 주식 ' + curEqPct.toFixed(1) + '% vs Merton w* ' + wStarPct.toFixed(1) + '%'
+             + ' → 편차 ' + (diffPct > 0 ? '+' : '') + diffPct.toFixed(1) + '%p ' + diffMsg
+             + '</div>';
+  }
 
-  el.innerHTML = `
-    <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
-      <div style="flex:1">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">최적 주식 비중 w*</div>
-        <div style="font-size:28px;font-weight:800;color:var(--accent);letter-spacing:-1px">${wStarPct.toFixed(1)}<span style="font-size:14px">%</span></div>
-      </div>
-      <div style="flex:1">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">무위험자산 (1−w*)</div>
-        <div style="font-size:28px;font-weight:800;color:var(--text2);letter-spacing:-1px">${wRfPct.toFixed(1)}<span style="font-size:14px">%</span></div>
-      </div>
-    </div>
-    <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-bottom:8px">
-      <div style="height:100%;width:${Math.min(wStarPct,100)}%;background:var(--accent);border-radius:4px"></div>
-    </div>
-    <div style="font-size:11px;color:var(--text2);line-height:1.8;background:var(--bg);padding:8px 12px;border-radius:7px">
-      <div>w* = (μ − r_f) / (λ · σ²) = (${(mu*100).toFixed(1)}% − ${(rf*100).toFixed(1)}%) / (${lambda} × ${(sigma*100).toFixed(0)}%²)</div>
-      <div>= ${((mu-rf)*100).toFixed(1)}% / ${(lambda*sigma*sigma*100).toFixed(2)}% = <b>${wStarPct.toFixed(1)}%</b></div>
-    </div>
-    ${diffText}
-    <div style="margin-top:10px">
-      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">파라미터 가정별 w* 비교</div>
-      <div style="display:flex;flex-direction:column;gap:3px">
-        ${[
-          { label: '공격적 가정 (μ=10%, σ=18%)', w: mertonWeight(0.10, rf, lambda, 0.18) },
-          { label: '현실적 가정 (μ=8%, σ=21%)',  w: mertonWeight(0.08, rf, lambda, 0.21) },
-          { label: '보수적 가정 (μ=7%, σ=22%)',  w: mertonWeight(0.07, rf, lambda, 0.22) },
-          { label: '현재 설정값',                  w: wStar / 100 },
-        ].map(row => {
-          const pct = row.w * 100;
-          const isCurrent = row.label === '현재 설정값';
-          return \`<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:\${isCurrent?'var(--accent-l)':'var(--bg)'};border-radius:6px;font-size:11px">
-            <span style="flex:1;color:\${isCurrent?'var(--accent)':'var(--text2)'};font-weight:\${isCurrent?700:400}">\${row.label}</span>
-            <div style="width:80px;height:5px;background:var(--border);border-radius:3px;overflow:hidden">
-              <div style="width:\${Math.min(pct,100)}%;height:100%;background:\${isCurrent?'var(--accent)':'var(--text3)'};border-radius:3px"></div>
-            </div>
-            <span style="font-weight:700;min-width:35px;text-align:right;color:\${isCurrent?'var(--accent)':'inherit'}">\${pct.toFixed(1)}%</span>
-          </div>\`;
-        }).join('')}
-      </div>
-    </div>\`;
+  el.innerHTML =
+    '<div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">'
+    + '<div style="flex:1"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">최적 주식 비중 w*</div>'
+    + '<div style="font-size:28px;font-weight:800;color:var(--accent);letter-spacing:-1px">' + wStarPct.toFixed(1) + '<span style="font-size:14px">%</span></div></div>'
+    + '<div style="flex:1"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">무위험자산 (1−w*)</div>'
+    + '<div style="font-size:28px;font-weight:800;color:var(--text2);letter-spacing:-1px">' + wRfPct.toFixed(1) + '<span style="font-size:14px">%</span></div></div>'
+    + '</div>'
+    + '<div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-bottom:8px">'
+    + '<div style="height:100%;width:' + Math.min(wStarPct,100) + '%;background:var(--accent);border-radius:4px"></div></div>'
+    + '<div style="font-size:11px;color:var(--text2);line-height:1.8;background:var(--bg);padding:8px 12px;border-radius:7px">'
+    + '<div>w* = (μ − r_f) / (λ · σ²) = (' + (mu*100).toFixed(1) + '% − ' + (rf*100).toFixed(1) + '%) / (' + lambda + ' × ' + (sigma*100).toFixed(0) + '%²)</div>'
+    + '<div>= ' + ((mu-rf)*100).toFixed(1) + '% / ' + (lambda*sigma*sigma*100).toFixed(2) + '% = <b>' + wStarPct.toFixed(1) + '%</b></div>'
+    + '</div>'
+    + diffHTML;
+
+  // 파라미터 가정별 비교 테이블
+  var scenarios = [
+    { label: '공격적 (μ=10%, σ=18%)', w: mertonWeight(0.10, rf, lambda, 0.18) * 100 },
+    { label: '현실적 (μ=8%,  σ=21%)', w: mertonWeight(0.08, rf, lambda, 0.21) * 100 },
+    { label: '보수적 (μ=7%,  σ=22%)', w: mertonWeight(0.07, rf, lambda, 0.22) * 100 },
+    { label: '현재 설정값',            w: wStarPct },
+  ];
+  var tableRows = scenarios.map(function(row) {
+    var pct   = Math.min(row.w, 200);
+    var isCur = row.label === '현재 설정값';
+    var bg    = isCur ? 'var(--accent-l)' : 'var(--bg)';
+    var col   = isCur ? 'var(--accent)'   : 'var(--text2)';
+    var barC  = isCur ? 'var(--accent)'   : 'var(--text3)';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:' + bg + ';border-radius:6px;font-size:11px">'
+         + '<span style="flex:1;color:' + col + ';font-weight:' + (isCur?700:400) + '">' + row.label + '</span>'
+         + '<div style="width:80px;height:5px;background:var(--border);border-radius:3px;overflow:hidden">'
+         + '<div style="width:' + Math.min(pct,100).toFixed(0) + '%;height:100%;background:' + barC + ';border-radius:3px"></div></div>'
+         + '<span style="font-weight:700;min-width:38px;text-align:right;color:' + col + '">' + pct.toFixed(1) + '%</span>'
+         + '</div>';
+  }).join('');
+
+  el.innerHTML +=
+    '<div style="margin-top:10px">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">파라미터 가정별 w* 비교</div>'
+    + '<div style="display:flex;flex-direction:column;gap:3px">' + tableRows + '</div>'
+    + '</div>';
 }
 
 // ③ 샤프비율 & 현재 포트폴리오 평가
