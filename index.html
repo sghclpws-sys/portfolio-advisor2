@@ -585,12 +585,13 @@ body {
       <div class="card-hd">
         <div>
           <div class="card-title">자산군 단위 리밸런싱</div>
-          <div class="card-sub">계좌 구분 없이 전체 포트폴리오 자산군 기준 · 머튼 비중 포함</div>
+          <div class="card-sub">계좌 구분 없이 전체 포트폴리오 자산군 기준 · 머튼비중은 투자분석 페이지 파라미터(λ·μ·σ)와 실시간 연동</div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <span style="font-size:10px;color:var(--text3)">목표 기준:</span>
           <button class="btn btn-sm" id="btnTargetCurrent" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer" onclick="setAssetTarget('current')">현재설정</button>
-          <button class="btn btn-sm" id="btnTargetMerton" style="background:var(--bg);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer" onclick="setAssetTarget('merton')">머튼비중</button>
+          <button class="btn btn-sm" id="btnTargetMerton" style="background:var(--bg);color:var(--text2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer" onclick="setAssetTarget('merton')" title="투자분석 페이지 파라미터 기반 · 먼저 투자분석을 실행하세요">머튼비중</button>
+          <span id="merton-sync-status" style="font-size:10px;color:var(--text3)">← 투자분석 페이지에서 자동 연동</span>
         </div>
       </div>
       <div class="card-body">
@@ -1593,6 +1594,15 @@ function renderRebal() {
   calcRebal();
   renderAssetCls();
   renderRebalHistory();
+  // 투자분석 파라미터가 이미 설정돼 있으면 머튼 배지 동기화
+  (function() {
+    var lam = parseFloat(document.getElementById('an-lambda')?.value) || 3;
+    var mu  = parseFloat(document.getElementById('an-mu')?.value) / 100 || 0.08;
+    var rf  = parseFloat(document.getElementById('an-rf')?.value) / 100 || 0.045;
+    var sig = parseFloat(document.getElementById('an-sigma')?.value) / 100 || 0.21;
+    var w   = Math.min(mertonWeight(mu, rf, lam, sig), 1.0) * 100;
+    syncMertonBadge(w, lam, mu * 100, sig * 100);
+  })();
 }
 
 // ══════════════════════════════════════════
@@ -2087,9 +2097,9 @@ function renderAnalyticsPage() {
 
 function runAnalytics() {
   const lambda = parseFloat(document.getElementById('an-lambda')?.value) || 3;
-  const mu_eq  = parseFloat(document.getElementById('an-mu')?.value) / 100 || 0.10;
+  const mu_eq  = parseFloat(document.getElementById('an-mu')?.value) / 100 || 0.08;
   const rf     = parseFloat(document.getElementById('an-rf')?.value) / 100 || 0.045;
-  const sigma  = parseFloat(document.getElementById('an-sigma')?.value) / 100 || 0.18;
+  const sigma  = parseFloat(document.getElementById('an-sigma')?.value) / 100 || 0.21;
 
   // FRED 금리 자동반영
   if (M.rates?.t10y?.value) {
@@ -2100,12 +2110,56 @@ function runAnalytics() {
     }
   }
 
+  // ── 핵심: 계산된 w*를 ASSET_TARGETS.merton에 실시간 반영 ──
+  const wStar = Math.min(mertonWeight(mu_eq, rf, lambda, sigma), 1.0); // 상한 100%
+  const wRf   = Math.max(1 - wStar, 0);
+
+  // 주식을 equity_us(85%) + equity_kr(15%)로 배분
+  // 채권/원자재/리츠는 무위험 비중에서 배분
+  const bond      = wRf * 0.55;
+  const commodity = wRf * 0.25;
+  const reit      = wRf * 0.10;
+  const cash      = wRf * 0.10;
+  const eq_us     = wStar * 0.85;
+  const eq_kr     = wStar * 0.15;
+
+  // 합계 맞추기 (반올림 오차 보정)
+  const total = eq_us + eq_kr + bond + commodity + reit + cash;
+  ASSET_TARGETS.merton = {
+    equity_us:  Math.round(eq_us  / total * 100),
+    equity_kr:  Math.round(eq_kr  / total * 100),
+    bond_us:    Math.round(bond   / total * 100),
+    commodity:  Math.round(commodity / total * 100),
+    reit:       Math.round(reit   / total * 100),
+    crypto:     0,
+    cash:       Math.round(cash   / total * 100),
+  };
+  // 반올림 오차로 합계가 100이 안될 경우 cash로 보정
+  const sum = Object.values(ASSET_TARGETS.merton).reduce((a,b)=>a+b,0);
+  ASSET_TARGETS.merton.cash += (100 - sum);
+
+  // 리밸런싱 페이지 머튼비중 버튼 라벨 업데이트
+  syncMertonBadge(wStar * 100, lambda, mu_eq * 100, sigma * 100);
+
+  // 리밸런싱 페이지가 열려있으면 즉시 재렌더
+  if (document.getElementById('page-rebalance')?.classList.contains('active')) {
+    renderAssetCls();
+  }
+
   renderParamBanner(lambda, mu_eq, rf, sigma);
   renderMertonSection(lambda, mu_eq, rf, sigma);
   renderSharpeSection(lambda, rf);
   renderUtilitySection(lambda, mu_eq, rf, sigma);
   renderDecisionMatrix(lambda, mu_eq, rf, sigma);
   runSimulator();
+}
+
+// 리밸런싱 페이지 머튼비중 버튼에 현재 w* 표시
+function syncMertonBadge(wStarPct, lambda, muPct, sigmaPct) {
+  var btn = document.getElementById('btnTargetMerton');
+  if (!btn) return;
+  btn.textContent = '머튼비중 (w*=' + wStarPct.toFixed(0) + '%)';
+  btn.title = 'λ=' + lambda + ', μ=' + muPct.toFixed(0) + '%, σ=' + sigmaPct.toFixed(0) + '% 기반 · 투자분석 페이지에서 파라미터 조정 가능';
 }
 
 // ① 파라미터 해석 배너
