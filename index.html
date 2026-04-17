@@ -588,8 +588,7 @@ body {
     <div class="card">
       <div class="card-hd"><div class="card-title">계좌별 목표 vs 현재</div></div>
       <table class="rtable"><thead><tr><th>계좌</th><th>목적</th><th>평가금액</th><th>현재</th><th>목표</th><th>괴리</th><th>액션</th></tr></thead>
-      <tbody id="rebalBody"></tbody></table>
-      </div>
+      <tbody id="rebalBody"></tbody></table>      </div>
     </div>
 
     <!-- ══ 자산군 단위 리밸런싱 ══ -->
@@ -2026,6 +2025,1270 @@ function calcRebal() {
 }
 
 // ══════════════════════════════════════════
+
+
+// ══════════════════════════════════════════
+// 리밸런싱 히스토리
+// ══════════════════════════════════════════
+function logRebalancing() {
+  if (!P) { showToast('⚠ 포트폴리오 데이터 없음'); return; }
+  const history = JSON.parse(localStorage.getItem('rebal_history') || '[]');
+  const tot = totalWithCash();
+  const bd = classBreakdown();
+  const entry = {
+    date: new Date().toLocaleDateString('ko-KR'),
+    total: tot,
+    allocation: Object.fromEntries(
+      Object.entries(bd).map(([k,v]) => [k, tot ? +((v/tot)*100).toFixed(1) : 0])
+    ),
+    note: `총자산 ${fmt(tot)} · USD ${usdExposure().toFixed(0)}%`
+  };
+  history.unshift(entry);
+  if (history.length > 12) history.pop();
+  localStorage.setItem('rebal_history', JSON.stringify(history));
+  renderRebalHistory();
+  showToast('✓ 리밸런싱 기록 저장');
+}
+
+function clearRebalHistory() {
+  if (!confirm('리밸런싱 기록을 초기화할까요?')) return;
+  localStorage.removeItem('rebal_history');
+  renderRebalHistory();
+}
+
+function renderRebalHistory() {
+  const el = document.getElementById('rebalHistoryList');
+  if (!el) return;
+  const history = JSON.parse(localStorage.getItem('rebal_history') || '[]');
+  if (!history.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:12px;padding:16px">리밸런싱 기록이 없습니다</div>';
+    return;
+  }
+  el.innerHTML = history.map((entry, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span style="font-size:10px;font-weight:600;color:var(--text3);min-width:80px">${entry.date}</span>
+      <span style="font-weight:600;min-width:90px">${fmt(entry.total)}</span>
+      <div style="flex:1;display:flex;flex-wrap:wrap;gap:4px">
+        ${Object.entries(entry.allocation||{}).filter(([k,v])=>v>0).map(([k,v])=>`
+          <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${CLS_COLOR[k]||'#9ca3af'}22;color:${CLS_COLOR[k]||'#9ca3af'};font-weight:600">${ASSET_LABEL_KO[k]||k} ${v}%</span>`).join('')}
+      </div>
+      <span style="font-size:10px;color:var(--text3)">${entry.note||''}</span>
+    </div>`).join('');
+}
+
+
+
+// ══════════════════════════════════════════
+// ANALYTICS ENGINE
+// Merton · Sharpe · Utility · Coast FIRE
+// ══════════════════════════════════════════
+
+// ── 자산군별 파라미터 (역사적 추정치) ──
+const ASSET_PARAMS = {
+  equity_us:  { mu: 0.08, sigma: 0.17, label: '미국주식' },
+  equity_kr:  { mu: 0.08, sigma: 0.22, label: '국내주식' },
+  bond_us:    { mu: 0.04, sigma: 0.07, label: '미국채'   },
+  commodity:  { mu: 0.05, sigma: 0.20, label: '원자재'   },
+  reit:       { mu: 0.08, sigma: 0.19, label: '리츠'     },
+  crypto:     { mu: 0.20, sigma: 0.75, label: '암호화폐' },
+  cash:       { mu: 0.04, sigma: 0.00, label: '현금'     },
+};
+
+// ── 자산군 간 상관계수 행렬 (간략화) ──
+const CORR = {
+  equity_us: { equity_us:1.00, equity_kr:0.55, bond_us:-0.10, commodity:0.15, reit:0.65, crypto:0.20, cash:0.00 },
+  equity_kr: { equity_us:0.55, equity_kr:1.00, bond_us:-0.05, commodity:0.10, reit:0.50, crypto:0.15, cash:0.00 },
+  bond_us:   { equity_us:-0.10,equity_kr:-0.05,bond_us:1.00,  commodity:0.05, reit:0.20, crypto:-0.05,cash:0.05  },
+  commodity: { equity_us:0.15, equity_kr:0.10, bond_us:0.05,  commodity:1.00, reit:0.25, crypto:0.10, cash:0.00 },
+  reit:      { equity_us:0.65, equity_kr:0.50, bond_us:0.20,  commodity:0.25, reit:1.00, crypto:0.15, cash:0.00 },
+  crypto:    { equity_us:0.20, equity_kr:0.15, bond_us:-0.05, commodity:0.10, reit:0.15, crypto:1.00, cash:0.00 },
+  cash:      { equity_us:0.00, equity_kr:0.00, bond_us:0.05,  commodity:0.00, reit:0.00, crypto:0.00, cash:1.00 },
+};
+
+// ── 포트폴리오 μ, σ 계산 (가중평균 + 공분산 반영) ──
+function calcPortfolioStats(weights) {
+  // weights: { equity_us: 0.55, bond_us: 0.10, ... } (합계 1)
+  const keys = Object.keys(weights).filter(k => weights[k] > 0);
+  
+  // μ_p = Σ w_i · μ_i
+  let mu_p = 0;
+  keys.forEach(k => { mu_p += weights[k] * (ASSET_PARAMS[k]?.mu || 0); });
+
+  // σ_p² = Σ_i Σ_j w_i · w_j · σ_i · σ_j · ρ_ij
+  let var_p = 0;
+  keys.forEach(ki => {
+    keys.forEach(kj => {
+      const wi = weights[ki], wj = weights[kj];
+      const si = ASSET_PARAMS[ki]?.sigma || 0;
+      const sj = ASSET_PARAMS[kj]?.sigma || 0;
+      const rho = (CORR[ki] && CORR[ki][kj]) ? CORR[ki][kj] : 0;
+      var_p += wi * wj * si * sj * rho;
+    });
+  });
+  const sigma_p = Math.sqrt(Math.max(var_p, 0));
+
+  return { mu_p, sigma_p, var_p };
+}
+
+// ── 현재 포트폴리오 가중치 추출 ──
+function getCurrentWeights() {
+  if (!P) return null;
+  const tot = totalWithCash();
+  if (!tot) return null;
+  const bd = { ...classBreakdown(), cash: P?.cash?.available || 0 };
+  const weights = {};
+  let sum = 0;
+  Object.keys(ASSET_PARAMS).forEach(k => {
+    weights[k] = (bd[k] || 0) / tot;
+    sum += weights[k];
+  });
+  // 나머지 현금으로
+  if (sum < 0.999) weights.cash = (weights.cash || 0) + (1 - sum);
+  return weights;
+}
+
+// ── Utility 계산: U = μ_p − ½·λ·σ_p² ──
+function calcUtility(mu_p, sigma_p, lambda) {
+  return mu_p - 0.5 * lambda * sigma_p * sigma_p;
+}
+
+// ── Certainty Equivalent Return ──
+// CER = r_f + U (위험자산 투자의 확실성 등가수익률)
+function calcCER(mu_p, sigma_p, lambda, rf) {
+  const U = calcUtility(mu_p, sigma_p, lambda);
+  return U; // = μ_p - ½λσ² = CER (무위험수익률 기준)
+}
+
+// ── Merton 최적 비중 (단일 위험자산 기준) ──
+// w* = (μ - r_f) / (λ · σ²)
+function mertonWeight(mu, rf, lambda, sigma) {
+  const excess = mu - rf;
+  const w = excess / (lambda * sigma * sigma);
+  return Math.max(0, Math.min(2, w)); // 레버리지 상한 200%
+}
+
+// ── Sharpe Ratio ──
+function sharpeRatio(mu_p, sigma_p, rf) {
+  if (sigma_p === 0) return 0;
+  return (mu_p - rf) / sigma_p;
+}
+
+// ── 포트폴리오 MDD 추정 (역사적 근사) ──
+// MDD ≈ −2·σ (95% CI 기준 경험적 추정)
+function estimateMDD(sigma_p) {
+  return -2 * sigma_p; // rough estimate
+}
+
+
+
+// ══ 메인 렌더 함수 ══
+function renderAnalyticsPage() {
+  runAnalytics();
+}
+
+function runAnalytics() {
+  const lambda = parseFloat(document.getElementById('an-lambda')?.value) || 3;
+  const mu_eq  = parseFloat(document.getElementById('an-mu')?.value) / 100 || 0.08;
+  const rf     = parseFloat(document.getElementById('an-rf')?.value) / 100 || 0.045;
+  const sigma  = parseFloat(document.getElementById('an-sigma')?.value) / 100 || 0.21;
+
+  // FRED 금리 자동반영
+  if (M.rates?.t10y?.value) {
+    const fredRf = M.rates.t10y.value / 100;
+    const el = document.getElementById('an-rf');
+    if (el && Math.abs(parseFloat(el.value)/100 - fredRf) > 0.005) {
+      el.value = (fredRf * 100).toFixed(2);
+    }
+  }
+
+  // ── 핵심: 계산된 w*를 ASSET_TARGETS.merton에 실시간 반영 ──
+  const wStar = Math.min(mertonWeight(mu_eq, rf, lambda, sigma), 1.0); // 상한 100%
+  const wRf   = Math.max(1 - wStar, 0);
+
+  // 주식을 equity_us(85%) + equity_kr(15%)로 배분
+  // 채권/원자재/리츠는 무위험 비중에서 배분
+  const bond      = wRf * 0.55;
+  const commodity = wRf * 0.25;
+  const reit      = wRf * 0.10;
+  const cash      = wRf * 0.10;
+  const eq_us     = wStar * 0.85;
+  const eq_kr     = wStar * 0.15;
+
+  // 합계 맞추기 (반올림 오차 보정)
+  const total = eq_us + eq_kr + bond + commodity + reit + cash;
+  ASSET_TARGETS.merton = {
+    equity_us:  Math.round(eq_us  / total * 100),
+    equity_kr:  Math.round(eq_kr  / total * 100),
+    bond_us:    Math.round(bond   / total * 100),
+    commodity:  Math.round(commodity / total * 100),
+    reit:       Math.round(reit   / total * 100),
+    crypto:     0,
+    cash:       Math.round(cash   / total * 100),
+  };
+  // 반올림 오차로 합계가 100이 안될 경우 cash로 보정
+  const sum = Object.values(ASSET_TARGETS.merton).reduce((a,b)=>a+b,0);
+  ASSET_TARGETS.merton.cash += (100 - sum);
+
+  // 리밸런싱 페이지 머튼비중 버튼 라벨 업데이트
+  syncMertonBadge(wStar * 100, lambda, mu_eq * 100, sigma * 100);
+
+  // 리밸런싱 페이지가 열려있으면 즉시 재렌더
+  if (document.getElementById('page-rebalance')?.classList.contains('active')) {
+    renderAssetCls();
+  }
+
+  renderParamBanner(lambda, mu_eq, rf, sigma);
+  renderMertonSection(lambda, mu_eq, rf, sigma);
+  renderSharpeSection(lambda, rf);
+  renderUtilitySection(lambda, mu_eq, rf, sigma);
+  renderDecisionMatrix(lambda, mu_eq, rf, sigma);
+  runCoastFire();
+}
+
+// 리밸런싱 페이지 머튼비중 버튼에 현재 w* 표시
+function syncMertonBadge(wStarPct, lambda, muPct, sigmaPct) {
+  var btn = document.getElementById('btnTargetMerton');
+  if (!btn) return;
+  btn.textContent = '머튼비중 (w*=' + wStarPct.toFixed(0) + '%)';
+  btn.title = 'λ=' + lambda + ', μ=' + muPct.toFixed(0) + '%, σ=' + sigmaPct.toFixed(0) + '% 기반 · 투자분석 페이지에서 파라미터 조정 가능';
+}
+
+// ① 파라미터 해석 배너
+function renderParamBanner(lambda, mu, rf, sigma) {
+  var el = document.getElementById('an-param-banner');
+  if (!el) return;
+  var excessRet = (mu - rf) * 100;
+  var mertonW   = mertonWeight(mu, rf, lambda, sigma) * 100;
+  var riskProfile = lambda <= 2 ? '초공격형' : lambda <= 3.5 ? '공격형'
+                  : lambda <= 5 ? '중립형'   : lambda <= 7   ? '보수형' : '초보수형';
+
+  var warnings = [];
+  if (mu > 0.09)    warnings.push({ msg: 'μ=' + (mu*100).toFixed(0) + '% — CAPE 고점권 감안 시 7~9% 권장', level: 'warn' });
+  if (mu < 0.06)    warnings.push({ msg: 'μ=' + (mu*100).toFixed(0) + '% — 과소추정 가능', level: 'warn' });
+  if (sigma < 0.17) warnings.push({ msg: 'σ=' + (sigma*100).toFixed(0) + '% — 성장주 포트 기준 20~22% 권장', level: 'warn' });
+  if (mertonW > 100) warnings.push({ msg: 'w*=' + mertonW.toFixed(0) + '% — 레버리지 구간, 상한 100% 적용', level: 'danger' });
+
+  var sens = [
+    { label: 'μ +1%', w: mertonWeight(mu+0.01, rf, lambda, sigma)*100 },
+    { label: 'μ −1%', w: mertonWeight(mu-0.01, rf, lambda, sigma)*100 },
+    { label: 'σ +3%', w: mertonWeight(mu, rf, lambda, sigma+0.03)*100 },
+    { label: 'σ −3%', w: mertonWeight(mu, rf, lambda, sigma-0.03)*100 },
+  ];
+
+  var warnHTML = '';
+  if (warnings.length > 0) {
+    warnHTML = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'
+      + warnings.map(function(w) {
+          var bg  = w.level === 'danger' ? 'var(--red-l)'  : 'var(--yellow-l)';
+          var col = w.level === 'danger' ? 'var(--red)'    : 'var(--yellow)';
+          return '<span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:10px;background:'
+               + bg + ';color:' + col + '">⚠ ' + w.msg + '</span>';
+        }).join('') + '</div>';
+  }
+
+  var sensHTML = sens.map(function(s) {
+    var delta = s.w - mertonW;
+    var col   = delta > 0 ? 'var(--green)' : delta < 0 ? 'var(--red)' : 'var(--text2)';
+    return '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg);color:' + col + '">'
+         + s.label + ' → <b>' + s.w.toFixed(1) + '%</b>'
+         + ' (' + (delta > 0 ? '+' : '') + delta.toFixed(1) + '%p)</span>';
+  }).join('');
+
+  el.innerHTML =
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px">'
+    + '<span style="font-weight:700">λ=' + lambda + '</span>'
+    + ' → <span style="color:var(--accent);font-weight:700">' + riskProfile + '</span>'
+    + '<span style="color:var(--text3)">|</span>'
+    + '<span>(μ−r_f) = <b>' + excessRet.toFixed(1) + '%</b></span>'
+    + '<span style="color:var(--text3)">|</span>'
+    + '<span>SR(주식단독) = <b>' + ((mu-rf)/sigma).toFixed(2) + '</b></span>'
+    + '<span style="color:var(--text3)">|</span>'
+    + '<span>Merton <b style="color:var(--accent)">w* = ' + mertonW.toFixed(1) + '%</b>'
+    + ' 주식 / ' + Math.max(0, 100-mertonW).toFixed(1) + '% 무위험</span>'
+    + '</div>'
+    + warnHTML
+    + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+    + '<span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">w* 민감도:</span>'
+    + sensHTML + '</div>';
+}
+
+// ② 머튼 최적 비중
+function renderMertonSection(lambda, mu, rf, sigma) {
+  var el    = document.getElementById('an-merton-body');
+  var badge = document.getElementById('an-merton-badge');
+  if (!el) return;
+
+  var wStar    = mertonWeight(mu, rf, lambda, sigma);
+  var wStarPct = wStar * 100;
+  var wRfPct   = 100 - wStarPct;
+
+  var curWeights = getCurrentWeights();
+  var curEqPct   = curWeights ? ((curWeights.equity_us||0) + (curWeights.equity_kr||0)) * 100 : null;
+
+  badge.textContent = 'w* = ' + wStarPct.toFixed(1) + '%';
+  badge.style.background = wStarPct > 80 ? 'var(--orange-l)' : wStarPct > 60 ? 'var(--green-l)' : 'var(--accent-l)';
+  badge.style.color      = wStarPct > 80 ? 'var(--orange)'   : wStarPct > 60 ? 'var(--green)'   : 'var(--accent)';
+
+  var diffHTML = '';
+  if (curEqPct !== null) {
+    var diffPct  = wStarPct - curEqPct;
+    var diffBg   = Math.abs(diffPct) < 5 ? 'var(--green-l)' : 'var(--yellow-l)';
+    var diffCol  = Math.abs(diffPct) < 5 ? 'var(--green)'   : 'var(--yellow)';
+    var diffMsg  = Math.abs(diffPct) < 5 ? '✓ 최적 범위'
+                 : diffPct > 0 ? '→ 주식 추가 매수 여력' : '→ 주식 비중 과다';
+    diffHTML = '<div style="margin-top:8px;padding:8px 12px;border-radius:7px;font-size:11px;font-weight:600;background:' + diffBg + ';color:' + diffCol + '">'
+             + '현재 주식 ' + curEqPct.toFixed(1) + '% vs Merton w* ' + wStarPct.toFixed(1) + '%'
+             + ' → 편차 ' + (diffPct > 0 ? '+' : '') + diffPct.toFixed(1) + '%p ' + diffMsg
+             + '</div>';
+  }
+
+  el.innerHTML =
+    '<div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">'
+    + '<div style="flex:1"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">최적 주식 비중 w*</div>'
+    + '<div style="font-size:28px;font-weight:800;color:var(--accent);letter-spacing:-1px">' + wStarPct.toFixed(1) + '<span style="font-size:14px">%</span></div></div>'
+    + '<div style="flex:1"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">무위험자산 (1−w*)</div>'
+    + '<div style="font-size:28px;font-weight:800;color:var(--text2);letter-spacing:-1px">' + wRfPct.toFixed(1) + '<span style="font-size:14px">%</span></div></div>'
+    + '</div>'
+    + '<div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden;margin-bottom:8px">'
+    + '<div style="height:100%;width:' + Math.min(wStarPct,100) + '%;background:var(--accent);border-radius:4px"></div></div>'
+    + '<div style="font-size:11px;color:var(--text2);line-height:1.8;background:var(--bg);padding:8px 12px;border-radius:7px">'
+    + '<div>w* = (μ − r_f) / (λ · σ²) = (' + (mu*100).toFixed(1) + '% − ' + (rf*100).toFixed(1) + '%) / (' + lambda + ' × ' + (sigma*100).toFixed(0) + '%²)</div>'
+    + '<div>= ' + ((mu-rf)*100).toFixed(1) + '% / ' + (lambda*sigma*sigma*100).toFixed(2) + '% = <b>' + wStarPct.toFixed(1) + '%</b></div>'
+    + '</div>'
+    + diffHTML;
+
+  // 파라미터 가정별 비교 테이블
+  var scenarios = [
+    { label: '공격적 (μ=10%, σ=18%)', w: mertonWeight(0.10, rf, lambda, 0.18) * 100 },
+    { label: '현실적 (μ=8%,  σ=21%)', w: mertonWeight(0.08, rf, lambda, 0.21) * 100 },
+    { label: '보수적 (μ=7%,  σ=22%)', w: mertonWeight(0.07, rf, lambda, 0.22) * 100 },
+    { label: '현재 설정값',            w: wStarPct },
+  ];
+  var tableRows = scenarios.map(function(row) {
+    var pct   = Math.min(row.w, 200);
+    var isCur = row.label === '현재 설정값';
+    var bg    = isCur ? 'var(--accent-l)' : 'var(--bg)';
+    var col   = isCur ? 'var(--accent)'   : 'var(--text2)';
+    var barC  = isCur ? 'var(--accent)'   : 'var(--text3)';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:' + bg + ';border-radius:6px;font-size:11px">'
+         + '<span style="flex:1;color:' + col + ';font-weight:' + (isCur?700:400) + '">' + row.label + '</span>'
+         + '<div style="width:80px;height:5px;background:var(--border);border-radius:3px;overflow:hidden">'
+         + '<div style="width:' + Math.min(pct,100).toFixed(0) + '%;height:100%;background:' + barC + ';border-radius:3px"></div></div>'
+         + '<span style="font-weight:700;min-width:38px;text-align:right;color:' + col + '">' + pct.toFixed(1) + '%</span>'
+         + '</div>';
+  }).join('');
+
+  // 해석 노트
+  el.innerHTML += '<div style="margin-top:10px;padding:8px 12px;background:var(--accent-l);border-radius:7px;font-size:11px;color:var(--accent);line-height:1.6"><b>해석:</b> w*는 내 위험성향(λ)과 시장 조건(μ,σ,r_f)이 주어졌을 때 효용을 최대화하는 이론적 최적 주식 비중입니다. 현재 주식 비중과 비교해 포지션 조정 여부를 판단하세요.</div>';
+  el.innerHTML +=
+    '<div style="margin-top:10px">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">파라미터 가정별 w* 비교</div>'
+    + '<div style="display:flex;flex-direction:column;gap:3px">' + tableRows + '</div>'
+    + '</div>';
+}
+
+// ③ 샤프비율 & 현재 포트폴리오 평가
+function renderSharpeSection(lambda, rf) {
+  var el = document.getElementById('an-sharpe-body');
+  if (!el) return;
+  var curWeights = getCurrentWeights();
+  if (!curWeights) {
+    el.innerHTML = '<div class="empty" style="padding:16px">포트폴리오 데이터를 입력하세요</div>';
+    return;
+  }
+  var stats     = calcPortfolioStats(curWeights);
+  var mu_p      = stats.mu_p;
+  var sigma_p   = stats.sigma_p;
+  var SR_cur    = sharpeRatio(mu_p, sigma_p, rf);
+  var U_cur     = calcUtility(mu_p, sigma_p, lambda);
+  var w6040     = { equity_us:0.60, equity_kr:0.05, bond_us:0.35 };
+  var st6040    = calcPortfolioStats(w6040);
+  var SR_6040   = sharpeRatio(st6040.mu_p, st6040.sigma_p, rf);
+  var srGrade   = SR_cur >= 1.0 ? { g:'우수', c:'var(--green)' }
+                : SR_cur >= 0.7 ? { g:'양호', c:'var(--accent)' }
+                : SR_cur >= 0.5 ? { g:'보통', c:'var(--yellow)' }
+                : { g:'개선필요', c:'var(--red)' };
+  var vsColor  = SR_cur >= SR_6040 ? 'var(--green)' : 'var(--red)';
+  var vsBg     = SR_cur >= SR_6040 ? 'var(--green-l)' : 'var(--red-l)';
+  var vsLabel  = SR_cur >= SR_6040 ? '▲ SR 우위' : '▼ SR 열위';
+
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'
+    + '<div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">Sharpe Ratio</div>'
+    + '<div style="font-size:22px;font-weight:800;color:' + srGrade.c + '">' + SR_cur.toFixed(2) + '</div>'
+    + '<div style="font-size:10px;font-weight:600;color:' + srGrade.c + '">' + srGrade.g + '</div></div>'
+    + '<div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">포트폴리오 μ_p</div>'
+    + '<div style="font-size:22px;font-weight:800;color:var(--text)">' + (mu_p*100).toFixed(1) + '%</div>'
+    + '<div style="font-size:10px;color:var(--text3)">기대수익률</div></div>'
+    + '<div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">포트폴리오 σ_p</div>'
+    + '<div style="font-size:22px;font-weight:800;color:var(--orange)">' + (sigma_p*100).toFixed(1) + '%</div>'
+    + '<div style="font-size:10px;color:var(--text3)">연간 변동성</div></div>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:5px;font-size:12px">'
+    + '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">'
+    + '<span>Utility U = &mu;_p &minus; &frac12;&lambda;&sigma;_p&sup2;</span>'
+    + '<span style="font-weight:700;color:var(--accent)">' + (U_cur*100).toFixed(2) + '%</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">'
+    + '<span>연간 수익 예상 범위 (&plusmn;1&sigma;)</span>'
+    + '<span style="font-weight:700;color:var(--orange)">' + ((mu_p-sigma_p)*100).toFixed(1) + '% ~ +' + ((mu_p+sigma_p)*100).toFixed(1) + '%</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">'
+    + '<span>SR 비교: 60/40 포트폴리오</span>'
+    + '<span style="font-weight:700;color:var(--text2)">' + SR_6040.toFixed(2) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:' + vsBg + ';border-radius:6px">'
+    + '<span style="font-weight:600">내 포트폴리오 vs 60/40</span>'
+    + '<span style="font-weight:700;color:' + vsColor + '">' + vsLabel + ' ' + Math.abs(SR_cur-SR_6040).toFixed(2) + '</span></div>'
+    + '<div style="padding:8px 10px;background:var(--accent-l);border-radius:6px;font-size:11px;color:var(--accent);line-height:1.6">'
+    + '<b>해석:</b> SR이 높을수록 같은 위험으로 더 많은 수익 &middot; SR&gt;0.5 양호 &middot; 60/40 대비 우위면 현재 자산배분이 효율적</div>'
+    + '</div>';
+}
+
+// ④ 효용 분석 + 차트
+function renderUtilitySection(lambda, mu, rf, sigma) {
+  const tblEl = document.getElementById('an-utility-table');
+  const canvasEl = document.getElementById('an-utility-chart');
+  if (!tblEl || !canvasEl) return;
+
+  const curWeights = getCurrentWeights();
+  const curEqPct = curWeights ? ((curWeights.equity_us||0)+(curWeights.equity_kr||0))*100 : null;
+  const wStar = mertonWeight(mu, rf, lambda, sigma) * 100;
+
+  // 비중별 효용 계산 (0%~120% 주식, 나머지 무위험)
+  const steps = [];
+  for (let w = 0; w <= 120; w += 5) {
+    const wEq = w / 100;
+    const wRf = 1 - wEq;
+    const mu_p = wEq * mu + wRf * rf;
+    const sigma_p = wEq * sigma; // 단일 위험자산 가정
+    const U = calcUtility(mu_p, sigma_p, lambda);
+    const SR = sigma_p > 0 ? (mu_p - rf) / sigma_p : 0;
+    steps.push({ w, mu_p, sigma_p, U, SR });
+  }
+
+  // 테이블: 주요 비중 포인트만
+  const keyPoints = [0, 20, 40, 50, 60, Math.round(wStar/5)*5, 80, 100].filter((v,i,a)=>a.indexOf(v)===i && v<=120).sort((a,b)=>a-b);
+  const maxU = Math.max(...steps.map(s=>s.U));
+
+  tblEl.innerHTML = `
+    <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">비중별 효용 비교</div>
+    <div style="display:flex;flex-direction:column;gap:3px">
+      <div style="display:grid;grid-template-columns:45px 48px 48px 48px 48px;gap:4px;font-size:9px;font-weight:700;color:var(--text3);padding:0 4px;text-transform:uppercase">
+        <span>주식%</span><span style="text-align:right">μ_p</span><span style="text-align:right">σ_p</span><span style="text-align:right">U</span><span style="text-align:right">SR</span>
+      </div>
+      ${keyPoints.map(w => {
+        const s = steps.find(st=>st.w===w) || steps[steps.length-1];
+        const isOptimal = Math.abs(w - wStar) < 5;
+        const isCurrent = curEqPct !== null && Math.abs(w - Math.round(curEqPct/5)*5) < 3;
+        const isMax = Math.abs(s.U - maxU) < 0.001;
+        const bg = isOptimal ? 'var(--accent-l)' : isCurrent ? 'var(--green-l)' : isMax ? 'var(--yellow-l)' : 'var(--bg)';
+        const fw = (isOptimal || isCurrent) ? 700 : 400;
+        const tag = isOptimal ? ' ← w*' : isCurrent ? ' ← 현재' : '';
+        return `<div style="display:grid;grid-template-columns:45px 48px 48px 48px 48px;gap:4px;padding:5px 4px;background:${bg};border-radius:5px;font-size:11px;font-weight:${fw}">
+          <span>${w}%${tag?`<span style="font-size:9px;color:var(--accent)">${tag}</span>`:''}</span>
+          <span style="text-align:right">${(s.mu_p*100).toFixed(1)}%</span>
+          <span style="text-align:right">${(s.sigma_p*100).toFixed(1)}%</span>
+          <span style="text-align:right;color:${s.U===maxU?'var(--green)':'inherit'}">${(s.U*100).toFixed(2)}%</span>
+          <span style="text-align:right">${s.SR.toFixed(2)}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // Canvas 차트 (효용 곡선)
+  const ctx = canvasEl.getContext('2d');
+  canvasEl.width = canvasEl.offsetWidth * window.devicePixelRatio || 400;
+  canvasEl.height = 180 * window.devicePixelRatio || 360;
+  ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const cw = canvasEl.offsetWidth || 400, ch = 180;
+
+  const Us = steps.map(s=>s.U);
+  const minU = Math.min(...Us), maxUV = Math.max(...Us);
+  const padX = 30, padY = 15, plotW = cw - padX - 10, plotH = ch - padY - 20;
+
+  ctx.clearRect(0, 0, cw, ch);
+
+  // 배경 그리드
+  ctx.strokeStyle = '#e8eaed'; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = padY + (plotH * i / 4);
+    ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(padX+plotW, y); ctx.stroke();
+    const v = maxUV - (maxUV-minU)*i/4;
+    ctx.fillStyle = '#9ca3af'; ctx.font = '9px Pretendard,sans-serif';
+    ctx.fillText((v*100).toFixed(1)+'%', 0, y+3);
+  }
+
+  // 효용 곡선
+  ctx.beginPath(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2;
+  steps.forEach((s, i) => {
+    const x = padX + (s.w / 120) * plotW;
+    const y = padY + plotH - ((s.U - minU) / (maxUV - minU + 0.0001)) * plotH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // 최적 비중 수직선
+  const xOpt = padX + (wStar / 120) * plotW;
+  ctx.beginPath(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
+  ctx.moveTo(xOpt, padY); ctx.lineTo(xOpt, padY+plotH); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#2563eb'; ctx.font = 'bold 9px Pretendard,sans-serif';
+  ctx.fillText(`w*=${wStar.toFixed(0)}%`, xOpt+3, padY+10);
+
+  // 현재 비중 수직선
+  if (curEqPct !== null && curEqPct <= 120) {
+    const xCur = padX + (curEqPct / 120) * plotW;
+    ctx.beginPath(); ctx.strokeStyle = '#059669'; ctx.lineWidth = 1.5; ctx.setLineDash([4,3]);
+    ctx.moveTo(xCur, padY); ctx.lineTo(xCur, padY+plotH); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#059669';
+    ctx.fillText(`현재=${curEqPct.toFixed(0)}%`, xCur+3, padY+22);
+  }
+
+  // X축 레이블
+  ctx.fillStyle = '#9ca3af'; ctx.font = '9px Pretendard,sans-serif';
+  [0,20,40,60,80,100,120].forEach(w => {
+    ctx.fillText(w+'%', padX+(w/120)*plotW-5, ch-4);
+  });
+}
+
+// ⑤ Coast FIRE
+function runCoastFire() {
+  var el = document.getElementById('coast-fire-result');
+  if (!el) return;
+
+  var curAge    = parseInt(document.getElementById('cf-age')?.value) || 35;
+  var retireAge = parseInt(document.getElementById('cf-retire')?.value) || 55;
+  var monthlyEx = (parseFloat(document.getElementById('cf-monthly')?.value) || 500) * 10000;
+  var years     = Math.max(retireAge - curAge, 1);
+  var annualEx  = monthlyEx * 12;
+
+  // 현재 포트폴리오 μ_p를 실질수익률로 사용 (인플레이션 2.5% 차감)
+  var mu_p = 0.08; // 기본값
+  if (typeof calcPortfolioStats === 'function' && typeof getCurrentWeights === 'function') {
+    var w = getCurrentWeights();
+    if (w) {
+      var stats = calcPortfolioStats(w);
+      mu_p = Math.max(stats.mu_p, 0.04);
+    }
+  }
+  var realReturn = Math.max(mu_p - 0.025, 0.02); // 실질수익률
+
+  // FIRE Number = 연생활비 ÷ 4% (Trinity Study)
+  var fireNumber = annualEx / 0.04;
+
+  // Coast FIRE Number = FIRE Number ÷ (1 + 실질수익률)^years
+  var coastNumber = fireNumber / Math.pow(1 + realReturn, years);
+
+  // 현재 총자산
+  var currentWealth = (typeof totalWithCash === 'function') ? totalWithCash() : 0;
+
+  // 달성 여부
+  var reached = currentWealth >= coastNumber;
+  var gap     = coastNumber - currentWealth;
+  var surplusPct = currentWealth > 0 ? ((currentWealth - coastNumber) / coastNumber * 100) : -100;
+
+  // 추가 저축 없이 은퇴 시 예상 자산
+  var projectedWealth = currentWealth * Math.pow(1 + realReturn, years);
+
+  // 현재 속도로 추가 저축 시 (월 n만원 추가 시 Coast FIRE까지)
+  var neededMonthly = 0;
+  if (!reached) {
+    // 월 추가 저축으로 coastNumber 달성에 필요한 금액 역산
+    // Coast FIRE Number = PV + PMT × [(1+r)^n - 1] / r → PMT 역산
+    var r = realReturn / 12;
+    var n = years * 12;
+    var fvFactor = (Math.pow(1 + r, n) - 1) / r;
+    var pvGrowth = currentWealth * Math.pow(1 + r, n);
+    var shortfall = fireNumber - pvGrowth;
+    neededMonthly = shortfall > 0 ? Math.max(0, shortfall / fvFactor) : 0;
+  }
+
+  // 결과 렌더
+  var statusColor = reached ? 'var(--green)' : 'var(--orange)';
+  var statusBg    = reached ? 'var(--green-l)' : 'var(--yellow-l)';
+  var statusIcon  = reached ? '✓' : '→';
+  var statusLabel = reached
+    ? 'Coast FIRE 달성 — 추가 저축 없이도 은퇴 가능'
+    : 'Coast FIRE 미달 — 아직 추가 저축 필요';
+
+  el.innerHTML =
+    '<div style="padding:12px 16px;background:' + statusBg + ';border-radius:8px;border-left:4px solid ' + statusColor + ';margin-bottom:14px">' +
+    '<div style="font-size:14px;font-weight:800;color:' + statusColor + ';margin-bottom:3px">' + statusIcon + ' ' + statusLabel + '</div>' +
+    '<div style="font-size:11px;color:var(--text2)">실질수익률 ' + (realReturn*100).toFixed(1) + '% · 투자기간 ' + years + '년 · 4% 안전인출률 기준</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">' +
+    '<div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">' +
+    '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">FIRE Number</div>' +
+    '<div style="font-size:16px;font-weight:800">' + fmt(fireNumber) + '</div>' +
+    '<div style="font-size:10px;color:var(--text3)">월 ' + (monthlyEx/10000).toFixed(0) + '만원 × 25배</div>' +
+    '</div>' +
+    '<div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">' +
+    '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">Coast FIRE Number</div>' +
+    '<div style="font-size:16px;font-weight:800;color:var(--accent)">' + fmt(coastNumber) + '</div>' +
+    '<div style="font-size:10px;color:var(--text3)">' + years + '년 후 FIRE로 역산</div>' +
+    '</div>' +
+    '<div style="background:' + (reached?'var(--green-l)':'var(--red-l)') + ';border-radius:7px;padding:10px 12px;text-align:center">' +
+    '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">현재 자산</div>' +
+    '<div style="font-size:16px;font-weight:800;color:' + (reached?'var(--green)':'var(--red)') + '">' + fmt(currentWealth) + '</div>' +
+    '<div style="font-size:10px;font-weight:600;color:' + statusColor + '">' + (reached ? '달성 (' + surplusPct.toFixed(0) + '% 초과)' : '부족 ' + fmt(gap)) + '</div>' +
+    '</div>' +
+    '</div>' +
+    (reached
+      ? '<div style="padding:10px 14px;background:var(--green-l);border-radius:7px;font-size:12px;color:var(--green);line-height:1.7">' +
+        '<b>🎉 이미 Coast FIRE 달성</b> — 지금 당장 추가 저축을 멈춰도 ' + years + '년 후 복리만으로 ' + fmt(projectedWealth) + '에 도달합니다. ' +
+        '추가 저축은 더 이른 은퇴 또는 더 풍요로운 노후를 위한 선택사항입니다.' +
+        '</div>'
+      : '<div style="padding:10px 14px;background:var(--accent-l);border-radius:7px;font-size:12px;color:var(--text2);line-height:1.7">' +
+        '<b>Coast FIRE까지 부족액: ' + fmt(gap) + '</b><br>' +
+        '월 <b style="color:var(--accent)">' + fmt(neededMonthly) + '</b> 추가 투자 시 ' + years + '년 내 Coast FIRE 달성 가능 · ' +
+        '또는 은퇴 나이를 ' + (retireAge + 5) + '세로 조정 시 Coast Number 감소' +
+        '</div>'
+    );
+}
+
+// ⑥ Risk-Adjusted Decision Matrix
+function renderDecisionMatrix(lambda, mu, rf, sigma) {
+  const el = document.getElementById('an-decision-body');
+  if (!el) return;
+
+  const curWeights = getCurrentWeights();
+  if (!curWeights) {
+    el.innerHTML = '<div class="empty" style="padding:16px">포트폴리오 데이터를 입력하세요</div>';
+    return;
+  }
+
+  const wStar = mertonWeight(mu, rf, lambda, sigma);
+  const { mu_p: mu_cur, sigma_p: sig_cur } = calcPortfolioStats(curWeights);
+  const U_cur = calcUtility(mu_cur, sig_cur, lambda);
+  const SR_cur = sharpeRatio(mu_cur, sig_cur, rf);
+
+  // 최적 포트폴리오 (머튼 비중)
+  const optWeights = {
+    equity_us: wStar * 0.85,
+    equity_kr: wStar * 0.15,
+    bond_us: Math.max(0, 1 - wStar) * 0.7,
+    commodity: Math.max(0, 1 - wStar) * 0.2,
+    reit: Math.max(0, 1 - wStar) * 0.1,
+    crypto: 0,
+    cash: Math.max(0, 1 - wStar - 0.05),
+  };
+  // 합계 맞추기
+  const sum = Object.values(optWeights).reduce((a,b)=>a+b,0);
+  Object.keys(optWeights).forEach(k => optWeights[k] /= sum);
+
+  const { mu_p: mu_opt, sigma_p: sig_opt } = calcPortfolioStats(optWeights);
+  const U_opt = calcUtility(mu_opt, sig_opt, lambda);
+  const SR_opt = sharpeRatio(mu_opt, sig_opt, rf);
+
+  // Utility Cost: 현재 비최적 포지션의 효용 손실
+  const utilityCost = U_opt - U_cur;
+  const annualCostKRW = utilityCost * totalWithCash();
+
+  // 시나리오별 의사결정
+  const decisions = [
+    {
+      label: '현재 포트폴리오 유지',
+      mu: mu_cur, sigma: sig_cur,
+      U: U_cur, SR: SR_cur,
+      action: '아무것도 안 함',
+      pros: '세금 없음, 거래비용 없음',
+      cons: `효용 손실 연 ${(utilityCost*100).toFixed(2)}%p`,
+      color: 'var(--text2)'
+    },
+    {
+      label: 'Merton 최적 비중으로 전환',
+      mu: mu_opt, sigma: sig_opt,
+      U: U_opt, SR: SR_opt,
+      action: `주식 ${(wStar*100).toFixed(0)}% 목표 리밸런싱`,
+      pros: '효용 최대화, SR 최적화',
+      cons: '거래비용, ISA외 계좌 세금',
+      color: 'var(--accent)'
+    },
+    {
+      label: '추가자금 투입으로 조정',
+      mu: mu_cur * 0.98 + mu_opt * 0.02,
+      sigma: sig_cur * 0.98 + sig_opt * 0.02,
+      U: U_cur * 0.98 + U_opt * 0.02,
+      SR: SR_cur * 0.98 + SR_opt * 0.02,
+      action: '신규 매수로만 비중 이동',
+      pros: '세금 0, 기존 포지션 보존',
+      cons: '조정 속도 느림',
+      color: 'var(--green)'
+    },
+  ];
+
+  el.innerHTML = `
+    <div style="margin-bottom:12px;padding:10px 14px;background:var(--yellow-l);border-radius:8px;border-left:3px solid var(--yellow);font-size:12px">
+      <b>Utility Cost 분석</b> — 현재 포트폴리오의 비최적성으로 인한 연간 효용 손실:
+      <span style="color:var(--red);font-weight:700"> ${(utilityCost*100).toFixed(2)}%p</span>
+      = 총자산 기준 <span style="color:var(--red);font-weight:700">${fmt(annualCostKRW)}/년</span>
+      (U_opt ${(U_opt*100).toFixed(2)}% − U_cur ${(U_cur*100).toFixed(2)}%)
+    </div>
+    <div style="overflow-x:auto">
+      <table class="rtable">
+        <thead>
+          <tr>
+            <th>전략</th><th>μ_p</th><th>σ_p</th><th>Sharpe</th><th>Utility U</th><th>액션</th><th>장점</th><th>단점</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${decisions.map((d,i) => `
+          <tr style="${i===1?'background:var(--accent-l)':''}">
+            <td style="font-weight:700;color:${d.color}">${d.label}</td>
+            <td>${(d.mu*100).toFixed(1)}%</td>
+            <td>${(d.sigma*100).toFixed(1)}%</td>
+            <td style="font-weight:700">${d.SR.toFixed(2)}</td>
+            <td style="font-weight:700;color:${d.U===Math.max(...decisions.map(x=>x.U))?'var(--green)':'inherit'}">${(d.U*100).toFixed(2)}%</td>
+            <td style="font-size:11px;color:var(--accent)">${d.action}</td>
+            <td style="font-size:11px;color:var(--green)">${d.pros}</td>
+            <td style="font-size:11px;color:var(--red)">${d.cons}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3);line-height:1.8">
+      <b>해석:</b> Utility Cost가 클수록 현재 포지션이 비효율적 · 추가자금 투입 전략이 세금 없이 Utility를 높이는 가장 현실적인 방법<br>      * 상관관계 행렬 기반 σ_p 계산 · 단일 위험자산 가정(Merton) 아닌 다자산 포트폴리오 분석
+    </div>`;
+}
+
+
+// ══════════════════════════════════════════
+// WM STRATEGY PAGE
+// ══════════════════════════════════════════
+function renderWMStrategy() {
+  syncTAAtoTargets(); // WM 전략 열 때마다 TAA 최신화
+  renderRiskProfile();
+  renderSAATarget();
+  renderTAAView();
+  renderGapAnalysis();
+}
+
+function renderRiskProfile() {
+  var el = document.getElementById('wm-risk-profile');
+  if (!el) return;
+  var cur = INVESTOR_PROFILE_SCORE;
+
+  var html = '<div style="display:flex;flex-direction:column;gap:8px">';
+  WM_PROFILES.forEach(function(p) {
+    var isActive = p.score === cur;
+    var bg = isActive ? 'var(--accent-l)' : 'var(--bg)';
+    var border = isActive ? '2px solid var(--accent)' : '1px solid var(--border)';
+    var col = isActive ? 'var(--accent)' : 'var(--text2)';
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:' + bg + ';border:' + border + ';border-radius:8px">';
+    html += '<div style="width:28px;height:28px;border-radius:50%;background:' + (isActive?'var(--accent)':'var(--border)') + ';color:' + (isActive?'#fff':'var(--text3)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">' + p.score + '</div>';
+    html += '<div style="flex:1"><div style="font-size:12px;font-weight:' + (isActive?800:600) + ';color:' + col + '">' + p.grade + ' · ' + p.ko + '</div><div style="font-size:10px;color:var(--text3);margin-top:1px">' + p.desc + '</div></div>';
+    // 목표수익/최대손실
+    html += '<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:var(--green)">목표 ' + p.targetReturn + '%</div><div style="font-size:10px;color:var(--red)">MDD ' + p.maxDrawdown + '%</div></div>';
+    if (isActive) html += '<div style="font-size:10px;font-weight:700;color:var(--accent);flex-shrink:0">← 현재</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:10px;padding:8px 12px;background:var(--accent-l);border-radius:7px;font-size:11px;color:var(--accent);line-height:1.6">';
+  var p = WM_PROFILES[cur-1];
+  html += '<b>현재 등급: ' + p.grade + ' (' + p.ko + ')</b> · 목표수익률 ' + p.targetReturn + '%/yr · 허용 최대낙폭 ' + p.maxDrawdown + '% · 30대 risk-on 성향, ISA/연금 구조적 방어 반영';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderSAATarget() {
+  var el = document.getElementById('wm-saa-target');
+  if (!el) return;
+  var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
+  var saa = p.saa;
+  var ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+
+  var html = '<div style="display:flex;flex-direction:column;gap:6px">';
+  ORDER.forEach(function(k) {
+    var pct = saa[k] || 0;
+    var role = ASSET_ROLE[k];
+    var col = CLS_COLOR[k] || '#9ca3af';
+    // TAA 조정값
+    var taaAdj = 0;
+    TAA_HOUSE_VIEW.views.forEach(function(v){ if(v.asset===k) taaAdj = v.adj; });
+    var taaPct = pct + taaAdj;
+    html += '<div style="padding:8px 12px;background:var(--bg);border-radius:7px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">';
+    html += '<span style="font-size:13px">' + role.icon + '</span>';
+    html += '<span style="font-size:12px;font-weight:700;flex:1">' + ASSET_LABEL_KO[k] + '</span>';
+    html += '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:' + col + '22;color:' + col + '">' + role.role + '</span>';
+    html += '<span style="font-size:13px;font-weight:800;color:' + col + ';min-width:35px;text-align:right">' + pct + '%</span>';
+    if (taaAdj !== 0) html += '<span style="font-size:10px;font-weight:700;color:' + (taaAdj>0?'var(--green)':'var(--red)') + '">' + (taaAdj>0?'+':'') + taaAdj + '%p→' + taaPct + '%</span>';
+    html += '</div>';
+    html += '<div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">';
+    html += '<div style="height:100%;width:' + Math.min(taaPct,100) + '%;background:' + col + ';border-radius:3px;transition:width .5s"></div></div>';
+    html += '<div style="font-size:10px;color:var(--text3);margin-top:3px">' + role.desc + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderTAAView() {
+  var el = document.getElementById('wm-taa-view');
+  var dateEl = document.getElementById('taa-update-date');
+  if (!el) return;
+  if (dateEl) dateEl.textContent = TAA_HOUSE_VIEW.updated + ' 업데이트';
+
+  var stanceLabel = { overweight:'비중확대', neutral:'중립', underweight:'비중축소' };
+  var stanceColor = { overweight:'var(--green)', neutral:'var(--text3)', underweight:'var(--red)' };
+  var stanceBg    = { overweight:'var(--green-l)', neutral:'var(--bg)', underweight:'var(--red-l)' };
+
+  var html = '<div style="padding:9px 14px;background:var(--yellow-l);border-radius:7px;border-left:3px solid var(--yellow);font-size:12px;color:var(--text2);margin-bottom:12px">';
+  html += '<b>매크로 요약:</b> ' + TAA_HOUSE_VIEW.macro_summary;
+  html += '</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
+  TAA_HOUSE_VIEW.views.forEach(function(v) {
+    var role = ASSET_ROLE[v.asset];
+    var col  = CLS_COLOR[v.asset] || '#9ca3af';
+    var sc   = stanceColor[v.stance];
+    var sb   = stanceBg[v.stance];
+    var sl   = stanceLabel[v.stance];
+    var p    = WM_PROFILES[INVESTOR_PROFILE_SCORE-1].saa[v.asset] || 0;
+    var tp   = p + v.adj;
+    html += '<div style="padding:10px 12px;background:' + sb + ';border-radius:8px;border-left:3px solid ' + sc + '">';
+    html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+    html += '<span>' + role.icon + '</span>';
+    html += '<span style="font-size:12px;font-weight:700;flex:1">' + ASSET_LABEL_KO[v.asset] + '</span>';
+    html += '<span style="font-size:10px;font-weight:700;color:' + sc + ';padding:2px 7px;background:' + sb + ';border-radius:10px">' + sl + '</span>';
+    html += '</div>';
+    if (v.adj !== 0) {
+      html += '<div style="font-size:11px;font-weight:700;color:' + sc + ';margin-bottom:3px">SAA ' + p + '% → TAA ' + tp + '% (' + (v.adj>0?'+':'') + v.adj + '%p)</div>';
+    } else {
+      html += '<div style="font-size:11px;color:var(--text3);margin-bottom:3px">SAA ' + p + '% 유지</div>';
+    }
+    html += '<div style="font-size:11px;color:var(--text2);line-height:1.5">' + v.reason + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderGapAnalysis() {
+  var el = document.getElementById('wm-gap-analysis');
+  if (!el) return;
+  if (!P) {
+    el.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-icon">📊</div>포트폴리오 데이터를 입력하면 현재 vs 목표 갭을 분석합니다</div>';
+    return;
+  }
+
+  var tot = totalWithCash();
+  var bd  = Object.assign({}, classBreakdown());
+  bd.cash = (P.cash && P.cash.available) ? P.cash.available : 0;
+
+  var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
+  var ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+
+  var rows = '';
+  var actions = [];
+  ORDER.forEach(function(k) {
+    var curAmt = bd[k] || 0;
+    var curPct = tot ? (curAmt/tot)*100 : 0;
+    var saaPct = p.saa[k] || 0;
+    var taaAdj = 0;
+    TAA_HOUSE_VIEW.views.forEach(function(v){ if(v.asset===k) taaAdj = v.adj; });
+    var targetPct = saaPct + taaAdj;
+    var gap = curPct - targetPct;
+    var gapAmt = (gap/100) * tot;
+    var role = ASSET_ROLE[k];
+    var col  = CLS_COLOR[k] || '#9ca3af';
+    var gapColor = Math.abs(gap) < 3 ? 'var(--text3)' : gap > 0 ? 'var(--red)' : 'var(--green)';
+    var action = Math.abs(gap) < 3 ? '유지' : gap > 5 ? '축소' : gap > 0 ? '소폭축소' : gap < -5 ? '확대' : '소폭확대';
+    var actionColor = action==='유지'?'var(--text3)': (action.includes('축소')?'var(--red)':'var(--green)');
+    if (Math.abs(gap) >= 5) actions.push({ k, action, gap, gapAmt, role });
+
+    rows += '<tr>';
+    rows += '<td><span style="display:inline-flex;align-items:center;gap:5px"><span style="font-size:12px">' + role.icon + '</span><span style="font-weight:600">' + ASSET_LABEL_KO[k] + '</span></span></td>';
+    rows += '<td style="font-size:10px;color:var(--text3)">' + role.role + '</td>';
+    rows += '<td style="font-weight:700">' + curPct.toFixed(1) + '%</td>';
+    rows += '<td style="color:var(--text2)">' + saaPct + '%</td>';
+    rows += '<td style="color:var(--accent);font-weight:600">' + targetPct + '%</td>';
+    rows += '<td style="font-weight:700;color:' + gapColor + '">' + (gap>0?'+':'') + gap.toFixed(1) + '%p</td>';
+    rows += '<td style="font-weight:600;color:' + actionColor + '">' + action + '</td>';
+    rows += '<td style="font-size:11px;color:var(--text2)">' + (Math.abs(gap)>=3 ? fmt(Math.abs(gapAmt)) : '—') + '</td>';
+    rows += '</tr>';
+  });
+
+  var actionBanner = '';
+  if (actions.length > 0) {
+    actionBanner = '<div style="margin-bottom:12px;padding:10px 14px;background:var(--yellow-l);border:1px solid var(--yellow);border-radius:8px;font-size:12px">';
+    actionBanner += '<b>우선 조정 필요 (±5%p 초과):</b> ';
+    actionBanner += actions.map(function(a) {
+      return a.role.icon + ' ' + ASSET_LABEL_KO[a.k] + ' ' + a.action + ' ' + (a.gap>0?'+':'') + a.gap.toFixed(1) + '%p (' + fmt(Math.abs(a.gapAmt)) + ')';
+    }).join(' &nbsp;·&nbsp; ');
+    actionBanner += '</div>';
+  } else {
+    actionBanner = '<div style="margin-bottom:12px;padding:10px 14px;background:var(--green-l);border-radius:8px;font-size:12px;color:var(--green);font-weight:600">✓ 모든 자산군이 SAA+TAA 목표 ±5%p 내에 있습니다</div>';
+  }
+
+  el.innerHTML = actionBanner +
+    '<div style="overflow-x:auto"><table class="rtable">' +
+    '<thead><tr><th>자산군</th><th>역할</th><th>현재%</th><th>SAA%</th><th>TAA목표%</th><th>갭</th><th>액션</th><th>금액</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table></div>' +
+    '<div style="margin-top:8px;font-size:11px;color:var(--text3)">TAA 목표 = SAA + House View 조정 · 갭 ±3%p 이내는 허용 범위 · ±5%p 초과 시 조정 검토</div>';
+}
+
+
+
+function getBucketTag(acct) {
+  for (var i = 0; i < BUCKETS.length; i++) {
+    if (BUCKETS[i].acctTypes.indexOf(acct.type) !== -1) {
+      return BUCKETS[i].icon + ' ' + BUCKETS[i].name;
+    }
+  }
+  return '';
+}
+
+// ══════════════════════════════════════════
+// 1. 목표 버킷 렌더
+// ══════════════════════════════════════════
+function renderBuckets() {
+  var el = document.getElementById('bucketList');
+  if (!el) return;
+  if (!P) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🪣</div>데이터를 입력하면 버킷이 표시됩니다</div>';
+    return;
+  }
+  var tot = totalWithCash();
+  var html = '<div style="display:flex;flex-direction:column;gap:6px">';
+  var totalMapped = 0;
+
+  BUCKETS.forEach(function(b) {
+    var bucketVal = 0;
+    getActiveAccounts().forEach(function(a) {
+      if (b.acctTypes.indexOf(a.type) !== -1) {
+        bucketVal += acctVal(a);
+      }
+    });
+    // cash 버킷은 현금 추가
+    if (b.id === 'safety') bucketVal += (P.cash && P.cash.available ? P.cash.available : 0);
+    totalMapped += bucketVal;
+    var pct = tot ? (bucketVal / tot) * 100 : 0;
+
+    html += '<div style="padding:9px 12px;background:var(--bg);border-radius:8px;border-left:3px solid ' + b.color + '">';
+    html += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">';
+    html += '<span style="font-size:14px">' + b.icon + '</span>';
+    html += '<span style="font-size:12px;font-weight:700;flex:1">' + b.name + '</span>';
+    html += '<span style="font-size:11px;color:var(--text3)">' + b.horizon + '</span>';
+    html += '<span style="font-size:13px;font-weight:800;color:' + b.color + '">' + (bucketVal > 0 ? fmt(bucketVal) : '—') + '</span>';
+    html += '</div>';
+    if (bucketVal > 0) {
+      html += '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:3px">';
+      html += '<div style="height:100%;width:' + Math.min(pct, 100).toFixed(0) + '%;background:' + b.color + ';border-radius:2px;transition:width .5s"></div></div>';
+    }
+    html += '<div style="font-size:10px;color:var(--text3)">' + b.purpose + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+// 2. 리스크 한도 체크 (룰 엔진 보조)
+// ══════════════════════════════════════════
+function checkRiskLimits() {
+  if (!P) return [];
+  var alerts = [];
+  var tot = totalWithCash();
+  var bd  = classBreakdown();
+
+  // 단일 종목 집중도
+  getActiveAccounts().forEach(function(a) {
+    (a.assets || []).forEach(function(h) {
+      if (h.amount && tot) {
+        var pct = (h.amount / tot) * 100;
+        if (pct > RISK_LIMITS.single_stock_max) {
+          alerts.push({
+            priority: 'HIGH',
+            account: a.name,
+            title: h.name + ' 단일 종목 집중 ' + pct.toFixed(1) + '% — 분산 검토',
+            reason: '단일 종목 ' + RISK_LIMITS.single_stock_max + '% 상한 초과 · WM 리스크 버짓 기준 · 비중 축소 또는 ETF 전환 고려',
+            amount: Math.round(((pct - RISK_LIMITS.single_stock_max) / 100) * tot)
+          });
+        }
+      }
+    });
+  });
+
+  // BTC 비중 한도
+  var cryptoPct = tot ? ((bd.crypto || 0) / tot) * 100 : 0;
+  if (cryptoPct > RISK_LIMITS.crypto_max) {
+    alerts.push({
+      priority: 'MEDIUM',
+      account: '업비트',
+      title: 'BTC 비중 ' + cryptoPct.toFixed(1) + '% — 위성 한도(' + RISK_LIMITS.crypto_max + '%) 초과',
+      reason: '위성 자산 상한 초과 · 초과분 ' + fmt(((cryptoPct - RISK_LIMITS.crypto_max) / 100) * tot) + ' · 일부 차익실현 후 코어 자산 편입 검토',
+      amount: Math.round(((cryptoPct - RISK_LIMITS.crypto_max) / 100) * tot)
+    });
+  }
+
+  // USD 익스포저 한도
+  var usdPct = usdExposure();
+  if (usdPct > RISK_LIMITS.usd_exposure_max) {
+    alerts.push({
+      priority: 'MEDIUM',
+      account: '전체',
+      title: 'USD 익스포저 ' + usdPct.toFixed(0) + '% — 환율 의존도 경고',
+      reason: 'USD 노출 ' + RISK_LIMITS.usd_exposure_max + '% 상한 초과 · 환율 급등락 시 포트폴리오 변동성 확대 · 원화 자산 비중 점검',
+      amount: 0
+    });
+  }
+
+  // 주식 총합 한도
+  var equityTotal = tot ? (((bd.equity_us || 0) + (bd.equity_kr || 0)) / tot) * 100 : 0;
+  if (equityTotal > RISK_LIMITS.equity_total_max) {
+    alerts.push({
+      priority: 'MEDIUM',
+      account: '전체',
+      title: '주식 총비중 ' + equityTotal.toFixed(1) + '% — Growth 등급 상한(' + RISK_LIMITS.equity_total_max + '%) 초과',
+      reason: 'Growth 프로파일 주식 상한 초과 · 방어자산(채권·원자재) 비중 확대 필요 · ISA/연금 내 교체 우선',
+      amount: 0
+    });
+  }
+
+  return alerts;
+}
+
+// ══════════════════════════════════════════
+// 3. 매도 회피 로직 (2단계 판단)
+// ══════════════════════════════════════════
+function assessRebalancingMethod(assetKey, deficitAmt) {
+  // 신규자금으로 해결 가능한지 먼저 판단
+  var cash = P && P.cash ? (P.cash.available || 0) : 0;
+  var tax  = getTaxBenefitStatus();
+  var isaRemain = tax && tax.isa ? (tax.isa.remain || 0) : 0;
+
+  var loc = ASSET_LOCATION[assetKey] || {};
+  var bestAcct = loc.best || 'ISA';
+  var hint = ASSET_BUY_HINT[assetKey] || '';
+
+  if (deficitAmt <= 0) return null;
+
+  // Step 1: 신규자금(현금)으로 해결 가능?
+  if (cash >= deficitAmt * 0.5) {
+    return {
+      method: 'NEW_CASH',
+      label: '신규자금 투입',
+      detail: '현금 ' + fmt(cash) + ' 중 ' + fmt(deficitAmt) + ' 투입 · 매도 불필요 · 세금 0',
+      acct: bestAcct,
+      hint: hint,
+      taxSaving: 0
+    };
+  }
+
+  // Step 2: ISA/연금 내 교체로 해결 가능?
+  if (isaRemain > deficitAmt * 0.3) {
+    return {
+      method: 'ISA_SWITCH',
+      label: 'ISA/연금 내 전환',
+      detail: 'ISA 잔여한도 ' + fmt(isaRemain) + ' · 기존 자산 교체 · 세금 0',
+      acct: 'ISA',
+      hint: hint,
+      taxSaving: 0
+    };
+  }
+
+  // Step 3: 매도 불가피
+  var estimatedTax = assetKey === 'equity_us' ? deficitAmt * 0.22 * 0.3 : 0; // rough estimate
+  return {
+    method: 'SELL',
+    label: '매도 필요 (세금 주의)',
+    detail: '신규자금·ISA 부족 · 일반계좌 매도 검토 · 추정 세금 ' + (estimatedTax > 0 ? fmt(estimatedTax) : '확인필요'),
+    acct: '일반계좌',
+    hint: '손실 자산 먼저 매도(손익통산) · ISA 대체 매수 가능 여부 확인',
+    taxSaving: -estimatedTax
+  };
+}
+
+// ══════════════════════════════════════════
+// 4. TAA → ASSET_TARGETS 자동 연결
+// ══════════════════════════════════════════
+function syncTAAtoTargets() {
+  // TAA House View의 조정을 SAA에 더해 current target에 반영
+  var prof = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
+  var newTarget = {};
+  var ORDER = ['equity_us', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
+
+  ORDER.forEach(function(k) {
+    var saa = prof.saa[k] || 0;
+    var taaAdj = 0;
+    TAA_HOUSE_VIEW.views.forEach(function(v) { if (v.asset === k) taaAdj = v.adj; });
+    newTarget[k] = Math.max(0, saa + taaAdj);
+  });
+
+  // 합계 100% 맞추기 (반올림 오차 보정)
+  var total = Object.values(newTarget).reduce(function(a, b) { return a + b; }, 0);
+  if (total !== 100) {
+    newTarget.cash = Math.max(0, (newTarget.cash || 0) + (100 - total));
+  }
+
+  // ASSET_TARGETS.current를 TAA 반영값으로 업데이트
+  ASSET_TARGETS.current = newTarget;
+
+  // 리밸런싱 페이지 배지 업데이트
+  var badge = document.getElementById('taa-sync-badge');
+  if (badge) badge.textContent = 'TAA 반영 (' + TAA_HOUSE_VIEW.updated + ')';
+}
+
+// ══════════════════════════════════════════
+// MACRO PAGE
+// ══════════════════════════════════════════
+function renderMacroPage() { updateBTC(); updateFG(); renderRates(); renderCrypto(); }
+
+// ══════════════════════════════════════════
+// MARKET DATA FETCH
+// ══════════════════════════════════════════
+async function fetchBTC() {
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=krw,usd&include_24hr_change=true');
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    M.btc = d.bitcoin; M.eth = d.ethereum; M.sol = d.solana;
+    M.crypto = [
+      {...d.bitcoin, name:'Bitcoin', sym:'BTC', icon:'₿'},
+      {...d.ethereum, name:'Ethereum', sym:'ETH', icon:'Ξ'},
+      {...d.solana, name:'Solana', sym:'SOL', icon:'◎'}
+    ];
+    updateBTC(); renderCrypto();
+    renderHome();
+  } catch(e) { console.error('[BTC]', e); showToast('⚠ BTC 시세 로드 실패'); }
+}
+
+async function fetchFX() {
+  try {
+    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    M.fx = d.rates?.KRW;
+    renderHome();
+    updateFXDisplay();
+  } catch(e) { console.error('[FX]', e); showToast('⚠ 환율 데이터 로드 실패'); }
+}
+
+async function fetchFG() {
+  try {
+    const r = await fetch('https://api.alternative.me/fng/?limit=3');
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    if(d.data?.[0]) {
+      const s = parseInt(d.data[0].value);
+      const label = s<=20?'극도의 공포':s<=40?'공포':s<=60?'중립':s<=80?'탐욕':'극도의 탐욕';
+      const color = s<=20?'var(--red)':s<=40?'var(--orange)':s<=60?'var(--text2)':s<=80?'var(--green)':'#059669';
+      M.fg = {score:s, label, color, history:d.data.slice(1)};
+      updateFG(); renderHome();
+    }
+  } catch(e) { console.error('[F&G]', e); showToast('⚠ Fear & Greed 로드 실패'); }
+}
+
+async function fetchFRED() {
+  const key = localStorage.getItem('fredApiKey')||'';
+  if(!key) return;
+  const series = [{id:'DGS10',name:'미국채 10Y',key:'t10y'},{id:'DGS2',name:'미국채 2Y',key:'t2y'},{id:'FEDFUNDS',name:'연방기금금리',key:'ffr'},{id:'DGS30',name:'미국채 30Y',key:'t30y'}];
+  for(const s of series) {
+    try {
+      const r = await fetch(`https://api.stlouisfed.org/fred/series/observations?series_id=${s.id}&api_key=${key}&file_type=json&limit=2&sort_order=desc`);
+      const d = await r.json();
+      const obs = d.observations?.filter(o=>o.value!=='.')||[];
+      if(obs.length>=2) M.rates[s.key] = {value:parseFloat(obs[0].value),change:parseFloat(obs[0].value)-parseFloat(obs[1].value),name:s.name};
+    } catch(e) {}
+  }
+  renderRates();
+  const t10=M.rates.t10y;
+  if(t10){document.getElementById('m-t10').textContent=t10.value.toFixed(2)+'%';document.getElementById('m-t10-sub').textContent=t10.value>4?'고금리 구간':'중립 구간';}
+}
+
+async function fetchIndices() {
+  // yfinance 대신 간단히 CoinGecko에서 가져올 수 없으니 — TradingView 위젯이 담당
+  // 나스닥/S&P는 FRED나 Yahoo Finance 비공식 엔드포인트 시도
+  try {
+    // S&P500 (SPY 기준 — 비공식)
+    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=5d');
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    const prices = d.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+    if(prices && prices.length >= 2) {
+      const last = prices[prices.length-1], prev = prices[prices.length-2], first = prices[0];
+      M.sp500 = { price:last, change1d:(last-prev)/prev, change5d:(last-first)/first };
+    }
+  } catch(e) { console.error('[S&P500]', e); }
+  try {
+    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EIXIC?interval=1d&range=5d');
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    const prices = d.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+    if(prices && prices.length >= 2) {
+      const last = prices[prices.length-1], prev = prices[prices.length-2], first = prices[0];
+      M.nasdaq = { price:last, change1d:(last-prev)/prev, change5d:(last-first)/first };
+    }
+  } catch(e) { console.error('[NASDAQ]', e); }
+  renderHome();
+}
+
+function updateBTC() {
+  if(!M.btc) return;
+  const p=M.btc.krw, c=M.btc.krw_24h_change||0;
+  const pStr = p>=1e8?'₩'+(p/1e8).toFixed(2)+'억':'₩'+Math.round(p/1e4)+'만';
+  const cStr = pct(c)+' (24h)';
+  ['m-btc','a-btc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=pStr;});
+  ['m-btc-chg','a-btc-chg'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=cStr;el.className='kpi-sub '+(c>=0?'pos':'neg');}});
+}
+
+function updateFXDisplay() {
+  if(!M.fx) return;
+  document.getElementById('m-fx').textContent = Math.round(M.fx).toLocaleString()+'원';
+  renderRates();
+}
+
+function updateFG() {
+  if(!M.fg) return;
+  const {score,label,color} = M.fg;
+  ['m-fg','fgNum'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=score;el.style.color=color;}});
+  ['m-fg-lbl','fgLbl'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=label;el.style.color=color;}});
+  // Arc
+  const svg=document.getElementById('fgArc'); if(!svg)return;
+  const cx=90,cy=90,r=70,sa=Math.PI,ea=2*Math.PI;
+  const sax=cx+r*Math.cos(sa),say=cy+r*Math.sin(sa),eax=cx+r*Math.cos(ea),eay=cy+r*Math.sin(ea);
+  const va=sa+(score/100)*(ea-sa),vx=cx+r*Math.cos(va),vy=cy+r*Math.sin(va);
+  svg.innerHTML=`<defs><linearGradient id="fg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#dc2626"/><stop offset="50%" stop-color="#d97706"/><stop offset="100%" stop-color="#059669"/></linearGradient></defs>
+    <path d="M ${sax} ${say} A ${r} ${r} 0 0 1 ${eax} ${eay}" fill="none" stroke="var(--bg)" stroke-width="12" stroke-linecap="round"/>
+    <path d="M ${sax} ${say} A ${r} ${r} 0 ${score>50?1:0} 1 ${vx} ${vy}" fill="none" stroke="url(#fg)" stroke-width="12" stroke-linecap="round" opacity=".9"/>
+    <circle cx="${vx}" cy="${vy}" r="5" fill="${color}"/>
+    <text x="${cx-r+5}" y="${cy-8}" font-size="9" fill="var(--text3)" font-family="Pretendard">공포</text>
+    <text x="${cx+r-30}" y="${cy-8}" font-size="9" fill="var(--text3)" font-family="Pretendard">탐욕</text>`;
+  if(M.fg.history?.length) {
+    document.getElementById('fgHist').innerHTML = M.fg.history.slice(0,2).map((h,i)=>`
+      <div class="fg-hi"><div class="fg-hi-lbl">${i===0?'1주 전':'1달 전'}</div><div class="fg-hi-val">${h.value}</div></div>`).join('');
+  }
+}
+
+function renderRates() {
+  const el = document.getElementById('rateList'); if(!el) return;
+  const items = [];
+  if(M.fx) items.push({name:'USD/KRW',ticker:'환율',value:Math.round(M.fx).toLocaleString()+'원',change:null,color:'var(--accent)'});
+  Object.values(M.rates).forEach(r => { items.push({name:r.name,ticker:'FRED',value:r.value.toFixed(2)+'%',change:r.change,color:r.value>4?'var(--red)':r.value>3?'var(--yellow)':'var(--green)'}); });
+  el.innerHTML = items.length ? items.map(item=>`
+    <div class="rate-row">
+      <div><div class="rate-name">${item.name}</div><div class="rate-ticker">${item.ticker}</div></div>
+      <div style="text-align:right"><div class="rate-val" style="color:${item.color}">${item.value}</div>${item.change!=null?`<div class="rate-chg ${item.change>=0?'pos':'neg'}">${(item.change>=0?'+':'')+item.change.toFixed(3)}</div>`:''}</div>
+    </div>`).join('') : '<div style="text-align:center;color:var(--text3);font-size:12px;padding:16px">FRED API 키 설정 시 금리 데이터 표시</div>';
+}
+
+function renderCrypto() {
+  const el = document.getElementById('cryptoGrid'); if(!el||!M.crypto?.length) return;
+  el.innerHTML = M.crypto.map(c=>{
+    const p=c.krw,chg=c.krw_24h_change||0;
+    const pStr=p>=1e8?'₩'+(p/1e8).toFixed(2)+'억':p>=1e4?'₩'+Math.round(p/1e4)+'만':'₩'+Math.round(p).toLocaleString();
+    return `<div class="crypto-item"><div class="crypto-top"><span class="crypto-icon">${c.icon}</span><div><div class="crypto-name">${c.name}</div><div class="crypto-sym">${c.sym}</div></div></div><div class="crypto-price">${pStr}</div><div class="crypto-chg ${chg>=0?'pos':'neg'}">${pct(chg)}</div></div>`;
+  }).join('');
+}
+
+async function refreshAll() {
+  showToast('↻ 시세 갱신 중...');
+  await Promise.all([fetchBTC(),fetchFX(),fetchFG(),fetchIndices(),fetchFRED()]);
+  showToast('✓ 갱신 완료');
+}
+
+// ══════════════════════════════════════════
+// AI
+
 // ══════════════════════════════════════════
 // DATA MODAL
 // ══════════════════════════════════════════
