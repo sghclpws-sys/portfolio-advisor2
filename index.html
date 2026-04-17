@@ -414,7 +414,7 @@ body {
     <div class="nav-item" data-page="macro"><span class="nav-icon">◎</span>매크로</div>
     <div class="nav-section">전략</div>
     <div class="nav-item" data-page="analytics"><span class="nav-icon">◈</span>투자 분석</div>
-    <div class="nav-item" data-page="strategy"><span class="nav-icon">◫</span>투자 원칙</div>
+    <div class="nav-item" data-page="strategy"><span class="nav-icon">◫</span>WM 전략</div>
     <div class="nav-item" data-page="ai"><span class="nav-icon">✦</span>AI 어드바이저</div>
   </div>
   <div class="sidebar-footer">
@@ -451,12 +451,25 @@ body {
     <div class="main-grid">
       <div class="left-col">
 
+        <!-- 목표 버킷 (Morgan Stanley Goals Planning 방식) -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-hd">
+            <div>
+              <div class="card-title">목표 버킷</div>
+              <div class="card-sub">계좌 → 목적 기반 재분류 · 버킷별 현재 금액 · 역할 확인</div>
+            </div>
+          </div>
+          <div class="card-body" id="bucketList">
+            <div class="empty"><div class="empty-icon">🪣</div>데이터를 입력하면 버킷이 표시됩니다</div>
+          </div>
+        </div>
+
         <!-- 액션 리스트 -->
         <div class="card">
           <div class="card-hd">
             <div>
               <div class="card-title">지금 할 일</div>
-              <div class="card-sub">룰 기반 자동 도출 · SAA 드리프트 감지 · 세금 효율 순서 반영</div>
+              <div class="card-sub">WM 룰 엔진 · SAA+TAA 드리프트 · 매도회피 우선 · 세금효율 순서</div>
             </div>
             <button class="btn btn-outline btn-sm" onclick="recalcActions()">↻ 재계산</button>
           </div>
@@ -553,12 +566,12 @@ body {
   <div class="content page" id="page-rebalance">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent)">
-        <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:2px">SAA RULE</div>
-        ±5% 드리프트 감지 시 즉시 실행 · ISA→연금→일반 순서 · 감정 개입 금지
+        <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:2px">SAA+TAA RULE</div>
+        ±5%p 드리프트 감지 시 실행 · <span id="taa-sync-badge" style="color:var(--accent)">TAA 연동 중...</span>
       </div>
       <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--green)">
-        <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:2px">EXECUTION RULE</div>
-        추가자금 우선 → 세제 계좌 교체 → 최후 수단만 일반계좌 매도
+        <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:2px">매도 회피 우선순위</div>
+        ① 신규자금 투입 → ② ISA/연금 내 전환 → ③ 불가피 시만 일반계좌 매도
       </div>
     </div>
     <div class="card" style="margin-bottom:14px">
@@ -663,11 +676,22 @@ body {
   <div class="content page" id="page-analytics">
 
     <!-- ① 투자자 파라미터 설정 -->
+    <!-- 시장 컨텍스트 배너 -->
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:11px">
+      <div><div style="color:var(--text3);font-weight:600;margin-bottom:2px">CAPE (Shiller PE)</div><div style="font-weight:700;font-size:14px;color:var(--red)">36.5</div><div style="color:var(--text3)">역사적 상위권 · EY=2.74%</div></div>
+      <div><div style="color:var(--text3);font-weight:600;margin-bottom:2px">VIX (내재변동성)</div><div style="font-weight:700;font-size:14px;color:var(--green)">~18</div><div style="color:var(--text3)">낮음 · 장기평균 20 · 최근 高 35.8</div></div>
+      <div><div style="color:var(--text3);font-weight:600;margin-bottom:2px">10Y 국채금리</div><div style="font-weight:700;font-size:14px;color:var(--accent)">4.30%</div><div style="color:var(--text3)">r_f 기준 · 2Y=3.81% (정상화)</div></div>
+      <div><div style="color:var(--text3);font-weight:600;margin-bottom:2px">Forward ERP</div><div style="font-weight:700;font-size:14px;color:var(--orange)">−1.6%</div><div style="color:var(--text3)">EY−r_f · 밸류 부담 구간</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);padding:8px 14px;background:var(--yellow-l);border-radius:8px;margin-bottom:14px;line-height:1.6">
+      <b>2026-04-17 파라미터 업데이트</b> · CAPE=36.5 기반 Shiller μ ≈ 7.2~8.0% · VIX=18로 σ=17% 적용 · λ=2.5 (30대 risk-on) · <b>→ w* = ~51%</b> (이전 설정 26.5%에서 상향)
+    </div>
+
     <div class="card" style="margin-bottom:14px">
       <div class="card-hd">
         <div>
           <div class="card-title">투자자 파라미터</div>
-          <div class="card-sub">Merton Framework · 위험회피계수 λ · 기대수익률 μ · 변동성 σ</div>
+          <div class="card-sub">Merton Framework · 분기 1회 리뷰 권장 · 2026-04-17 시장 데이터 반영</div>
         </div>
         <button class="btn btn-primary btn-sm" onclick="runAnalytics()">전체 분석 실행</button>
       </div>
@@ -675,8 +699,8 @@ body {
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
           <div>
             <div class="calc-lbl">위험회피계수 λ (1~10)</div>
-            <input class="calc-input" id="an-lambda" type="number" min="1" max="10" step="0.5" value="3" oninput="runAnalytics()">
-            <div style="font-size:10px;color:var(--text3);margin-top:3px">공격형=2~3.5 · 중립=3~5 · 보수=5~8</div>
+            <input class="calc-input" id="an-lambda" type="number" min="1" max="10" step="0.5" value="2.5" oninput="runAnalytics()">
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">공격형 2~3 · 중립 3~5 · 보수 5~8 · 현재 설정: 2.5</div>
           </div>
           <div>
             <div class="calc-lbl">주식 기대수익률 μ (%/yr)</div>
@@ -685,13 +709,13 @@ body {
           </div>
           <div>
             <div class="calc-lbl">무위험수익률 r_f (%/yr)</div>
-            <input class="calc-input" id="an-rf" type="number" min="0" max="10" step="0.1" value="4.5" oninput="runAnalytics()">
-            <div style="font-size:10px;color:var(--text3);margin-top:3px">미국채 10Y 현재값 자동반영</div>
+            <input class="calc-input" id="an-rf" type="number" min="0" max="10" step="0.1" value="4.3" oninput="runAnalytics()">
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">2026-04-17 현재 4.30% · FRED 자동반영</div>
           </div>
           <div>
             <div class="calc-lbl">주식 변동성 σ (%/yr)</div>
-            <input class="calc-input" id="an-sigma" type="number" min="5" max="50" step="0.5" value="21" oninput="runAnalytics()">
-            <div style="font-size:10px;color:var(--text3);margin-top:3px">S&P ~18%, 나스닥/성장주 중심 시 20~22% 권장</div>
+            <input class="calc-input" id="an-sigma" type="number" min="5" max="50" step="0.5" value="17" oninput="runAnalytics()">
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">VIX=18 낮은 변동성 국면 · S&P장기 17% 적용</div>
           </div>
         </div>
         <!-- 파라미터 해석 배너 -->
@@ -706,7 +730,7 @@ body {
         <div class="card-hd">
           <div>
             <div class="card-title">Merton Optimal Weight</div>
-            <div class="card-sub">w* = (μ − r_f) / (λ · σ²)</div>
+            <div class="card-sub">w* = (μ − r_f) / (λ · σ²) · <b>w* &gt; 현재주식비중</b>이면 추가 매수 여력, <b>w* &lt; 현재</b>이면 과다 노출</div>
           </div>
           <span id="an-merton-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--accent-l);color:var(--accent)">계산 중</span>
         </div>
@@ -720,7 +744,7 @@ body {
         <div class="card-hd">
           <div>
             <div class="card-title">Sharpe Ratio · 포트폴리오 평가</div>
-            <div class="card-sub">SR = (μ_p − r_f) / σ_p · 현재 vs 최적</div>
+            <div class="card-sub">SR = (μ_p − r_f) / σ_p · SR &gt; 0.5 양호 · 높을수록 위험 대비 수익 효율적 · 포트폴리오 구조 개선 기준</div>
           </div>
         </div>
         <div class="card-body">
@@ -735,7 +759,7 @@ body {
       <div class="card-hd">
         <div>
           <div class="card-title">투자 효용 (Utility) 분석</div>
-          <div class="card-sub">U = μ_p − ½ · λ · σ_p² · Certainty Equivalent Return · 비중별 효용 곡선</div>
+          <div class="card-sub">U = μ_p − ½λσ_p² · U가 최대인 비중 = 내 위험성향 기준 최적점 · 현재 비중이 곡선 어디에 있는지 확인</div>
         </div>
       </div>
       <div class="card-body">
@@ -754,7 +778,7 @@ body {
       <div class="card-hd">
         <div>
           <div class="card-title">목표 기반 시뮬레이터</div>
-          <div class="card-sub">현재 자산 + 월 투자금 → 목표 달성 가능성 · Monte Carlo (1,000회)</div>
+          <div class="card-sub">GBM 기반 1,000회 시뮬레이션 · P50(중앙값)이 목표 초과 시 달성 가능 · 달성 확률 70%+ 목표</div>
         </div>
       </div>
       <div class="card-body">
@@ -782,7 +806,7 @@ body {
       <div class="card-hd">
         <div>
           <div class="card-title">Risk-Adjusted Decision Matrix</div>
-          <div class="card-sub">현재 포트폴리오 vs 최적 포트폴리오 · 효용 손실(Utility Cost) 정량화</div>
+          <div class="card-sub">Utility Cost = 비최적 포지션 유지의 연간 기회비용 · 리밸런싱 여부를 숫자로 판단하는 기준</div>
         </div>
       </div>
       <div class="card-body" id="an-decision-body">
@@ -794,54 +818,108 @@ body {
 
   <!-- ══ STRATEGY ══ -->
   <div class="content page" id="page-strategy">
-    <div class="strategy-grid">
-      <div>
-        <div class="card" style="margin-bottom:14px">
-          <div class="card-hd"><div class="card-title">투자 원칙</div></div>
-          <div class="card-body">
-            <div class="p-item"><div class="p-num">01</div><div><div class="p-title">성장 중심 포트폴리오</div><div class="p-desc">mid-30s, risk-on. 미국 주식 우상향 전제.</div></div></div>
-            <div class="p-item"><div class="p-num">02</div><div><div class="p-title">환율 헤지</div><div class="p-desc">원화 약세 → USD 익스포저 확대 전략 유지.</div></div></div>
-            <div class="p-item"><div class="p-num">03</div><div><div class="p-title">계좌별 목적 분리</div><div class="p-desc">ISA: 세제+캐시플로우 / 연금: 방어 / 일반: 공격.</div></div></div>
-            <div class="p-item"><div class="p-num">04</div><div><div class="p-title">매도 최소화</div><div class="p-desc">기존 포지션 유지. 추가자금으로 비중 조정.</div></div></div>
-            <div class="p-item"><div class="p-num">05</div><div><div class="p-title">데이터 기반 결정</div><div class="p-desc">감정 배제. DCA. 매크로 환경 반영.</div></div></div>
+
+    <!-- ① Risk Profile -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="card">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">Risk Profile</div>
+            <div class="card-sub">UBS/GS/JPM 기준 5등급 분류 · 투자자 등급이 SAA 목표를 결정</div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-hd"><div class="card-title">매크로 뷰</div></div>
-          <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
-            <div style="padding:10px 14px;background:var(--bg);border-radius:7px;border-left:3px solid var(--accent)"><div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px">미국 금리</div><div style="font-size:12px;color:var(--text2)">금리 고점 → 중장기 하락 사이클. Big Tech valuation 부담 완화 구간.</div></div>
-            <div style="padding:10px 14px;background:var(--bg);border-radius:7px;border-left:3px solid var(--yellow)"><div style="font-size:10px;font-weight:700;color:var(--yellow);margin-bottom:3px">트럼프 정책</div><div style="font-size:12px;color:var(--text2)">보호무역 강화 → 글로벌 변동성. 미국 자산 상대적 우위.</div></div>
-            <div style="padding:10px 14px;background:var(--bg);border-radius:7px;border-left:3px solid var(--green)"><div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:3px">환율</div><div style="font-size:12px;color:var(--text2)">원화 약세 지속 → 해외자산 비중 유지 필수.</div></div>
-            <div style="padding:10px 14px;background:var(--bg);border-radius:7px;border-left:3px solid var(--orange)"><div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:3px">Bitcoin</div><div style="font-size:12px;color:var(--text2)">포트폴리오 다각화 자산. 변동성 높아 소량 헤지 성격.</div></div>
+        <div class="card-body" id="wm-risk-profile"></div>
+      </div>
+
+      <!-- ② SAA 목표 포트폴리오 -->
+      <div class="card">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">SAA 목표 포트폴리오</div>
+            <div class="card-sub">Strategic Asset Allocation · 등급별 장기 목표 · 역할 기반 배분</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="renderWMStrategy()">↻</button>
+        </div>
+        <div class="card-body" id="wm-saa-target"></div>
+      </div>
+    </div>
+
+    <!-- ③ TAA House View -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-hd">
+        <div>
+          <div class="card-title">TAA House View</div>
+          <div class="card-sub">Tactical Asset Allocation · 현재 시장 맥락 기반 SAA 대비 전술적 조정 · 분기 업데이트</div>
+        </div>
+        <span id="taa-update-date" style="font-size:11px;color:var(--text3)"></span>
+      </div>
+      <div class="card-body" id="wm-taa-view"></div>
+    </div>
+
+    <!-- ④ 현재 포트폴리오 vs SAA+TAA -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-hd">
+        <div>
+          <div class="card-title">현재 포트폴리오 vs SAA+TAA 목표</div>
+          <div class="card-sub">현재 비중 · SAA 목표 · TAA 조정 후 목표 · 역할별 갭</div>
+        </div>
+      </div>
+      <div class="card-body" id="wm-gap-analysis"></div>
+    </div>
+
+    <!-- ⑤ 실행 원칙 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="card">
+        <div class="card-hd"><div class="card-title">계좌별 실행 원칙</div></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+            <div style="padding:10px 12px;background:var(--green-l);border-radius:7px;border-left:3px solid var(--green)">
+              <div style="font-weight:700;color:var(--green);margin-bottom:2px">① ISA — 가장 먼저 조정</div>
+              <div style="color:var(--text2)">비과세 계좌. 주식↔채권 자유 전환. 리밸런싱 비용 0.</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--green-l);border-radius:7px;border-left:3px solid var(--green)">
+              <div style="font-weight:700;color:var(--green);margin-bottom:2px">② 연금저축/IRP — 두 번째</div>
+              <div style="color:var(--text2)">과세이연. ETF 간 전환 세금 없음. TDF 자동 리밸런싱 활용.</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--yellow-l);border-radius:7px;border-left:3px solid var(--yellow)">
+              <div style="font-weight:700;color:var(--yellow);margin-bottom:2px">③ 신규 자금 — 우선 활용</div>
+              <div style="color:var(--text2)">추가 매수로 비중 조정. 매도 없이 세금 0. 가장 효율적.</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--red-l);border-radius:7px;border-left:3px solid var(--red)">
+              <div style="font-weight:700;color:var(--red);margin-bottom:2px">④ 일반계좌 — 최후 수단</div>
+              <div style="color:var(--text2)">해외주식 22% 양도세. 손실 자산 먼저 매도(손익통산). 최소화.</div>
+            </div>
           </div>
         </div>
       </div>
-      <div>
-        <div class="card" style="margin-bottom:14px">
-          <div class="card-hd"><div class="card-title">액션 아이템</div></div>
-          <div class="card-body">
-            <label class="todo-item"><input type="checkbox" style="accent-color:var(--accent)"><span class="todo-label">ISA 2,000만원까지 확대</span><span class="todo-pill" style="background:var(--green-l);color:var(--green)">우선</span></label>
-            <label class="todo-item"><input type="checkbox" style="accent-color:var(--accent)"><span class="todo-label">연금저축 600만원 + IRP 300만원</span><span class="todo-pill" style="background:var(--green-l);color:var(--green)">우선</span></label>
-            <label class="todo-item"><input type="checkbox" style="accent-color:var(--accent)"><span class="todo-label">일반계좌 ETF 추가 집행</span><span class="todo-pill" style="background:var(--yellow-l);color:var(--yellow)">검토</span></label>
-            <label class="todo-item"><input type="checkbox" style="accent-color:var(--accent)"><span class="todo-label">금 비중 재점검</span><span class="todo-pill" style="background:var(--yellow-l);color:var(--yellow)">검토</span></label>
-            <label class="todo-item"><input type="checkbox" style="accent-color:var(--accent)"><span class="todo-label">유가 상승 구간 리밸런싱 점검</span><span class="todo-pill" style="background:var(--accent-l);color:var(--accent)">대기</span></label>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-hd"><div class="card-title">리스크 관리</div></div>
-          <div class="card-body" style="display:flex;flex-direction:column">
-            <div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--green)">●</span>단일 자산군 과도 집중 방지</div>
-            <div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--green)">●</span>레버리지 사용 없음</div>
-            <div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--green)">●</span>현금 비중 전략적 유지</div>
-            <div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="color:var(--yellow)">●</span>이벤트 리스크: 금리 / 지정학 / 빅테크 실적</div>
-            <div style="display:flex;gap:8px;align-items:center;padding:8px 0;font-size:12px"><span style="color:var(--yellow)">●</span>DCA — 하락 시 분할매수, 급등 추격 지양</div>
+
+      <div class="card">
+        <div class="card-hd"><div class="card-title">리밸런싱 실행 기준</div></div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+            <div style="padding:10px 12px;background:var(--bg);border-radius:7px">
+              <div style="font-weight:700;margin-bottom:2px">Time-based · 반기 정기 리뷰</div>
+              <div style="color:var(--text2)">6월 · 12월 연 2회. SAA 대비 전체 포트폴리오 점검.</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--bg);border-radius:7px">
+              <div style="font-weight:700;margin-bottom:2px">Threshold-based · ±5% 드리프트</div>
+              <div style="color:var(--text2)">자산군이 SAA 목표 대비 ±5%p 이탈 시 즉시 검토.</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--bg);border-radius:7px">
+              <div style="font-weight:700;margin-bottom:2px">Event-based · 시장 이벤트</div>
+              <div style="color:var(--text2)">급락(-15%+) 또는 급등(+20%+) 시 TAA 재검토.</div>
+            </div>
+            <div style="padding:10px 12px;background:var(--accent-l);border-radius:7px;border-left:3px solid var(--accent)">
+              <div style="font-weight:700;color:var(--accent);margin-bottom:2px">Merton w* 참고</div>
+              <div style="color:var(--text2)">투자분석 페이지의 w*는 위험자산 총 비중 상한 참고값.</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ══ AI ADVISOR ══ -->
+<!-- ══ AI ADVISOR ══ -->
   <div class="content page" id="page-ai">
     <div style="max-width:780px;margin:0 auto">
       <div id="aiCtxBanner" style="background:var(--accent-l);border:1px solid #bfdbfe;border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--accent);display:flex;align-items:center;gap:8px">
@@ -907,7 +985,7 @@ const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#ea
 const CLS_COLOR = { equity_us:'#2563eb', equity_kr:'#059669', bond_us:'#7c3aed', commodity:'#d97706', reit:'#0891b2', crypto:'#ea580c', cash:'#9ca3af', irp:'#65a30d', 기타:'#d1d5db' };
 const CLS_LABEL = { equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', irp:'IRP', fund:'펀드' };
 const ACCT_PURPOSE = { taxable:'일반계좌', isa:'ISA', pension:'연금저축', irp:'IRP', crypto_exchange:'암호화폐' };
-const PAGE_TITLES = { home:'지금 상태', accounts:'계좌 현황', rebalance:'리밸런싱', macro:'매크로', strategy:'전략', analytics:'투자 분석', ai:'AI 어드바이저' };
+const PAGE_TITLES = { home:'지금 상태', accounts:'계좌 현황', rebalance:'리밸런싱', macro:'매크로', strategy:'WM 전략', analytics:'투자 분석', ai:'AI 어드바이저' };
 
 function getAccountRole(a) {
   if (a.display_role) return a.display_role;
@@ -1004,6 +1082,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
     if(id === 'rebalance') renderRebal();
     if(id === 'macro') renderMacroPage();
     if(id === 'ai') renderAIPage();
+    if(id === 'strategy') renderWMStrategy();
     if(id === 'analytics') renderAnalyticsPage();
   });
 });
@@ -1196,9 +1275,10 @@ function runRuleEngine() {
     }
   });
 
-  // RULE 8: SAA Drift 트리거 (핵심 — 자산군 기준)
+  // RULE 8: SAA+TAA Drift 트리거 (TAA 자동 연결)
   const BAND = 5;
   const bd = classBreakdown();
+  // TAA 반영 목표 사용 (syncTAAtoTargets로 업데이트된 값)
   const assetTarget = ASSET_TARGETS.current;
   const ORDER_CHECK = ['equity_us','bond_us','equity_kr','commodity','reit','crypto'];
   ORDER_CHECK.forEach(k => {
@@ -1208,29 +1288,50 @@ function runRuleEngine() {
     if (dev > BAND) {
       actions.push({
         priority: 'HIGH',
-        account: 'SAA 드리프트 감지',
-        title: `${ASSET_LABEL_KO[k]||k} 비중 초과 +${dev.toFixed(1)}% — 매도/축소`,
-        reason: `현재 ${curPct.toFixed(1)}% vs 목표 ${tgtPct}% · 허용 밴드 ±${BAND}% 초과 · ISA/연금 내 전환 우선`,
+        account: 'SAA+TAA 드리프트',
+        title: `${ASSET_ROLE[k]?.icon||''} ${ASSET_LABEL_KO[k]||k} 비중 초과 +${dev.toFixed(1)}%p — 축소 필요`,
+        reason: `현재 ${curPct.toFixed(1)}% vs SAA+TAA 목표 ${tgtPct}% · ±${BAND}%p 초과 · ISA/연금 내 교체 우선 → 매도 최후수단`,
         amount: Math.round((dev/100)*tot)
       });
     } else if (dev < -BAND) {
+      // 매도 회피 로직: 신규자금/ISA 우선 판단
+      const deficitAmt = Math.round((-dev/100)*tot);
+      const rebalMethod = assessRebalancingMethod(k, deficitAmt);
+      const methodLabel = rebalMethod ? ' [' + rebalMethod.label + ']' : '';
+      const methodDetail = rebalMethod ? ' · ' + rebalMethod.detail : '';
+      const locHint = ASSET_LOCATION[k] ? ' · 최적계좌: ' + ASSET_LOCATION[k].best : '';
       actions.push({
         priority: 'HIGH',
-        account: 'SAA 드리프트 감지',
-        title: `${ASSET_LABEL_KO[k]||k} 비중 미달 ${dev.toFixed(1)}% — 매수/확대`,
-        reason: `현재 ${curPct.toFixed(1)}% vs 목표 ${tgtPct}% · 허용 밴드 ±${BAND}% 이탈 · ${ASSET_BUY_HINT[k]||'추가 매수'}`,
-        amount: Math.round((-dev/100)*tot)
+        account: 'SAA+TAA 드리프트',
+        title: `${ASSET_ROLE[k]?.icon||''} ${ASSET_LABEL_KO[k]||k} 비중 미달 ${dev.toFixed(1)}%p${methodLabel}`,
+        reason: `현재 ${curPct.toFixed(1)}% vs SAA+TAA 목표 ${tgtPct}%${methodDetail}${locHint} · ${ASSET_BUY_HINT[k]||'추가 매수'}`,
+        amount: deficitAmt
       });
     }
   });
 
-  // RULE 9: 신호 없음
+  // RULE 9~11: 리스크 한도 경고 (WM Risk Budget)
+  const riskAlerts = checkRiskLimits();
+  riskAlerts.forEach(function(a) { actions.push(a); });
+
+  // RULE 12: ISA 한도 소진 임박
+  if(isaRemain > 0 && isaRemain < 500000) {
+    actions.push({
+      priority: 'MEDIUM',
+      account: '미래에셋 ISA',
+      title: 'ISA 납입한도 거의 소진 — 내년 한도 계획',
+      reason: `잔여 ${fmtF(isaRemain)} · 연간 한도 소진 임박 · 신규 ISA 개설 또는 내년 납입 계획 수립`,
+      amount: 0
+    });
+  }
+
+  // RULE 13: 신호 없음
   if(actions.length === 0) {
     actions.push({
       priority: 'INFO',
       account: '전체',
-      title: '현재 이상 없음 — 기존 전략 유지',
-      reason: '시장 안정 구간 · SAA 정상 범위 · DCA 계획대로 진행',
+      title: '✓ 이상 없음 — 현재 전략 유지',
+      reason: '시장 안정 · SAA+TAA 정상 범위 · 리스크 한도 준수 · DCA 계획대로 진행',
       amount: 0
     });
   }
@@ -1279,6 +1380,7 @@ function getPortfolioStatus() {
 // ══════════════════════════════════════════
 function renderHome() {
   renderStatusBanner();
+  renderBuckets();
   renderActionList();
   renderPortfolioSummary();
   renderDonut();
@@ -1552,7 +1654,7 @@ function renderAccounts() {
       <div class="acct-head">
         <div style="display:flex;align-items:center;flex:1">
           <div class="acct-ind" style="background:${c}"></div>
-          <div><div class="acct-name">${a.name}</div><div class="acct-type">${getAccountRegion(a)} · ${getAccountRole(a)}</div></div>
+          <div><div class="acct-name">${a.name}</div><div class="acct-type">${getAccountRegion(a)} · ${getAccountRole(a)} · ${getBucketTag(a)}</div></div>
         </div>
         <div class="acct-right"><div class="acct-val">${fmt(v)}</div><div class="acct-pnl ${pnl>=0?'pos':'neg'}">${pct(pp)}</div></div>
       </div>
@@ -1573,6 +1675,7 @@ function renderAccounts() {
 // ══════════════════════════════════════════
 function renderRebal() {
   if(!P) return;
+  syncTAAtoTargets(); // 리밸런싱 열 때 TAA 최신화
   const tot = totalWithCash();
   document.getElementById('rebalBody').innerHTML = getActiveAccounts().map((a,i) => {
     const v=acctVal(a), r=tot?(v/tot)*100:0, t=a.target_weight||0, dev=r-t;
@@ -1612,6 +1715,70 @@ const ASSET_TARGETS = {
   current: { equity_us:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
   merton:  { equity_us:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7 }
 };
+
+// ── Global WM: 자산군 역할 정의 ──
+const ASSET_ROLE = {
+  equity_us:  { role:'성장',   icon:'📈', color:'#2563eb', desc:'장기 복리 수익의 핵심 엔진. 포트폴리오 성장 동력.' },
+  equity_kr:  { role:'성장',   icon:'📈', color:'#059669', desc:'국내 시장 노출. 환율 헤지 + 로컬 성장 포착.' },
+  bond_us:    { role:'방어',   icon:'🛡️', color:'#7c3aed', desc:'주식과 음의 상관관계. 하락장 완충 + 쿠폰 현금흐름.' },
+  commodity:  { role:'헤지',   icon:'🔰', color:'#d97706', desc:'인플레이션·지정학 헤지. 실물자산 노출.' },
+  reit:       { role:'현금흐름', icon:'🏢', color:'#0891b2', desc:'배당 현금흐름. 부동산 노출. 인플레이션 연동.' },
+  crypto:     { role:'위성',   icon:'🔭', color:'#ea580c', desc:'고위험-고수익 위성 자산. 포트폴리오 다각화.' },
+  cash:       { role:'유동성', icon:'💧', color:'#9ca3af', desc:'리밸런싱 탄약. 기회 대기 자금. 단기 유동성.' },
+};
+
+// ── Global WM: Risk Profile 등급별 SAA ──
+const WM_PROFILES = [
+  {
+    grade: 'Conservative', ko: '안정형', score: 1,
+    desc: '자본 보전 최우선. 변동성 최소화.',
+    saa: { equity_us:15, equity_kr:5, bond_us:50, commodity:5, reit:5, crypto:0, cash:20 },
+    maxDrawdown: -10, targetReturn: 4.5,
+  },
+  {
+    grade: 'Moderate', ko: '안정성장형', score: 2,
+    desc: '안정성과 성장 균형. 중간 변동성 허용.',
+    saa: { equity_us:30, equity_kr:5, bond_us:35, commodity:8, reit:7, crypto:0, cash:15 },
+    maxDrawdown: -18, targetReturn: 6.0,
+  },
+  {
+    grade: 'Balanced', ko: '균형형', score: 3,
+    desc: '장기 성장 추구. 단기 변동성 감내.',
+    saa: { equity_us:45, equity_kr:8, bond_us:25, commodity:8, reit:5, crypto:2, cash:7 },
+    maxDrawdown: -25, targetReturn: 7.5,
+  },
+  {
+    grade: 'Growth', ko: '성장형', score: 4,
+    desc: '성장 중심. 높은 변동성 허용. 장기 지평.',
+    saa: { equity_us:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
+    maxDrawdown: -35, targetReturn: 9.0,
+  },
+  {
+    grade: 'Aggressive', ko: '공격형', score: 5,
+    desc: '최대 성장 추구. 단기 손실 -40%+ 감내 가능.',
+    saa: { equity_us:65, equity_kr:12, bond_us:5, commodity:8, reit:3, crypto:7, cash:0 },
+    maxDrawdown: -45, targetReturn: 11.0,
+  },
+];
+
+// 현재 투자자 등급: Growth (score=4)
+// 30대 중반, risk-on, 미국주식 우상향 전제, ISA/연금으로 구조적 방어
+const INVESTOR_PROFILE_SCORE = 4;
+
+// ── Global WM: TAA House View (2026-04-17 기준) ──
+const TAA_HOUSE_VIEW = {
+  updated: '2026-04-17',
+  macro_summary: 'CAPE 36.5 고밸류 + 금리 4.3% 고착 + 중동 지정학 리스크. 단기 변동성 유효.',
+  views: [
+    { asset: 'equity_us',  stance: 'neutral',     adj:  0, reason: '고밸류에이션 부담. AI 성장 모멘텀 유효. 중립 유지.' },
+    { asset: 'bond_us',    stance: 'overweight',  adj: +3, reason: '금리 고원 → 채권 매력도 상승. 쿠폰 수익 확보 관점.' },
+    { asset: 'commodity',  stance: 'overweight',  adj: +2, reason: '중동 지정학·인플레 헤지. 금 포지션 강화 시기.' },
+    { asset: 'equity_kr',  stance: 'neutral',     adj:  0, reason: '환율 변동성. 글로벌 무역 불확실성 지속.' },
+    { asset: 'reit',       stance: 'underweight', adj: -2, reason: '고금리 환경 지속 시 리츠 밸류에이션 부담.' },
+    { asset: 'crypto',     stance: 'neutral',     adj:  0, reason: '위성 자산 성격 유지. 비중 변경 불필요.' },
+    { asset: 'cash',       stance: 'overweight',  adj: +2, reason: '불확실성 구간 유동성 확보. 기회 대기.' },
+  ],
+};
 const ASSET_LABEL_KO = {
   equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채',
   commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
@@ -1623,6 +1790,86 @@ const ASSET_BUY_HINT = {
   equity_us: '→ ISA / 연금저축: KODEX S&P500 / KODEX 나스닥100',
   equity_kr: '→ ISA: TIGER 코리아배당다우존스',
   crypto:    '→ 업비트 BTC 보유 중',
+};
+
+// ── Asset Location: 계좌별 최적 자산 배치 원칙 ──
+// JPM Private Bank 방식: 세후 수익률 최대화를 위해 자산을 계좌에 배치
+const ASSET_LOCATION = {
+  equity_us:  { best: 'ISA', second: '연금저축', worst: '일반(22%양도세)', reason: '성장 자산은 비과세/과세이연 계좌 우선. 일반계좌 매도 시 22% 세금.' },
+  equity_kr:  { best: 'ISA', second: '일반(국내비과세)', worst: null, reason: '국내주식 양도세 없음. ISA 비과세 한도 활용 우선.' },
+  bond_us:    { best: '연금저축', second: 'IRP', worst: 'ISA(기회비용)', reason: '이자 과세이연 효과. 연금 계좌에서 자유 전환 가능.' },
+  commodity:  { best: '연금저축', second: 'ISA', worst: '일반', reason: '원자재 ETF 분배금 과세이연. 연금 내 전환 비용 없음.' },
+  reit:       { best: 'ISA', second: '연금저축', worst: '일반', reason: '리츠 배당 비과세. ISA 연 200만 비과세 한도 활용.' },
+  crypto:     { best: '업비트(분리)', second: null, worst: null, reason: 'BTC는 분리 운용. 비중 5% 상한 준수.' },
+  cash:       { best: 'ISA(파킹통장)', second: '일반CMA', worst: null, reason: '단기 유동성. ISA 내 파킹 시 이자 비과세.' },
+};
+
+// ── 목표 버킷 구조 (Morgan Stanley Goals Planning 방식) ──
+const BUCKETS = [
+  {
+    id: 'safety',
+    name: '안전 버킷',
+    icon: '🛡️',
+    color: '#059669',
+    horizon: '0~2년',
+    purpose: '생활비 버퍼 · 비상 예비금 · 단기 유동성',
+    accounts: ['현금', 'CMA', '단기채'],
+    acctTypes: ['cash'],
+    assetClasses: ['cash'],
+  },
+  {
+    id: 'tax_growth',
+    name: '절세성장 버킷',
+    icon: '💚',
+    color: '#2563eb',
+    horizon: '3~10년',
+    purpose: 'ISA 비과세 · 배당+성장 · 세제 혜택 극대화',
+    accounts: ['미래에셋 ISA'],
+    acctTypes: ['isa'],
+    assetClasses: ['equity_us', 'equity_kr', 'reit'],
+  },
+  {
+    id: 'long_compounding',
+    name: '장기복리 버킷',
+    icon: '🏦',
+    color: '#7c3aed',
+    horizon: '10년+',
+    purpose: '연금저축 · IRP · 과세이연 복리 · TDF',
+    accounts: ['미래에셋 연금저축 (ETF)', '미래에셋 연금저축 (TDF)', '개인형IRP'],
+    acctTypes: ['pension', 'irp'],
+    assetClasses: ['bond_us', 'commodity', 'equity_us'],
+  },
+  {
+    id: 'aggressive',
+    name: '공격성장 버킷',
+    icon: '🚀',
+    color: '#d97706',
+    horizon: '5년+',
+    purpose: '미국 개별주 · 성장 ETF · 달러 노출 확대',
+    accounts: ['미래에셋 일반계좌', '삼성증권 일반계좌', '유진/SK증권'],
+    acctTypes: ['taxable'],
+    assetClasses: ['equity_us', 'equity_kr'],
+  },
+  {
+    id: 'satellite',
+    name: '위성 버킷',
+    icon: '🔭',
+    color: '#ea580c',
+    horizon: '장기보유',
+    purpose: 'BTC · 고위험 위성 · 포트폴리오 다각화',
+    accounts: ['업비트'],
+    acctTypes: ['crypto_exchange'],
+    assetClasses: ['crypto'],
+  },
+];
+
+// ── 리스크 한도 설정 (WM Risk Budget) ──
+const RISK_LIMITS = {
+  single_stock_max:    12,   // 단일 종목 최대 비중 (%)
+  crypto_max:           7,   // 암호화폐 최대 비중 (%)
+  usd_exposure_max:    75,   // USD 익스포저 최대 (%)
+  equity_total_max:    72,   // 주식 총합 최대 (%) — SAA Growth 상한
+  drawdown_warn:      -30,   // 예상 MDD 경고 임계 (%)
 };
 
 // TDF Look-through 비율 정의 (종목 id 기준)
@@ -1704,7 +1951,7 @@ function renderAssetCls() {
     const dev = cur - tgt;
     const devAmt = (dev/100)*tot;
     const col = CLS_COLOR[k]||'#9ca3af';
-    const label = ASSET_LABEL_KO[k]||k;
+    const label = (ASSET_ROLE[k]?ASSET_ROLE[k].icon+' ':'') + (ASSET_LABEL_KO[k]||k);
     const hint = ASSET_BUY_HINT[k]||'';
 
     const pillCls = Math.abs(dev)<2 ? 'neu' : dev>3 ? 'neg' : dev<-3 ? 'pos' : 'neu';
@@ -1957,7 +2204,7 @@ function renderRebalHistory() {
 
 // ── 자산군별 파라미터 (역사적 추정치) ──
 const ASSET_PARAMS = {
-  equity_us:  { mu: 0.08, sigma: 0.21, label: '미국주식' },
+  equity_us:  { mu: 0.08, sigma: 0.17, label: '미국주식' },
   equity_kr:  { mu: 0.08, sigma: 0.22, label: '국내주식' },
   bond_us:    { mu: 0.04, sigma: 0.07, label: '미국채'   },
   commodity:  { mu: 0.05, sigma: 0.20, label: '원자재'   },
@@ -2287,6 +2534,8 @@ function renderMertonSection(lambda, mu, rf, sigma) {
          + '</div>';
   }).join('');
 
+  // 해석 노트
+  el.innerHTML += '<div style="margin-top:10px;padding:8px 12px;background:var(--accent-l);border-radius:7px;font-size:11px;color:var(--accent);line-height:1.6"><b>해석:</b> w*는 내 위험성향(λ)과 시장 조건(μ,σ,r_f)이 주어졌을 때 효용을 최대화하는 이론적 최적 주식 비중입니다. 현재 주식 비중과 비교해 포지션 조정 여부를 판단하세요.</div>';
   el.innerHTML +=
     '<div style="margin-top:10px">'
     + '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">파라미터 가정별 w* 비교</div>'
@@ -2296,72 +2545,60 @@ function renderMertonSection(lambda, mu, rf, sigma) {
 
 // ③ 샤프비율 & 현재 포트폴리오 평가
 function renderSharpeSection(lambda, rf) {
-  const el = document.getElementById('an-sharpe-body');
+  var el = document.getElementById('an-sharpe-body');
   if (!el) return;
-
-  const curWeights = getCurrentWeights();
+  var curWeights = getCurrentWeights();
   if (!curWeights) {
     el.innerHTML = '<div class="empty" style="padding:16px">포트폴리오 데이터를 입력하세요</div>';
     return;
   }
+  var stats     = calcPortfolioStats(curWeights);
+  var mu_p      = stats.mu_p;
+  var sigma_p   = stats.sigma_p;
+  var SR_cur    = sharpeRatio(mu_p, sigma_p, rf);
+  var U_cur     = calcUtility(mu_p, sigma_p, lambda);
+  var w6040     = { equity_us:0.60, equity_kr:0.05, bond_us:0.35 };
+  var st6040    = calcPortfolioStats(w6040);
+  var SR_6040   = sharpeRatio(st6040.mu_p, st6040.sigma_p, rf);
+  var srGrade   = SR_cur >= 1.0 ? { g:'우수', c:'var(--green)' }
+                : SR_cur >= 0.7 ? { g:'양호', c:'var(--accent)' }
+                : SR_cur >= 0.5 ? { g:'보통', c:'var(--yellow)' }
+                : { g:'개선필요', c:'var(--red)' };
+  var vsColor  = SR_cur >= SR_6040 ? 'var(--green)' : 'var(--red)';
+  var vsBg     = SR_cur >= SR_6040 ? 'var(--green-l)' : 'var(--red-l)';
+  var vsLabel  = SR_cur >= SR_6040 ? '▲ SR 우위' : '▼ SR 열위';
 
-  const { mu_p, sigma_p } = calcPortfolioStats(curWeights);
-  const SR_current = sharpeRatio(mu_p, sigma_p, rf);
-  const U_current = calcUtility(mu_p, sigma_p, lambda);
-  const CER_current = U_current;
-  const MDD_est = estimateMDD(sigma_p);
-
-  // 비교: 단순 60/40
-  const w6040 = { equity_us:0.60, equity_kr:0.05, bond_us:0.35 };
-  const stats6040 = calcPortfolioStats(w6040);
-  const SR_6040 = sharpeRatio(stats6040.mu_p, stats6040.sigma_p, rf);
-
-  // SR 등급
-  const srGrade = SR_current >= 1.0 ? { g:'우수', c:'var(--green)' }
-    : SR_current >= 0.7 ? { g:'양호', c:'var(--accent)' }
-    : SR_current >= 0.5 ? { g:'보통', c:'var(--yellow)' }
-    : { g:'개선필요', c:'var(--red)' };
-
-  el.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-      <div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">Sharpe Ratio</div>
-        <div style="font-size:22px;font-weight:800;color:${srGrade.c}">${SR_current.toFixed(2)}</div>
-        <div style="font-size:10px;font-weight:600;color:${srGrade.c}">${srGrade.g}</div>
-      </div>
-      <div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">포트폴리오 μ_p</div>
-        <div style="font-size:22px;font-weight:800;color:var(--text)">${(mu_p*100).toFixed(1)}%</div>
-        <div style="font-size:10px;color:var(--text3)">기대수익률</div>
-      </div>
-      <div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">
-        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">포트폴리오 σ_p</div>
-        <div style="font-size:22px;font-weight:800;color:var(--orange)">${(sigma_p*100).toFixed(1)}%</div>
-        <div style="font-size:10px;color:var(--text3)">연간 변동성</div>
-      </div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:5px;font-size:12px">
-      <div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">
-        <span>Certainty Equivalent Return (CER)</span>
-        <span style="font-weight:700;color:var(--accent)">${(CER_current*100).toFixed(2)}%</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">
-        <span>Utility U = μ_p − ½λσ_p²</span>
-        <span style="font-weight:700">${(U_current*100).toFixed(2)}%</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">
-        <span>추정 최대낙폭 (MDD ≈ −2σ)</span>
-        <span style="font-weight:700;color:var(--red)">${(MDD_est*100).toFixed(1)}%</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">
-        <span>SR 비교: 60/40 포트폴리오</span>
-        <span style="font-weight:700;color:var(--text2)">${SR_6040.toFixed(2)}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:7px 10px;background:${SR_current >= SR_6040 ? 'var(--green-l)' : 'var(--red-l)'};border-radius:6px">
-        <span style="font-weight:600">내 포트폴리오 vs 60/40</span>
-        <span style="font-weight:700;color:${SR_current >= SR_6040 ? 'var(--green)' : 'var(--red)'}">${SR_current >= SR_6040 ? '▲ 우위' : '▼ 열위'} ${Math.abs(SR_current-SR_6040).toFixed(2)}</span>
-      </div>
-    </div>`;
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'
+    + '<div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">Sharpe Ratio</div>'
+    + '<div style="font-size:22px;font-weight:800;color:' + srGrade.c + '">' + SR_cur.toFixed(2) + '</div>'
+    + '<div style="font-size:10px;font-weight:600;color:' + srGrade.c + '">' + srGrade.g + '</div></div>'
+    + '<div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">포트폴리오 μ_p</div>'
+    + '<div style="font-size:22px;font-weight:800;color:var(--text)">' + (mu_p*100).toFixed(1) + '%</div>'
+    + '<div style="font-size:10px;color:var(--text3)">기대수익률</div></div>'
+    + '<div style="background:var(--bg);border-radius:7px;padding:10px 12px;text-align:center">'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:3px">포트폴리오 σ_p</div>'
+    + '<div style="font-size:22px;font-weight:800;color:var(--orange)">' + (sigma_p*100).toFixed(1) + '%</div>'
+    + '<div style="font-size:10px;color:var(--text3)">연간 변동성</div></div>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:5px;font-size:12px">'
+    + '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">'
+    + '<span>Utility U = &mu;_p &minus; &frac12;&lambda;&sigma;_p&sup2;</span>'
+    + '<span style="font-weight:700;color:var(--accent)">' + (U_cur*100).toFixed(2) + '%</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">'
+    + '<span>연간 수익 예상 범위 (&plusmn;1&sigma;)</span>'
+    + '<span style="font-weight:700;color:var(--orange)">' + ((mu_p-sigma_p)*100).toFixed(1) + '% ~ +' + ((mu_p+sigma_p)*100).toFixed(1) + '%</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:var(--bg);border-radius:6px">'
+    + '<span>SR 비교: 60/40 포트폴리오</span>'
+    + '<span style="font-weight:700;color:var(--text2)">' + SR_6040.toFixed(2) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:7px 10px;background:' + vsBg + ';border-radius:6px">'
+    + '<span style="font-weight:600">내 포트폴리오 vs 60/40</span>'
+    + '<span style="font-weight:700;color:' + vsColor + '">' + vsLabel + ' ' + Math.abs(SR_cur-SR_6040).toFixed(2) + '</span></div>'
+    + '<div style="padding:8px 10px;background:var(--accent-l);border-radius:6px;font-size:11px;color:var(--accent);line-height:1.6">'
+    + '<b>해석:</b> SR이 높을수록 같은 위험으로 더 많은 수익 &middot; SR&gt;0.5 양호 &middot; 60/40 대비 우위면 현재 자산배분이 효율적</div>'
+    + '</div>';
 }
 
 // ④ 효용 분석 + 차트
@@ -2534,6 +2771,9 @@ function runSimulator() {
       ${neededMonthly !== null ? `<div style="padding:9px 12px;background:var(--accent-l);border-radius:7px;color:var(--accent);font-weight:600">
         50% 달성 필요 월 투자: <b>${fmt(neededMonthly)}</b>/월
       </div>` : ''}
+      <div style="padding:8px 12px;background:var(--green-l);border-radius:7px;font-size:11px;color:var(--green);line-height:1.6;margin-top:6px">
+        <b>해석:</b> P50(중앙값)이 목표를 초과하고 달성확률 70%+ 이면 현재 전략 유지 · 달성 확률이 낮으면 월 투자금 증액 또는 투자기간 연장 검토
+      </div>
     </div>`;
 
   // 팬 차트 (분위수 범위)
@@ -2684,8 +2924,7 @@ function renderDecisionMatrix(lambda, mu, rf, sigma) {
       <table class="rtable">
         <thead>
           <tr>
-            <th>전략</th><th>μ_p</th><th>σ_p</th><th>Sharpe</th>
-            <th>Utility U</th><th>CER</th><th>액션</th><th>장점</th><th>단점</th>
+            <th>전략</th><th>μ_p</th><th>σ_p</th><th>Sharpe</th><th>Utility U</th><th>액션</th><th>장점</th><th>단점</th>
           </tr>
         </thead>
         <tbody>
@@ -2696,7 +2935,6 @@ function renderDecisionMatrix(lambda, mu, rf, sigma) {
             <td>${(d.sigma*100).toFixed(1)}%</td>
             <td style="font-weight:700">${d.SR.toFixed(2)}</td>
             <td style="font-weight:700;color:${d.U===Math.max(...decisions.map(x=>x.U))?'var(--green)':'inherit'}">${(d.U*100).toFixed(2)}%</td>
-            <td>${(d.U*100).toFixed(2)}%</td>
             <td style="font-size:11px;color:var(--accent)">${d.action}</td>
             <td style="font-size:11px;color:var(--green)">${d.pros}</td>
             <td style="font-size:11px;color:var(--red)">${d.cons}</td>
@@ -2705,8 +2943,386 @@ function renderDecisionMatrix(lambda, mu, rf, sigma) {
       </table>
     </div>
     <div style="margin-top:10px;font-size:11px;color:var(--text3);line-height:1.8">
-      * CER(Certainty Equivalent Return) = U = μ_p − ½λσ_p² · 단일 위험자산 가정 · 상관관계는 포트폴리오 σ_p 계산에 반영
+      <b>해석:</b> Utility Cost가 클수록 현재 포지션이 비효율적 · 추가자금 투입 전략이 세금 없이 Utility를 높이는 가장 현실적인 방법<br>      * 상관관계 행렬 기반 σ_p 계산 · 단일 위험자산 가정(Merton) 아닌 다자산 포트폴리오 분석
     </div>`;
+}
+
+
+// ══════════════════════════════════════════
+// WM STRATEGY PAGE
+// ══════════════════════════════════════════
+function renderWMStrategy() {
+  syncTAAtoTargets(); // WM 전략 열 때마다 TAA 최신화
+  renderRiskProfile();
+  renderSAATarget();
+  renderTAAView();
+  renderGapAnalysis();
+}
+
+function renderRiskProfile() {
+  var el = document.getElementById('wm-risk-profile');
+  if (!el) return;
+  var cur = INVESTOR_PROFILE_SCORE;
+
+  var html = '<div style="display:flex;flex-direction:column;gap:8px">';
+  WM_PROFILES.forEach(function(p) {
+    var isActive = p.score === cur;
+    var bg = isActive ? 'var(--accent-l)' : 'var(--bg)';
+    var border = isActive ? '2px solid var(--accent)' : '1px solid var(--border)';
+    var col = isActive ? 'var(--accent)' : 'var(--text2)';
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:' + bg + ';border:' + border + ';border-radius:8px">';
+    html += '<div style="width:28px;height:28px;border-radius:50%;background:' + (isActive?'var(--accent)':'var(--border)') + ';color:' + (isActive?'#fff':'var(--text3)') + ';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">' + p.score + '</div>';
+    html += '<div style="flex:1"><div style="font-size:12px;font-weight:' + (isActive?800:600) + ';color:' + col + '">' + p.grade + ' · ' + p.ko + '</div><div style="font-size:10px;color:var(--text3);margin-top:1px">' + p.desc + '</div></div>';
+    // 목표수익/최대손실
+    html += '<div style="text-align:right;flex-shrink:0"><div style="font-size:11px;font-weight:700;color:var(--green)">목표 ' + p.targetReturn + '%</div><div style="font-size:10px;color:var(--red)">MDD ' + p.maxDrawdown + '%</div></div>';
+    if (isActive) html += '<div style="font-size:10px;font-weight:700;color:var(--accent);flex-shrink:0">← 현재</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:10px;padding:8px 12px;background:var(--accent-l);border-radius:7px;font-size:11px;color:var(--accent);line-height:1.6">';
+  var p = WM_PROFILES[cur-1];
+  html += '<b>현재 등급: ' + p.grade + ' (' + p.ko + ')</b> · 목표수익률 ' + p.targetReturn + '%/yr · 허용 최대낙폭 ' + p.maxDrawdown + '% · 30대 risk-on 성향, ISA/연금 구조적 방어 반영';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderSAATarget() {
+  var el = document.getElementById('wm-saa-target');
+  if (!el) return;
+  var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
+  var saa = p.saa;
+  var ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+
+  var html = '<div style="display:flex;flex-direction:column;gap:6px">';
+  ORDER.forEach(function(k) {
+    var pct = saa[k] || 0;
+    var role = ASSET_ROLE[k];
+    var col = CLS_COLOR[k] || '#9ca3af';
+    // TAA 조정값
+    var taaAdj = 0;
+    TAA_HOUSE_VIEW.views.forEach(function(v){ if(v.asset===k) taaAdj = v.adj; });
+    var taaPct = pct + taaAdj;
+    html += '<div style="padding:8px 12px;background:var(--bg);border-radius:7px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">';
+    html += '<span style="font-size:13px">' + role.icon + '</span>';
+    html += '<span style="font-size:12px;font-weight:700;flex:1">' + ASSET_LABEL_KO[k] + '</span>';
+    html += '<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:' + col + '22;color:' + col + '">' + role.role + '</span>';
+    html += '<span style="font-size:13px;font-weight:800;color:' + col + ';min-width:35px;text-align:right">' + pct + '%</span>';
+    if (taaAdj !== 0) html += '<span style="font-size:10px;font-weight:700;color:' + (taaAdj>0?'var(--green)':'var(--red)') + '">' + (taaAdj>0?'+':'') + taaAdj + '%p→' + taaPct + '%</span>';
+    html += '</div>';
+    html += '<div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">';
+    html += '<div style="height:100%;width:' + Math.min(taaPct,100) + '%;background:' + col + ';border-radius:3px;transition:width .5s"></div></div>';
+    html += '<div style="font-size:10px;color:var(--text3);margin-top:3px">' + role.desc + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderTAAView() {
+  var el = document.getElementById('wm-taa-view');
+  var dateEl = document.getElementById('taa-update-date');
+  if (!el) return;
+  if (dateEl) dateEl.textContent = TAA_HOUSE_VIEW.updated + ' 업데이트';
+
+  var stanceLabel = { overweight:'비중확대', neutral:'중립', underweight:'비중축소' };
+  var stanceColor = { overweight:'var(--green)', neutral:'var(--text3)', underweight:'var(--red)' };
+  var stanceBg    = { overweight:'var(--green-l)', neutral:'var(--bg)', underweight:'var(--red-l)' };
+
+  var html = '<div style="padding:9px 14px;background:var(--yellow-l);border-radius:7px;border-left:3px solid var(--yellow);font-size:12px;color:var(--text2);margin-bottom:12px">';
+  html += '<b>매크로 요약:</b> ' + TAA_HOUSE_VIEW.macro_summary;
+  html += '</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
+  TAA_HOUSE_VIEW.views.forEach(function(v) {
+    var role = ASSET_ROLE[v.asset];
+    var col  = CLS_COLOR[v.asset] || '#9ca3af';
+    var sc   = stanceColor[v.stance];
+    var sb   = stanceBg[v.stance];
+    var sl   = stanceLabel[v.stance];
+    var p    = WM_PROFILES[INVESTOR_PROFILE_SCORE-1].saa[v.asset] || 0;
+    var tp   = p + v.adj;
+    html += '<div style="padding:10px 12px;background:' + sb + ';border-radius:8px;border-left:3px solid ' + sc + '">';
+    html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+    html += '<span>' + role.icon + '</span>';
+    html += '<span style="font-size:12px;font-weight:700;flex:1">' + ASSET_LABEL_KO[v.asset] + '</span>';
+    html += '<span style="font-size:10px;font-weight:700;color:' + sc + ';padding:2px 7px;background:' + sb + ';border-radius:10px">' + sl + '</span>';
+    html += '</div>';
+    if (v.adj !== 0) {
+      html += '<div style="font-size:11px;font-weight:700;color:' + sc + ';margin-bottom:3px">SAA ' + p + '% → TAA ' + tp + '% (' + (v.adj>0?'+':'') + v.adj + '%p)</div>';
+    } else {
+      html += '<div style="font-size:11px;color:var(--text3);margin-bottom:3px">SAA ' + p + '% 유지</div>';
+    }
+    html += '<div style="font-size:11px;color:var(--text2);line-height:1.5">' + v.reason + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderGapAnalysis() {
+  var el = document.getElementById('wm-gap-analysis');
+  if (!el) return;
+  if (!P) {
+    el.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-icon">📊</div>포트폴리오 데이터를 입력하면 현재 vs 목표 갭을 분석합니다</div>';
+    return;
+  }
+
+  var tot = totalWithCash();
+  var bd  = Object.assign({}, classBreakdown());
+  bd.cash = (P.cash && P.cash.available) ? P.cash.available : 0;
+
+  var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
+  var ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+
+  var rows = '';
+  var actions = [];
+  ORDER.forEach(function(k) {
+    var curAmt = bd[k] || 0;
+    var curPct = tot ? (curAmt/tot)*100 : 0;
+    var saaPct = p.saa[k] || 0;
+    var taaAdj = 0;
+    TAA_HOUSE_VIEW.views.forEach(function(v){ if(v.asset===k) taaAdj = v.adj; });
+    var targetPct = saaPct + taaAdj;
+    var gap = curPct - targetPct;
+    var gapAmt = (gap/100) * tot;
+    var role = ASSET_ROLE[k];
+    var col  = CLS_COLOR[k] || '#9ca3af';
+    var gapColor = Math.abs(gap) < 3 ? 'var(--text3)' : gap > 0 ? 'var(--red)' : 'var(--green)';
+    var action = Math.abs(gap) < 3 ? '유지' : gap > 5 ? '축소' : gap > 0 ? '소폭축소' : gap < -5 ? '확대' : '소폭확대';
+    var actionColor = action==='유지'?'var(--text3)': (action.includes('축소')?'var(--red)':'var(--green)');
+    if (Math.abs(gap) >= 5) actions.push({ k, action, gap, gapAmt, role });
+
+    rows += '<tr>';
+    rows += '<td><span style="display:inline-flex;align-items:center;gap:5px"><span style="font-size:12px">' + role.icon + '</span><span style="font-weight:600">' + ASSET_LABEL_KO[k] + '</span></span></td>';
+    rows += '<td style="font-size:10px;color:var(--text3)">' + role.role + '</td>';
+    rows += '<td style="font-weight:700">' + curPct.toFixed(1) + '%</td>';
+    rows += '<td style="color:var(--text2)">' + saaPct + '%</td>';
+    rows += '<td style="color:var(--accent);font-weight:600">' + targetPct + '%</td>';
+    rows += '<td style="font-weight:700;color:' + gapColor + '">' + (gap>0?'+':'') + gap.toFixed(1) + '%p</td>';
+    rows += '<td style="font-weight:600;color:' + actionColor + '">' + action + '</td>';
+    rows += '<td style="font-size:11px;color:var(--text2)">' + (Math.abs(gap)>=3 ? fmt(Math.abs(gapAmt)) : '—') + '</td>';
+    rows += '</tr>';
+  });
+
+  var actionBanner = '';
+  if (actions.length > 0) {
+    actionBanner = '<div style="margin-bottom:12px;padding:10px 14px;background:var(--yellow-l);border:1px solid var(--yellow);border-radius:8px;font-size:12px">';
+    actionBanner += '<b>우선 조정 필요 (±5%p 초과):</b> ';
+    actionBanner += actions.map(function(a) {
+      return a.role.icon + ' ' + ASSET_LABEL_KO[a.k] + ' ' + a.action + ' ' + (a.gap>0?'+':'') + a.gap.toFixed(1) + '%p (' + fmt(Math.abs(a.gapAmt)) + ')';
+    }).join(' &nbsp;·&nbsp; ');
+    actionBanner += '</div>';
+  } else {
+    actionBanner = '<div style="margin-bottom:12px;padding:10px 14px;background:var(--green-l);border-radius:8px;font-size:12px;color:var(--green);font-weight:600">✓ 모든 자산군이 SAA+TAA 목표 ±5%p 내에 있습니다</div>';
+  }
+
+  el.innerHTML = actionBanner +
+    '<div style="overflow-x:auto"><table class="rtable">' +
+    '<thead><tr><th>자산군</th><th>역할</th><th>현재%</th><th>SAA%</th><th>TAA목표%</th><th>갭</th><th>액션</th><th>금액</th></tr></thead>' +
+    '<tbody>' + rows + '</tbody></table></div>' +
+    '<div style="margin-top:8px;font-size:11px;color:var(--text3)">TAA 목표 = SAA + House View 조정 · 갭 ±3%p 이내는 허용 범위 · ±5%p 초과 시 조정 검토</div>';
+}
+
+
+
+function getBucketTag(acct) {
+  for (var i = 0; i < BUCKETS.length; i++) {
+    if (BUCKETS[i].acctTypes.indexOf(acct.type) !== -1) {
+      return BUCKETS[i].icon + ' ' + BUCKETS[i].name;
+    }
+  }
+  return '';
+}
+
+// ══════════════════════════════════════════
+// 1. 목표 버킷 렌더
+// ══════════════════════════════════════════
+function renderBuckets() {
+  var el = document.getElementById('bucketList');
+  if (!el) return;
+  if (!P) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🪣</div>데이터를 입력하면 버킷이 표시됩니다</div>';
+    return;
+  }
+  var tot = totalWithCash();
+  var html = '<div style="display:flex;flex-direction:column;gap:6px">';
+  var totalMapped = 0;
+
+  BUCKETS.forEach(function(b) {
+    var bucketVal = 0;
+    getActiveAccounts().forEach(function(a) {
+      if (b.acctTypes.indexOf(a.type) !== -1) {
+        bucketVal += acctVal(a);
+      }
+    });
+    // cash 버킷은 현금 추가
+    if (b.id === 'safety') bucketVal += (P.cash && P.cash.available ? P.cash.available : 0);
+    totalMapped += bucketVal;
+    var pct = tot ? (bucketVal / tot) * 100 : 0;
+
+    html += '<div style="padding:9px 12px;background:var(--bg);border-radius:8px;border-left:3px solid ' + b.color + '">';
+    html += '<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">';
+    html += '<span style="font-size:14px">' + b.icon + '</span>';
+    html += '<span style="font-size:12px;font-weight:700;flex:1">' + b.name + '</span>';
+    html += '<span style="font-size:11px;color:var(--text3)">' + b.horizon + '</span>';
+    html += '<span style="font-size:13px;font-weight:800;color:' + b.color + '">' + (bucketVal > 0 ? fmt(bucketVal) : '—') + '</span>';
+    html += '</div>';
+    if (bucketVal > 0) {
+      html += '<div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:3px">';
+      html += '<div style="height:100%;width:' + Math.min(pct, 100).toFixed(0) + '%;background:' + b.color + ';border-radius:2px;transition:width .5s"></div></div>';
+    }
+    html += '<div style="font-size:10px;color:var(--text3)">' + b.purpose + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════
+// 2. 리스크 한도 체크 (룰 엔진 보조)
+// ══════════════════════════════════════════
+function checkRiskLimits() {
+  if (!P) return [];
+  var alerts = [];
+  var tot = totalWithCash();
+  var bd  = classBreakdown();
+
+  // 단일 종목 집중도
+  getActiveAccounts().forEach(function(a) {
+    (a.assets || []).forEach(function(h) {
+      if (h.amount && tot) {
+        var pct = (h.amount / tot) * 100;
+        if (pct > RISK_LIMITS.single_stock_max) {
+          alerts.push({
+            priority: 'HIGH',
+            account: a.name,
+            title: h.name + ' 단일 종목 집중 ' + pct.toFixed(1) + '% — 분산 검토',
+            reason: '단일 종목 ' + RISK_LIMITS.single_stock_max + '% 상한 초과 · WM 리스크 버짓 기준 · 비중 축소 또는 ETF 전환 고려',
+            amount: Math.round(((pct - RISK_LIMITS.single_stock_max) / 100) * tot)
+          });
+        }
+      }
+    });
+  });
+
+  // BTC 비중 한도
+  var cryptoPct = tot ? ((bd.crypto || 0) / tot) * 100 : 0;
+  if (cryptoPct > RISK_LIMITS.crypto_max) {
+    alerts.push({
+      priority: 'MEDIUM',
+      account: '업비트',
+      title: 'BTC 비중 ' + cryptoPct.toFixed(1) + '% — 위성 한도(' + RISK_LIMITS.crypto_max + '%) 초과',
+      reason: '위성 자산 상한 초과 · 초과분 ' + fmt(((cryptoPct - RISK_LIMITS.crypto_max) / 100) * tot) + ' · 일부 차익실현 후 코어 자산 편입 검토',
+      amount: Math.round(((cryptoPct - RISK_LIMITS.crypto_max) / 100) * tot)
+    });
+  }
+
+  // USD 익스포저 한도
+  var usdPct = usdExposure();
+  if (usdPct > RISK_LIMITS.usd_exposure_max) {
+    alerts.push({
+      priority: 'MEDIUM',
+      account: '전체',
+      title: 'USD 익스포저 ' + usdPct.toFixed(0) + '% — 환율 의존도 경고',
+      reason: 'USD 노출 ' + RISK_LIMITS.usd_exposure_max + '% 상한 초과 · 환율 급등락 시 포트폴리오 변동성 확대 · 원화 자산 비중 점검',
+      amount: 0
+    });
+  }
+
+  // 주식 총합 한도
+  var equityTotal = tot ? (((bd.equity_us || 0) + (bd.equity_kr || 0)) / tot) * 100 : 0;
+  if (equityTotal > RISK_LIMITS.equity_total_max) {
+    alerts.push({
+      priority: 'MEDIUM',
+      account: '전체',
+      title: '주식 총비중 ' + equityTotal.toFixed(1) + '% — Growth 등급 상한(' + RISK_LIMITS.equity_total_max + '%) 초과',
+      reason: 'Growth 프로파일 주식 상한 초과 · 방어자산(채권·원자재) 비중 확대 필요 · ISA/연금 내 교체 우선',
+      amount: 0
+    });
+  }
+
+  return alerts;
+}
+
+// ══════════════════════════════════════════
+// 3. 매도 회피 로직 (2단계 판단)
+// ══════════════════════════════════════════
+function assessRebalancingMethod(assetKey, deficitAmt) {
+  // 신규자금으로 해결 가능한지 먼저 판단
+  var cash = P && P.cash ? (P.cash.available || 0) : 0;
+  var tax  = getTaxBenefitStatus();
+  var isaRemain = tax && tax.isa ? (tax.isa.remain || 0) : 0;
+
+  var loc = ASSET_LOCATION[assetKey] || {};
+  var bestAcct = loc.best || 'ISA';
+  var hint = ASSET_BUY_HINT[assetKey] || '';
+
+  if (deficitAmt <= 0) return null;
+
+  // Step 1: 신규자금(현금)으로 해결 가능?
+  if (cash >= deficitAmt * 0.5) {
+    return {
+      method: 'NEW_CASH',
+      label: '신규자금 투입',
+      detail: '현금 ' + fmt(cash) + ' 중 ' + fmt(deficitAmt) + ' 투입 · 매도 불필요 · 세금 0',
+      acct: bestAcct,
+      hint: hint,
+      taxSaving: 0
+    };
+  }
+
+  // Step 2: ISA/연금 내 교체로 해결 가능?
+  if (isaRemain > deficitAmt * 0.3) {
+    return {
+      method: 'ISA_SWITCH',
+      label: 'ISA/연금 내 전환',
+      detail: 'ISA 잔여한도 ' + fmt(isaRemain) + ' · 기존 자산 교체 · 세금 0',
+      acct: 'ISA',
+      hint: hint,
+      taxSaving: 0
+    };
+  }
+
+  // Step 3: 매도 불가피
+  var estimatedTax = assetKey === 'equity_us' ? deficitAmt * 0.22 * 0.3 : 0; // rough estimate
+  return {
+    method: 'SELL',
+    label: '매도 필요 (세금 주의)',
+    detail: '신규자금·ISA 부족 · 일반계좌 매도 검토 · 추정 세금 ' + (estimatedTax > 0 ? fmt(estimatedTax) : '확인필요'),
+    acct: '일반계좌',
+    hint: '손실 자산 먼저 매도(손익통산) · ISA 대체 매수 가능 여부 확인',
+    taxSaving: -estimatedTax
+  };
+}
+
+// ══════════════════════════════════════════
+// 4. TAA → ASSET_TARGETS 자동 연결
+// ══════════════════════════════════════════
+function syncTAAtoTargets() {
+  // TAA House View의 조정을 SAA에 더해 current target에 반영
+  var prof = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
+  var newTarget = {};
+  var ORDER = ['equity_us', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
+
+  ORDER.forEach(function(k) {
+    var saa = prof.saa[k] || 0;
+    var taaAdj = 0;
+    TAA_HOUSE_VIEW.views.forEach(function(v) { if (v.asset === k) taaAdj = v.adj; });
+    newTarget[k] = Math.max(0, saa + taaAdj);
+  });
+
+  // 합계 100% 맞추기 (반올림 오차 보정)
+  var total = Object.values(newTarget).reduce(function(a, b) { return a + b; }, 0);
+  if (total !== 100) {
+    newTarget.cash = Math.max(0, (newTarget.cash || 0) + (100 - total));
+  }
+
+  // ASSET_TARGETS.current를 TAA 반영값으로 업데이트
+  ASSET_TARGETS.current = newTarget;
+
+  // 리밸런싱 페이지 배지 업데이트
+  var badge = document.getElementById('taa-sync-badge');
+  if (badge) badge.textContent = 'TAA 반영 (' + TAA_HOUSE_VIEW.updated + ')';
 }
 
 // ══════════════════════════════════════════
@@ -2891,32 +3507,51 @@ function buildCtx() {
     }
   } catch(e) { s+='\n'; }
   getActiveAccounts().forEach(a=>{const v=acctVal(a),r=tot?((v/tot)*100).toFixed(1):0;s+=`[${a.name}] ${getAccountRole(a)} ${fmtF(v)}(${r}%) 목표${a.target_weight||0}%\n`;});
+  // SAA GAP 정보
+  try {
+    var bd2=classBreakdown(); bd2.cash=(P.cash&&P.cash.available)||0;
+    var prof=WM_PROFILES[INVESTOR_PROFILE_SCORE-1];
+    s+='\nSAA갭: ';
+    ['equity_us','bond_us','commodity'].forEach(function(k){
+      var cur=tot?((bd2[k]||0)/tot)*100:0;
+      var taa=0; TAA_HOUSE_VIEW.views.forEach(function(v){if(v.asset===k)taa=v.adj;});
+      var tgt=(prof.saa[k]||0)+taa;
+      var gap=cur-tgt;
+      if(Math.abs(gap)>=3) s+=ASSET_LABEL_KO[k]+'='+(gap>0?'+':'')+gap.toFixed(1)+'%p ';
+    });
+    s+='\n';
+  } catch(e){}
   return s;
 }
-const SYS=`당신은 SONG의 전담 포트폴리오 어드바이저입니다.
+const SYS=`당신은 SONG의 전담 Private Wealth Manager입니다. UBS/GS/JPM 수준의 WM 서비스를 제공합니다.
 
 [투자자 프로필]
-- 30대 중반, risk-on 성향, 미국 주식 우상향 전제
+- 30대 중반, CFA 보유, risk-on 성향, 미국 주식 우상향 전제
+- Risk Profile: Growth (4/5등급) · 목표수익률 9%/yr · 허용 MDD -35%
 - 원화 약세 헤지 → USD 익스포저 확대 전략
 - 매도 최소화 / 추가자금으로 비중 조정 (세금 = 수익률)
 - DCA 원칙, 레버리지 없음
 - 계좌: 미래에셋(개별주/ISA/연금ETF/연금TDF), 삼성증권(개별주), 유진/SK(국내주식), IRP, 업비트(BTC)
 
-[당신의 역할 — Rule Engine과의 차이]
-Rule Engine은 이미 시그널 기반 기계적 액션을 제안합니다.
-당신은 Rule Engine이 못하는 것을 담당하세요:
+[WM 프레임워크]
+SAA 목표 (Growth등급): 미국주식55% · 국내주식10% · 미국채10% · 원자재8% · 리츠5% · BTC5% · 현금7%
+TAA House View (2026-04-17): 채권·원자재 비중확대 / 리츠 비중축소 / 주식 중립
+자산군 역할: 미국주식=성장엔진 / 채권=방어완충 / 원자재=헤지 / BTC=위성 / 현금=유동성
+실행순서: ISA 먼저 → 연금 → 신규자금 → 일반계좌(최후)
 
-1. 시나리오 분석: "금리가 다시 오르면?", "달러가 1600원 가면?" 등 가정 상황에서의 포트폴리오 영향
-2. 세금 시뮬레이션: 해외주식 양도세, ISA 비과세 한도, 연금 세액공제 최적화 구체 계산
-3. 종목 수준 판단: AMZN/MSFT/AAPL/TSLA/META/GOOGL 개별 포지션 평가, 교체 검토
-4. 정성적 판단: 뉴스·정책 맥락 반영한 전략 조정 의견
-5. 우선순위 조율: 여러 선택지 중 이 투자자에게 맞는 순서 제안
+[당신의 역할]
+1. SAA·TAA 관점에서 현재 포트폴리오 갭 분석 및 조정 우선순위 제안
+2. 시나리오 분석: 금리·환율·지정학 변화 시 포트폴리오 영향
+3. 세금 최적화: 해외주식 22% 양도세, ISA 비과세, 연금 세액공제
+4. 종목 수준 판단: AMZN/MSFT/AAPL/TSLA/META/GOOGL 개별 포지션
+5. 정성적 판단: 뉴스·정책 맥락 반영한 전략 조정
 
 답변 원칙:
-- 구체적 금액/비율로 답변 (추상적 조언 금지)
-- 매도 제안 시 반드시 세금 영향 언급
-- 불확실한 것은 솔직하게 불확실하다고 말할 것
-- 500자 내외로 간결하게, 필요시 더 길게
+- CFA 수준의 전문 용어 사용 가능 (투자자가 CFA 보유)
+- 구체적 금액/비율로 답변, 추상적 조언 금지
+- 매도 제안 시 반드시 세금 영향 명시
+- SAA·TAA 프레임 기준으로 판단 근거 제시
+- 불확실한 것은 솔직하게 불확실하다고 명시
 
 현재 포트폴리오 및 시장 데이터: `;
 async function callGemini(messages) {
@@ -2990,6 +3625,7 @@ function showToast(msg) {
 // INIT
 // ══════════════════════════════════════════
 loadSavedData();
+syncTAAtoTargets(); // TAA → ASSET_TARGETS.current 자동 반영
 renderHome();
 Promise.all([fetchBTC(), fetchFX(), fetchFG(), fetchIndices()]);
 const fk = localStorage.getItem('fredApiKey');
