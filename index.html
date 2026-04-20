@@ -1111,45 +1111,88 @@ function getAccountRegion(a) {
 function normalizePortfolioData(parsed) {
   if (!parsed || !Array.isArray(parsed.accounts)) return parsed;
   const p = JSON.parse(JSON.stringify(parsed));
+
+  function deriveExecutionAssetClass(h) {
+    if (h.execution_asset_class) return h.execution_asset_class;
+    if (h.asset_type === 'etf') {
+      if (h.asset_class === 'equity_us') return 'equity_us_etf';
+      if (h.asset_class === 'equity_kr') return 'equity_kr_etf';
+      if (h.asset_class === 'bond_us') return 'bond_us_etf';
+      if (h.asset_class === 'commodity') return 'commodity_etf';
+      if (h.asset_class === 'reit') return 'reit_etf';
+    }
+    if (h.asset_type === 'stock') {
+      if (h.asset_class === 'equity_us') return 'equity_us_stock';
+      if (h.asset_class === 'equity_kr') return 'equity_kr_stock';
+    }
+    if (h.asset_type === 'fund' && (h.id || '').toLowerCase().includes('tdf')) return 'tdf_fund';
+    if (h.asset_type === 'crypto') return 'crypto_spot';
+    return h.asset_class || 'other';
+  }
+
+  function defaultPreferredAccountTypes(executionAssetClass) {
+    const map = {
+      equity_us_etf: ['isa','pension','taxable'],
+      equity_us_stock: ['taxable'],
+      equity_kr_etf: ['isa','taxable','pension'],
+      equity_kr_stock: ['taxable','isa'],
+      bond_us_etf: ['pension','irp','isa'],
+      commodity_etf: ['pension','isa','irp'],
+      reit_etf: ['isa','pension','taxable'],
+      tdf_fund: ['pension','irp'],
+      crypto_spot: ['crypto_exchange']
+    };
+    return map[executionAssetClass] || ['isa','pension','irp','taxable'];
+  }
+
   p.accounts.forEach(a => {
     if ((a.name||'').includes('우리투자증권')) {
       a.exclude_from_portfolio = true;
       a.display_role = '공용자금 · 포트폴리오 제외';
-    }
-    if ((a.name||'').includes('개인형IRP')) {
-      const buy1 = 696129, val1 = 719228;
-      const buy2 = 3010523, val2 = 3071384;
-      a.deposited_this_year = 3000000;
-      a.annual_limit = 3000000;
-      a.display_role = 'TDF 중심 · 세액공제 완료';
-      a.assets = [
-        {
-          id: 'mirae_tdf2050',
-          name: '미래에셋전략배분적격TDF2050',
-          ticker: null,
-          asset_type: 'fund',
-          asset_class: 'irp',
-          currency_exposure: 'KRW',
-          amount: val1,
-          pnl_pct: ((val1 - buy1) / buy1) * 100
-        },
-        {
-          id: 'hanwha_tdf2050',
-          name: '한화 LIFEPLUS 적격 TDF2050',
-          ticker: null,
-          asset_type: 'fund',
-          asset_class: 'irp',
-          currency_exposure: 'KRW',
-          amount: val2,
-          pnl_pct: ((val2 - buy2) / buy2) * 100
-        }
-      ];
     }
     if ((a.name||'').includes('미래에셋 연금저축 (ETF)')) a.display_role = '성장형 All-Weather';
     if ((a.name||'').includes('미래에셋 ISA')) a.display_role = '성장형 전환 추진';
     if ((a.name||'').includes('미래에셋 일반계좌')) a.display_role = '미국 성장형 · 달러노출';
     if ((a.name||'').includes('삼성증권 일반계좌')) a.display_role = '미국 성장형 · 달러노출';
     if ((a.name||'').includes('유진/SK증권')) a.display_role = '국내주식 장기보유';
+    if ((a.name||'').includes('개인형IRP') && !a.display_role) a.display_role = '안정형 · 채권 보강';
+    if ((a.name||'').includes('미래에셋 연금저축 (TDF)') && !a.display_role) a.display_role = '코어 TDF · 전술 현금 별도';
+
+    if (!a.execution_policy) a.execution_policy = {};
+    if ((a.name||'').includes('미래에셋 ISA')) {
+      a.execution_policy.preferred_instrument_groups = a.execution_policy.preferred_instrument_groups || ['etf'];
+      a.execution_policy.rebalance_priority = a.execution_policy.rebalance_priority || 'high';
+    }
+    if ((a.name||'').includes('미래에셋 연금저축 (ETF)')) {
+      a.execution_policy.preferred_instrument_groups = a.execution_policy.preferred_instrument_groups || ['etf'];
+      a.execution_policy.rebalance_priority = a.execution_policy.rebalance_priority || 'high';
+    }
+    if ((a.name||'').includes('미래에셋 연금저축 (TDF)')) {
+      a.execution_policy.allow_rebalance_target = (a.execution_policy.allow_rebalance_target === undefined) ? false : a.execution_policy.allow_rebalance_target;
+      a.execution_policy.allow_direct_bond_recommendation = (a.execution_policy.allow_direct_bond_recommendation === undefined) ? false : a.execution_policy.allow_direct_bond_recommendation;
+      a.execution_policy.preferred_buy_assets = a.execution_policy.preferred_buy_assets || ['commodity'];
+      a.execution_policy.blocked_primary_rebalance_assets = a.execution_policy.blocked_primary_rebalance_assets || ['bond_us','equity_us','equity_kr','reit','crypto'];
+      a.execution_policy.preferred_instrument_groups = a.execution_policy.preferred_instrument_groups || ['fund','etf'];
+      a.execution_policy.rebalance_priority = a.execution_policy.rebalance_priority || 'restricted';
+    }
+    if ((a.name||'').includes('일반계좌') || a.type === 'taxable') {
+      a.execution_policy.preferred_instrument_groups = a.execution_policy.preferred_instrument_groups || ['stock','etf'];
+    }
+
+    (a.assets || []).forEach(h => {
+      h.execution_asset_class = deriveExecutionAssetClass(h);
+      h.instrument_group = h.instrument_group || (
+        h.asset_type === 'etf' ? 'etf' :
+        h.asset_type === 'stock' ? 'stock' :
+        h.asset_type === 'fund' ? 'fund' :
+        h.asset_type === 'crypto' ? 'crypto' : 'other'
+      );
+      h.exposure_asset_class = h.exposure_asset_class || h.asset_class || 'other';
+      h.preferred_account_types = h.preferred_account_types || defaultPreferredAccountTypes(h.execution_asset_class);
+      if (h.rebalance_direct_buy_candidate === undefined) {
+        h.rebalance_direct_buy_candidate = h.execution_asset_class !== 'tdf_fund';
+      }
+    });
   });
   return p;
 }
@@ -2230,182 +2273,171 @@ function renderAssetCls() {
     `&nbsp;&nbsp;|&nbsp; 총자산 ${fmtF(tot)}` + tdfNote;
 }
 
-function getAssetClassCurrentPctMap() {
-  const tot = totalWithCash();
-  const cls = {};
 
-  getActiveAccounts().forEach(a => {
-    expandTdfLookthrough(a.assets).forEach(h => {
-      const k = h.asset_class || '기타';
-      cls[k] = (cls[k] || 0) + (h.amount || 0);
-    });
-  });
-
-  cls.cash = (P?.cash?.available || 0);
-
-  const pctMap = {};
-  Object.keys(ASSET_TARGETS.current || {}).forEach(k => {
-    pctMap[k] = tot ? ((cls[k] || 0) / tot) * 100 : 0;
-  });
-
-  return { tot, cls, pctMap };
+function isTdfRestrictedAccount(account) {
+  if (!account) return false;
+  if (account.execution_policy && account.execution_policy.allow_rebalance_target === false) return true;
+  return (account.name || '').includes('(TDF)');
 }
 
-function getAccountAssetExposure(account, assetKey) {
+function isAccountBlockedForAsset(account, assetKey) {
+  if (!account) return false;
+  const policy = account.execution_policy || {};
+  if (policy.blocked_primary_rebalance_assets && policy.blocked_primary_rebalance_assets.includes(assetKey)) return true;
+  if (assetKey === 'bond_us' && policy.allow_direct_bond_recommendation === false) return true;
+  return false;
+}
+
+function getAccountTaxRemaining(account) {
+  if (!account) return 0;
+  return Math.max(0, (account.annual_limit || 0) - (account.deposited_this_year || 0));
+}
+
+function getExposureAmount(account, assetKey) {
   return expandTdfLookthrough(account.assets)
-    .filter(h => h.asset_class === assetKey)
-    .reduce((s, h) => s + (h.amount || 0), 0);
+    .filter(function(h) { return (h.asset_class || h.exposure_asset_class) === assetKey || h.exposure_asset_class === assetKey; })
+    .reduce(function(s, h) { return s + (h.amount || 0); }, 0);
+}
+
+function getAccountDisplayColor(accountName) {
+  const idx = getActiveAccounts().findIndex(function(a) { return a.name === accountName; });
+  return COLORS[(idx >= 0 ? idx : 0) % COLORS.length];
 }
 
 function getEligibleAccountsForAsset(assetKey) {
   const accounts = getActiveAccounts();
-
   const rules = {
-    equity_us: ['isa', 'pension', 'taxable'],
-    equity_kr: ['isa', 'taxable', 'pension'],
-    bond_us:   ['pension', 'irp', 'isa'],
-    commodity: ['pension', 'isa', 'irp'],
-    reit:      ['isa', 'pension', 'taxable'],
-    crypto:    ['crypto_exchange'],
-    cash:      ['isa', 'taxable']
+    equity_us: ['isa','pension','taxable'],
+    equity_kr: ['isa','taxable','pension'],
+    bond_us: ['pension','irp','isa'],
+    commodity: ['pension','isa','irp'],
+    reit: ['isa','pension','taxable'],
+    crypto: ['crypto_exchange'],
+    cash: ['isa','taxable']
   };
-
-  const preferredTypes = rules[assetKey] || ['isa', 'pension', 'irp', 'taxable'];
-
-  const filtered = accounts.filter(a => preferredTypes.includes(a.type));
-
-  return filtered.sort((a, b) => {
+  const preferredTypes = rules[assetKey] || ['isa','pension','irp','taxable'];
+  return accounts.filter(function(a) {
+    if (!preferredTypes.includes(a.type)) return false;
+    if (isAccountBlockedForAsset(a, assetKey)) return false;
+    if (assetKey === 'bond_us' && isTdfRestrictedAccount(a)) return false;
+    if (assetKey === 'equity_us' && isTdfRestrictedAccount(a)) return false;
+    if (assetKey === 'equity_kr' && isTdfRestrictedAccount(a)) return false;
+    if (assetKey === 'reit' && isTdfRestrictedAccount(a)) return false;
+    if (assetKey === 'commodity' && isTdfRestrictedAccount(a)) {
+      const policy = a.execution_policy || {};
+      if (!(policy.preferred_buy_assets || []).includes('commodity')) return false;
+    }
+    return true;
+  }).sort(function(a, b) {
     const ai = preferredTypes.indexOf(a.type);
     const bi = preferredTypes.indexOf(b.type);
     if (ai !== bi) return ai - bi;
-
-    const aAmt = getAccountAssetExposure(a, assetKey);
-    const bAmt = getAccountAssetExposure(b, assetKey);
-    return aAmt - bAmt;
+    return getExposureAmount(a, assetKey) - getExposureAmount(b, assetKey);
   });
 }
 
-function getAccountDisplayColor(accountName) {
-  const idx = getActiveAccounts().findIndex(a => a.name === accountName);
-  return COLORS[(idx >= 0 ? idx : 0) % COLORS.length];
+function getAssetBaseScores(assetKey, account) {
+  const isTdf = (account.name || '').includes('(TDF)');
+  if (assetKey === 'equity_us') {
+    if (account.type === 'isa') return 100;
+    if (account.type === 'pension' && !isTdf) return 70;
+    if (account.type === 'taxable') return 45;
+  }
+  if (assetKey === 'equity_kr') {
+    if (account.type === 'isa') return 100;
+    if (account.type === 'taxable') return 80;
+    if (account.type === 'pension' && !isTdf) return 35;
+  }
+  if (assetKey === 'bond_us') {
+    if (account.type === 'pension' && !isTdf) return 100;
+    if (account.type === 'irp') return 85;
+    if (account.type === 'isa') return 55;
+  }
+  if (assetKey === 'commodity') {
+    if (account.type === 'pension' && !isTdf) return 95;
+    if (isTdf) return 85;
+    if (account.type === 'isa') return 65;
+    if (account.type === 'irp') return 55;
+  }
+  if (assetKey === 'reit') {
+    if (account.type === 'isa') return 100;
+    if (account.type === 'pension' && !isTdf) return 60;
+    if (account.type === 'taxable') return 40;
+  }
+  if (assetKey === 'crypto') {
+    if (account.type === 'crypto_exchange') return 100;
+  }
+  return 10;
 }
 
 function getAccountCapacityScore(account, assetKey) {
-  let score = 0;
-
-  if (assetKey === 'bond_us') {
-    if (account.type === 'pension') score += 100;
-    if (account.type === 'irp') score += 90;
-    if (account.type === 'isa') score += 40;
-  } else if (assetKey === 'commodity') {
-    if (account.type === 'pension') score += 100;
-    if (account.type === 'isa') score += 70;
-    if (account.type === 'irp') score += 60;
-  } else if (assetKey === 'reit') {
-    if (account.type === 'isa') score += 100;
-    if (account.type === 'pension') score += 70;
-    if (account.type === 'taxable') score += 40;
-  } else if (assetKey === 'equity_us') {
-    if (account.type === 'isa') score += 100;
-    if (account.type === 'pension') score += 80;
-    if (account.type === 'taxable') score += 50;
-  } else if (assetKey === 'equity_kr') {
-    if (account.type === 'isa') score += 100;
-    if (account.type === 'taxable') score += 85;
-    if (account.type === 'pension') score += 40;
-  } else if (assetKey === 'crypto') {
-    if (account.type === 'crypto_exchange') score += 100;
-  } else if (assetKey === 'cash') {
-    if (account.type === 'isa') score += 70;
-    if (account.type === 'taxable') score += 60;
-  }
-
-  const exposure = getAccountAssetExposure(account, assetKey);
-  score -= exposure / 1000000; // 이미 같은 자산군이 많은 계좌는 약간 후순위
-
-  return score;
+  let score = getAssetBaseScores(assetKey, account);
+  const taxRemain = getAccountTaxRemaining(account);
+  if (account.type === 'isa') score += Math.min(40, taxRemain / 250000);
+  if (account.type === 'pension') score += Math.min(30, taxRemain / 200000);
+  if (account.type === 'irp') score += Math.min(20, taxRemain / 200000);
+  if (taxRemain === 0 && (account.type === 'pension' || account.type === 'irp')) score -= 15;
+  const exposure = getExposureAmount(account, assetKey);
+  score -= exposure / 1500000;
+  return Math.max(1, score);
 }
 
 function splitAmountAcrossAccounts(assetKey, amount) {
   const candidates = getEligibleAccountsForAsset(assetKey);
-  if (!candidates.length) {
-    return [{
-      accountName: '우선계좌 확인',
-      accountType: null,
-      amount: amount,
-      color: COLORS[0]
-    }];
-  }
-
-  const weighted = candidates.map(a => ({
-    account: a,
-    score: Math.max(1, getAccountCapacityScore(a, assetKey))
-  }));
-
-  const totalScore = weighted.reduce((s, x) => s + x.score, 0);
+  if (!candidates.length) return [];
+  const weighted = candidates.map(function(a) { return { account: a, score: getAccountCapacityScore(a, assetKey) }; });
+  const totalScore = weighted.reduce(function(s, x) { return s + x.score; }, 0);
   let remaining = amount;
-
-  const rawRows = weighted.map((x, idx) => {
-    let alloc = idx === weighted.length - 1
-      ? remaining
-      : Math.floor((amount * x.score / totalScore) / 10000) * 10000;
-
+  const rows = [];
+  weighted.forEach(function(x, idx) {
+    let alloc = idx === weighted.length - 1 ? remaining : Math.floor((amount * x.score / totalScore) / 10000) * 10000;
     alloc = Math.max(0, alloc);
     remaining -= alloc;
-
-    return {
-      accountName: x.account.name,
-      accountType: x.account.type,
-      amount: alloc,
-      color: getAccountDisplayColor(x.account.name)
-    };
-  }).filter(r => r.amount > 0);
-
-  // 남은 자투리 처리
-  if (remaining > 0 && rawRows.length) {
-    rawRows[0].amount += remaining;
-  }
-
-  return rawRows.filter(r => r.amount >= 10000);
+    if (alloc >= 10000) {
+      rows.push({
+        accountName: x.account.name,
+        accountType: x.account.type,
+        amount: alloc,
+        color: getAccountDisplayColor ? getAccountDisplayColor(x.account.name) : COLORS[idx % COLORS.length]
+      });
+    }
+  });
+  if (remaining > 0 && rows.length) rows[0].amount += remaining;
+  return rows;
 }
 
 function buildBuyPlanByAsset(cashInput) {
   const target = ASSET_TARGETS.current;
-  const { tot, pctMap } = getAssetClassCurrentPctMap();
+  const tot = totalWithCash();
   const postMoneyTot = tot + cashInput;
-
+  const cls = {};
+  getActiveAccounts().forEach(function(a) {
+    expandTdfLookthrough(a.assets).forEach(function(h) {
+      const k = h.asset_class || '기타';
+      cls[k] = (cls[k] || 0) + (h.amount || 0);
+    });
+  });
+  cls.cash = (P?.cash?.available || 0);
   const priorityOrder = ['bond_us','commodity','reit','equity_us','equity_kr','crypto'];
-  const deficits = priorityOrder.map(assetKey => {
-    const curPct = pctMap[assetKey] || 0;
+  const deficits = priorityOrder.map(function(assetKey) {
+    const curPct = tot ? ((cls[assetKey] || 0) / tot) * 100 : 0;
     const tgtPct = target[assetKey] || 0;
     const gapPct = tgtPct - curPct;
     const needAmt = gapPct > 0 ? (postMoneyTot * gapPct / 100) : 0;
+    return { assetKey, assetLabel: ASSET_LABEL_KO[assetKey] || assetKey, curPct, tgtPct, gapPct, needAmt: Math.max(0, needAmt) };
+  }).filter(function(x) { return x.needAmt >= 10000; });
 
-    return {
-      assetKey,
-      assetLabel: ASSET_LABEL_KO[assetKey] || assetKey,
-      curPct,
-      tgtPct,
-      gapPct,
-      needAmt: Math.max(0, needAmt)
-    };
-  }).filter(x => x.needAmt > 10000);
-
-  deficits.sort((a, b) => b.needAmt - a.needAmt);
+  deficits.sort(function(a, b) { return b.needAmt - a.needAmt; });
 
   let remaining = cashInput;
   const planRows = [];
-
-  deficits.forEach(d => {
+  deficits.forEach(function(d) {
     if (remaining <= 0) return;
-
     const allocAmt = Math.min(d.needAmt, remaining);
     if (allocAmt < 10000) return;
-
     const method = assessRebalancingMethod(d.assetKey, allocAmt, cashInput);
     const splitRows = splitAmountAcrossAccounts(d.assetKey, allocAmt);
-
-    splitRows.forEach(r => {
+    splitRows.forEach(function(r) {
       planRows.push({
         assetKey: d.assetKey,
         assetLabel: d.assetLabel,
@@ -2421,29 +2453,25 @@ function buildBuyPlanByAsset(cashInput) {
         methodDetail: method?.detail || ''
       });
     });
-
     remaining -= allocAmt;
   });
 
-  // 부족 자산군 보강 후 남는 돈은 성장축에 배치
   if (remaining >= 10000) {
     const fallbackAsset = 'equity_us';
-    const splitRows = splitAmountAcrossAccounts(fallbackAsset, remaining);
-
-    splitRows.forEach(r => {
+    splitAmountAcrossAccounts(fallbackAsset, remaining).forEach(function(r) {
       planRows.push({
         assetKey: fallbackAsset,
         assetLabel: ASSET_LABEL_KO[fallbackAsset],
-        curPct: pctMap[fallbackAsset] || 0,
+        curPct: tot ? ((cls[fallbackAsset] || 0) / tot) * 100 : 0,
         tgtPct: target[fallbackAsset] || 0,
-        gapPct: (target[fallbackAsset] || 0) - (pctMap[fallbackAsset] || 0),
+        gapPct: (target[fallbackAsset] || 0) - (tot ? ((cls[fallbackAsset] || 0) / tot) * 100 : 0),
         amount: r.amount,
         accountName: r.accountName,
         accountType: r.accountType,
         color: r.color,
-        hint: '부족 자산군 보강 후 잔여 자금은 장기 성장축 우선 배치',
+        hint: '잔여 자금은 장기 성장축 우선 배치',
         methodLabel: '잔여자금 배치',
-        methodDetail: '장기 성장형 자산 우선'
+        methodDetail: '세제혜택과 계좌 목적을 반영한 성장 자산 우선'
       });
     });
   }
@@ -2451,77 +2479,28 @@ function buildBuyPlanByAsset(cashInput) {
   return planRows;
 }
 
-
-  
 function calcRebal() {
-  const cash = parseFloat(document.getElementById('calcAmt')?.value) || 0;
+  const cash = parseFloat(document.getElementById('calcAmt')?.value)||0;
   const el = document.getElementById('calcResult');
-
-  if (!P || !cash) {
-    el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">투자금액 입력 시 자동 계산됩니다</div>';
-    return;
-  }
-
-  const planRows = buildBuyPlanByAsset(cash);
-
-  if (!planRows.length) {
-    el.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">현재 자산군이 목표 비중에 근접합니다</div>';
-    return;
-  }
-
-  const grouped = {};
-  planRows.forEach(row => {
-    const key = row.assetKey;
-    if (!grouped[key]) {
-      grouped[key] = {
-        assetKey: row.assetKey,
-        assetLabel: row.assetLabel,
-        curPct: row.curPct,
-        tgtPct: row.tgtPct,
-        gapPct: row.gapPct,
-        totalAmount: 0,
-        methodLabel: row.methodLabel,
-        methodDetail: row.methodDetail,
-        hint: row.hint,
-        rows: []
-      };
-    }
-    grouped[key].totalAmount += row.amount;
-    grouped[key].rows.push(row);
-  });
-
-  const groupList = Object.values(grouped).sort((a, b) => b.totalAmount - a.totalAmount);
-
-  el.innerHTML = groupList.map(group => `
-    <div style="padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px">
-        <div>
-          <div class="calc-lname"><b>${group.assetLabel}</b> 우선 매수</div>
-          <div class="calc-lreason">
-            현재 ${group.curPct.toFixed(1)}% → 목표 ${group.tgtPct.toFixed(1)}%
-            ${group.gapPct > 0 ? ` · 부족 ${group.gapPct.toFixed(1)}%p` : ''}
-          </div>
-          <div class="calc-lreason" style="color:var(--accent)">${group.methodLabel} · ${group.hint}</div>
-          ${group.methodDetail ? `<div class="calc-lreason" style="color:var(--text3)">${group.methodDetail}</div>` : ''}
-        </div>
-        <div class="calc-lamt">${fmtF(Math.round(group.totalAmount / 10000) * 10000)}</div>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px">
-        ${group.rows.sort((a,b) => b.amount - a.amount).map(row => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--bg);border-radius:7px">
-            <div style="display:flex;align-items:center;gap:8px;min-width:0">
-              <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${row.color};flex-shrink:0"></span>
-              <span style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${row.accountName}</span>
-            </div>
-            <div style="font-size:13px;font-weight:700;color:var(--accent)">${fmtF(Math.round(row.amount / 10000) * 10000)}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
+  if(!P||!cash) { el.innerHTML='<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">투자금액 입력 시 자동 계산됩니다</div>'; return; }
+  const tot = totalWithCash()+cash;
+  const activeAccounts = getActiveAccounts(); const allocs = activeAccounts.map(a=>{ const cur=acctVal(a),target=(a.target_weight||0)/100,dev=tot*target-cur; return{name:a.name,type:a.type,cur,target,dev,alloc:0,idx:activeAccounts.indexOf(a)}; });
+  let rem = cash;
+  [...allocs].sort((a,b)=>b.dev-a.dev).forEach(a=>{ if(a.dev>0&&rem>0){const g=Math.min(a.dev,rem);a.alloc=g;rem-=g;} });
+  if(rem>0.01){const st=allocs.reduce((s,a)=>s+(a.target||0),0);allocs.forEach(a=>{a.alloc=(a.alloc||0)+rem*(a.target||0)/Math.max(st,0.01);});}
+  el.innerHTML = allocs.filter(a=>(a.alloc||0)>1000).sort((a,b)=>b.alloc-a.alloc).map(a=>`
+    <div class="calc-row">
+      <div><div class="calc-lname"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLORS[a.idx%COLORS.length]};margin-right:7px"></span>${a.name}</div>
+      <div class="calc-lreason">${getAccountRole({type:a.type,name:a.name})} · 목표 ${(a.target*100).toFixed(0)}% → 현재 ${((a.cur/tot)*100).toFixed(1)}%</div></div>
+      <div class="calc-lamt">${fmtF(Math.round(a.alloc/10000)*10000)}</div>
+    </div>`).join('') || '<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">모든 계좌가 목표 비중에 근접합니다</div>';
 }
-  
+
+
+
+
+
+
 // ══════════════════════════════════════════
 // 리밸런싱 히스토리
 // ══════════════════════════════════════════
@@ -3486,16 +3465,13 @@ function checkRiskLimits() {
   var tot = totalWithCash();
   var bd  = classBreakdown();
 
-  // ── 단일 종목 집중도: BTC는 별도 통합 경고에서 처리하므로 제외
+  // 단일 종목 집중도: BTC는 별도 통합 경고에서 처리
   getActiveAccounts().forEach(function(a) {
     (a.assets || []).forEach(function(h) {
       if (!h.amount || !tot) return;
-
       var pct = (h.amount / tot) * 100;
       var isBTC = (h.name || '').includes('비트코인') || (h.name || '').includes('BTC');
-
       if (isBTC) return;
-
       if (pct > RISK_LIMITS.single_stock_max) {
         alerts.push({
           priority: 'HIGH',
@@ -3508,69 +3484,64 @@ function checkRiskLimits() {
     });
   });
 
-  // ── BTC / 암호화폐 통합 경고
+  // BTC / 암호화폐 통합 경고
   var cryptoPct = tot ? ((bd.crypto || 0) / tot) * 100 : 0;
-
   var btcHolding = null;
   getActiveAccounts().forEach(function(a) {
     (a.assets || []).forEach(function(h) {
       var isBTC = (h.name || '').includes('비트코인') || (h.name || '').includes('BTC');
       if (isBTC && (!btcHolding || (h.amount || 0) > (btcHolding.amount || 0))) {
-        btcHolding = {
-          account: a.name,
-          name: h.name,
-          amount: h.amount || 0
-        };
+        btcHolding = { account: a.name, name: h.name, amount: h.amount || 0 };
       }
     });
   });
-
   var btcPct = btcHolding && tot ? (btcHolding.amount / tot) * 100 : 0;
   var cryptoOver = cryptoPct > RISK_LIMITS.crypto_max;
   var btcSingleOver = btcPct > RISK_LIMITS.single_stock_max;
-
   if (cryptoOver || btcSingleOver) {
-    var titleParts = [];
     var reasonParts = [];
     var excessAmt = 0;
-
     if (cryptoOver) {
-      titleParts.push('BTC 비중 ' + cryptoPct.toFixed(1) + '% — 위성 한도(' + RISK_LIMITS.crypto_max + '%) 초과');
-      reasonParts.push('위성 자산 상한 초과');
+      reasonParts.push('위성 한도 ' + RISK_LIMITS.crypto_max + '% 초과');
       excessAmt = Math.max(excessAmt, Math.round(((cryptoPct - RISK_LIMITS.crypto_max) / 100) * tot));
     }
-
     if (btcSingleOver) {
       reasonParts.push('단일 종목 집중 ' + btcPct.toFixed(1) + '%');
       excessAmt = Math.max(excessAmt, Math.round(((btcPct - RISK_LIMITS.single_stock_max) / 100) * tot));
     }
-
     alerts.push({
       priority: 'MEDIUM',
       account: btcHolding ? btcHolding.account : '업비트',
-      title: titleParts.length
-        ? titleParts[0]
-        : 'BTC 단일 종목 집중 ' + btcPct.toFixed(1) + '% — 분산 검토',
-      reason:
-        reasonParts.join(' · ') +
-        ' · 일부 차익실현 후 코어 자산 편입 검토',
+      title: 'BTC 비중 ' + cryptoPct.toFixed(1) + '% — 축소 검토',
+      reason: reasonParts.join(' · ') + ' · 일부 차익실현 후 코어 자산 편입 검토',
       amount: excessAmt
     });
   }
 
-  // ── USD 익스포저 경고: 수혜/리스크 동시 표기
+  // USD 익스포저 한도
   var usdPct = usdExposure();
   if (usdPct > RISK_LIMITS.usd_exposure_max) {
     var fxLevel = M.fx || 0;
     var fxReason = fxLevel >= SIGNAL_CONFIG.usd_krw_threshold
-      ? '원화 약세 구간에서는 헤지 효과가 유효하나, 환율 되돌림 시 변동성 확대 가능'
+      ? '원화 약세 구간에서는 헤지 효과가 유효하나 환율 되돌림 시 변동성 확대 가능'
       : 'USD 노출이 높아 환율 방향성 의존도가 큼';
-
     alerts.push({
       priority: 'MEDIUM',
       account: '전체',
       title: 'USD 익스포저 ' + usdPct.toFixed(0) + '% — 높은 달러 노출',
       reason: fxReason + ' · 내부 상한 ' + RISK_LIMITS.usd_exposure_max + '% 초과 · 원화 자산 비중 점검',
+      amount: 0
+    });
+  }
+
+  // 주식 총합 한도
+  var equityTotal = tot ? (((bd.equity_us || 0) + (bd.equity_kr || 0)) / tot) * 100 : 0;
+  if (equityTotal > RISK_LIMITS.equity_total_max) {
+    alerts.push({
+      priority: 'MEDIUM',
+      account: '전체',
+      title: '주식 총비중 ' + equityTotal.toFixed(1) + '% — Growth 등급 상한(' + RISK_LIMITS.equity_total_max + '%) 초과',
+      reason: 'Growth 프로파일 주식 상한 초과 · 방어자산(채권·원자재) 비중 확대 필요 · ISA/연금 내 교체 우선',
       amount: 0
     });
   }
@@ -3584,7 +3555,7 @@ function checkRiskLimits() {
 function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
   var cash = newCashInput || 0;
   var isa = getActiveAccounts().find(function(a) { return a.type === 'isa'; });
-  var pension = getActiveAccounts().find(function(a) { return a.type === 'pension'; });
+  var pension = getActiveAccounts().find(function(a) { return a.type === 'pension' && !(a.name || '').includes('(TDF)'); });
   var irp = getActiveAccounts().find(function(a) { return a.type === 'irp'; });
 
   var isaRemain = isa ? Math.max(0, (isa.annual_limit || 0) - (isa.deposited_this_year || 0)) : 0;
@@ -3600,28 +3571,29 @@ function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
   }
 
   if (assetKey === 'bond_us' || assetKey === 'commodity') {
-    if (pension || irp) {
-      return {
-        label: '연금계좌 우선',
-        detail: '연금저축/IRP 내 전환 우선',
-        acct: pension?.name || irp?.name || '연금계좌'
-      };
+    if (pensionRemain > 0 && pension) {
+      return { label: '연금저축 우선', detail: '잔여 세제혜택 우선 활용', acct: pension.name };
+    }
+    if (irpRemain > 0 && irp) {
+      return { label: 'IRP 우선', detail: '잔여 세제혜택 우선 활용', acct: irp.name };
+    }
+    if (isaRemain > 0 && isa) {
+      return { label: 'ISA 대안', detail: '연금 여력 부족 시 ISA 활용', acct: isa.name };
     }
   }
 
   if (assetKey === 'equity_us' || assetKey === 'equity_kr' || assetKey === 'reit') {
-    if (isa) {
-      return {
-        label: 'ISA 우선',
-        detail: 'ISA 내 비과세 전환 우선',
-        acct: isa.name
-      };
+    if (isaRemain > 0 && isa) {
+      return { label: 'ISA 우선', detail: '잔여 한도 + ETF 매수 적합성 반영', acct: isa.name };
+    }
+    if (pensionRemain > 0 && pension && assetKey !== 'equity_kr') {
+      return { label: '연금저축 차선', detail: 'ISA 이후 세제혜택 계좌 활용', acct: pension.name };
     }
   }
 
   return {
-    label: '계좌 내 전환 검토',
-    detail: '신규자금 부족 시 세금효율 계좌 내 교체 후 일반계좌는 최후수단',
+    label: '세후/계좌 목적 재검토',
+    detail: '세제혜택 잔여와 계좌 목적을 함께 반영해 우선순위 재판단',
     acct: ASSET_LOCATION[assetKey]?.best || '우선계좌'
   };
 }
