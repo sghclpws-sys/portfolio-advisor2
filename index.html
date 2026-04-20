@@ -1353,7 +1353,7 @@ function runRuleEngine() {
   const bd = classBreakdown();
   // TAA 반영 목표 사용 (syncTAAtoTargets로 업데이트된 값)
   const assetTarget = ASSET_TARGETS.current;
-  const ORDER_CHECK = ['equity_us','bond_us','equity_kr','commodity','reit','crypto'];
+  const ORDER_CHECK = ['equity_us','bond_us','equity_kr','commodity','reit'];
   ORDER_CHECK.forEach(k => {
     const curPct = tot ? ((bd[k]||0)/tot)*100 : 0;
     const tgtPct = assetTarget[k]||0;
@@ -3486,56 +3486,91 @@ function checkRiskLimits() {
   var tot = totalWithCash();
   var bd  = classBreakdown();
 
-  // 단일 종목 집중도
+  // ── 단일 종목 집중도: BTC는 별도 통합 경고에서 처리하므로 제외
   getActiveAccounts().forEach(function(a) {
     (a.assets || []).forEach(function(h) {
-      if (h.amount && tot) {
-        var pct = (h.amount / tot) * 100;
-        if (pct > RISK_LIMITS.single_stock_max) {
-          alerts.push({
-            priority: 'HIGH',
-            account: a.name,
-            title: h.name + ' 단일 종목 집중 ' + pct.toFixed(1) + '% — 분산 검토',
-            reason: '단일 종목 ' + RISK_LIMITS.single_stock_max + '% 상한 초과 · WM 리스크 버짓 기준 · 비중 축소 또는 ETF 전환 고려',
-            amount: Math.round(((pct - RISK_LIMITS.single_stock_max) / 100) * tot)
-          });
-        }
+      if (!h.amount || !tot) return;
+
+      var pct = (h.amount / tot) * 100;
+      var isBTC = (h.name || '').includes('비트코인') || (h.name || '').includes('BTC');
+
+      if (isBTC) return;
+
+      if (pct > RISK_LIMITS.single_stock_max) {
+        alerts.push({
+          priority: 'HIGH',
+          account: a.name,
+          title: h.name + ' 단일 종목 집중 ' + pct.toFixed(1) + '% — 분산 검토',
+          reason: '단일 종목 ' + RISK_LIMITS.single_stock_max + '% 상한 초과 · WM 리스크 버짓 기준 · 비중 축소 또는 ETF 전환 고려',
+          amount: Math.round(((pct - RISK_LIMITS.single_stock_max) / 100) * tot)
+        });
       }
     });
   });
 
-  // BTC 비중 한도
+  // ── BTC / 암호화폐 통합 경고
   var cryptoPct = tot ? ((bd.crypto || 0) / tot) * 100 : 0;
-  if (cryptoPct > RISK_LIMITS.crypto_max) {
+
+  var btcHolding = null;
+  getActiveAccounts().forEach(function(a) {
+    (a.assets || []).forEach(function(h) {
+      var isBTC = (h.name || '').includes('비트코인') || (h.name || '').includes('BTC');
+      if (isBTC && (!btcHolding || (h.amount || 0) > (btcHolding.amount || 0))) {
+        btcHolding = {
+          account: a.name,
+          name: h.name,
+          amount: h.amount || 0
+        };
+      }
+    });
+  });
+
+  var btcPct = btcHolding && tot ? (btcHolding.amount / tot) * 100 : 0;
+  var cryptoOver = cryptoPct > RISK_LIMITS.crypto_max;
+  var btcSingleOver = btcPct > RISK_LIMITS.single_stock_max;
+
+  if (cryptoOver || btcSingleOver) {
+    var titleParts = [];
+    var reasonParts = [];
+    var excessAmt = 0;
+
+    if (cryptoOver) {
+      titleParts.push('BTC 비중 ' + cryptoPct.toFixed(1) + '% — 위성 한도(' + RISK_LIMITS.crypto_max + '%) 초과');
+      reasonParts.push('위성 자산 상한 초과');
+      excessAmt = Math.max(excessAmt, Math.round(((cryptoPct - RISK_LIMITS.crypto_max) / 100) * tot));
+    }
+
+    if (btcSingleOver) {
+      reasonParts.push('단일 종목 집중 ' + btcPct.toFixed(1) + '%');
+      excessAmt = Math.max(excessAmt, Math.round(((btcPct - RISK_LIMITS.single_stock_max) / 100) * tot));
+    }
+
     alerts.push({
       priority: 'MEDIUM',
-      account: '업비트',
-      title: 'BTC 비중 ' + cryptoPct.toFixed(1) + '% — 위성 한도(' + RISK_LIMITS.crypto_max + '%) 초과',
-      reason: '위성 자산 상한 초과 · 초과분 ' + fmt(((cryptoPct - RISK_LIMITS.crypto_max) / 100) * tot) + ' · 일부 차익실현 후 코어 자산 편입 검토',
-      amount: Math.round(((cryptoPct - RISK_LIMITS.crypto_max) / 100) * tot)
+      account: btcHolding ? btcHolding.account : '업비트',
+      title: titleParts.length
+        ? titleParts[0]
+        : 'BTC 단일 종목 집중 ' + btcPct.toFixed(1) + '% — 분산 검토',
+      reason:
+        reasonParts.join(' · ') +
+        ' · 일부 차익실현 후 코어 자산 편입 검토',
+      amount: excessAmt
     });
   }
 
-  // USD 익스포저 한도
+  // ── USD 익스포저 경고: 수혜/리스크 동시 표기
   var usdPct = usdExposure();
   if (usdPct > RISK_LIMITS.usd_exposure_max) {
-    alerts.push({
-      priority: 'MEDIUM',
-      account: '전체',
-      title: 'USD 익스포저 ' + usdPct.toFixed(0) + '% — 환율 의존도 경고',
-      reason: 'USD 노출 ' + RISK_LIMITS.usd_exposure_max + '% 상한 초과 · 환율 급등락 시 포트폴리오 변동성 확대 · 원화 자산 비중 점검',
-      amount: 0
-    });
-  }
+    var fxLevel = M.fx || 0;
+    var fxReason = fxLevel >= SIGNAL_CONFIG.usd_krw_threshold
+      ? '원화 약세 구간에서는 헤지 효과가 유효하나, 환율 되돌림 시 변동성 확대 가능'
+      : 'USD 노출이 높아 환율 방향성 의존도가 큼';
 
-  // 주식 총합 한도
-  var equityTotal = tot ? (((bd.equity_us || 0) + (bd.equity_kr || 0)) / tot) * 100 : 0;
-  if (equityTotal > RISK_LIMITS.equity_total_max) {
     alerts.push({
       priority: 'MEDIUM',
       account: '전체',
-      title: '주식 총비중 ' + equityTotal.toFixed(1) + '% — Growth 등급 상한(' + RISK_LIMITS.equity_total_max + '%) 초과',
-      reason: 'Growth 프로파일 주식 상한 초과 · 방어자산(채권·원자재) 비중 확대 필요 · ISA/연금 내 교체 우선',
+      title: 'USD 익스포저 ' + usdPct.toFixed(0) + '% — 높은 달러 노출',
+      reason: fxReason + ' · 내부 상한 ' + RISK_LIMITS.usd_exposure_max + '% 초과 · 원화 자산 비중 점검',
       amount: 0
     });
   }
