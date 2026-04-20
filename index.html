@@ -629,9 +629,15 @@ body {
       </div>
     </div>
     <div class="card">
-      <div class="card-hd"><div class="card-title">계좌별 목표 vs 현재</div></div>
-      <table class="rtable"><thead><tr><th>계좌</th><th>목적</th><th>평가금액</th><th>현재</th><th>목표</th><th>괴리</th><th>액션</th></tr></thead>
-      <tbody id="rebalBody"></tbody></table>
+      <div class="card-hd">
+        <div>
+          <div class="card-title">자산군별 실행 라우팅</div>
+          <div class="card-sub">자산군 gap → 매수 가능 계좌 우선순위 배치 · 계좌 잔액 목표와 무관</div>
+        </div>
+      </div>
+      <div class="card-body" id="assetRoutingBody">
+        <div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">데이터 입력 시 표시됩니다</div>
+      </div>
     </div>
 
     <!-- ══ 자산군 단위 리밸런싱 ══ -->
@@ -1375,23 +1381,7 @@ function runRuleEngine() {
     });
   }
 
-  // RULE 7: 괴리율 초과 계좌
-  getActiveAccounts().forEach(a => {
-    const w = acctWeights[a.name] || 0;
-    const t = a.target_weight || 0;
-    const dev = w - t;
-    if(dev < -7) {
-      actions.push({
-        priority: 'MEDIUM',
-        account: a.name,
-        title: `비중 목표 대비 부족 — 추가 매수 검토`,
-        reason: `현재 ${w.toFixed(1)}% vs 목표 ${t}% (괴리 ${dev.toFixed(1)}%)`,
-        amount: 0
-      });
-    }
-  });
-
-  // RULE 8: SAA+TAA Drift 트리거 (TAA 자동 연결)
+  // RULE 8: (RULE 7 제거 — 계좌 잔액 목표는 리밸런싱 기준 아님. 자산군 gap 기준 RULE 8 사용) SAA+TAA Drift 트리거 (TAA 자동 연결)
   const BAND = REBALANCE_BAND;
   const bd = classBreakdown();
   // TAA 반영 목표 사용 (syncTAAtoTargets로 업데이트된 값)
@@ -1566,17 +1556,16 @@ function renderPortfolioSummary() {
 
   // 계좌 바
   document.getElementById('barList').innerHTML = getActiveAccounts().map((a,i) => {
-    const v = acctVal(a), r = tot?(v/tot)*100:0, t = a.target_weight||0;
-    const dev = r - t; const c = COLORS[i%COLORS.length];
-    const devStr = Math.abs(dev) < 1 ? '' : `<span class="${dev>0?'neg':'pos'}" style="font-size:10px">${dev>0?'+':''}${dev.toFixed(1)}%</span>`;
+    const v = acctVal(a), r = tot?(v/tot)*100:0;
+    const c = COLORS[i%COLORS.length];
+    const roleLabel = getAccountRole(a);
     return `<div class="bar-row">
       <div class="bar-top">
         <span class="bar-name">${a.name}</span>
-        <span class="bar-meta"><span class="bar-val">${fmt(v)}</span><span class="bar-pct">${r.toFixed(1)}%</span>${devStr}</span>
+        <span class="bar-meta"><span class="bar-val">${fmt(v)}</span><span class="bar-pct">${r.toFixed(1)}%</span><span style="font-size:10px;color:var(--text3);margin-left:4px">${roleLabel}</span></span>
       </div>
-      <div class="bar-track" style="position:relative">
+      <div class="bar-track">
         <div class="bar-fill" style="width:${r}%;background:${c}"></div>
-        ${t > 0 ? `<div class="bar-target-line" style="left:${Math.min(t,100)}%"></div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1947,24 +1936,7 @@ function renderAccounts() {
 function renderRebal() {
   if(!P) return;
   syncTAAtoTargets(); // 리밸런싱 열 때 TAA 최신화
-  const tot = totalWithCash();
-  document.getElementById('rebalBody').innerHTML = getActiveAccounts().map((a,i) => {
-    const v=acctVal(a), r=tot?(v/tot)*100:0, t=a.target_weight||0, dev=r-t;
-    const dc=Math.abs(dev)<2?'pill-b':dev>0?'pill-g':'pill-r';
-    const dl=Math.abs(dev)<2?'±OK':(dev>0?'+':'')+dev.toFixed(1)+'%';
-    const ac=dev<-5?'pill-g':Math.abs(dev)<2?'pill-b':'pill-y';
-    const al=dev<-5?'추가매수':Math.abs(dev)<2?'유지':'검토';
-    const c=COLORS[i%COLORS.length];
-    return `<tr>
-      <td><span style="display:inline-flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block;flex-shrink:0"></span>${a.name}</span></td>
-      <td style="color:var(--text2)">${getAccountRole(a)}</td>
-      <td>${fmt(v)}</td>
-      <td>${r.toFixed(1)}%</td>
-      <td style="color:var(--text2)">${t}%</td>
-      <td><span class="pill ${dc}">${dl}</span></td>
-      <td><span class="pill ${ac}">${al}</span></td>
-    </tr>`;
-  }).join('');
+  renderAssetRouting();
   calcRebal();
   renderAssetCls();
   renderPBRebalComment();
@@ -1983,6 +1955,108 @@ function renderRebal() {
 // ══════════════════════════════════════════
 // 자산군 단위 리밸런싱
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// 자산군별 실행 라우팅 렌더 (계좌 잔액 목표 기준 아님)
+// 기준: 자산군 gap → 매수 가능 계좌 우선순위
+// ══════════════════════════════════════════
+function renderAssetRouting() {
+  const el = document.getElementById('assetRoutingBody');
+  if (!el || !P) return;
+
+  const tot = totalWithCash();
+  const target = ASSET_TARGETS.current;
+  const cls = {};
+  getActiveAccounts().forEach(function(a) {
+    expandTdfLookthrough(a.assets).forEach(function(h) {
+      const k = h.asset_class || 'other';
+      cls[k] = (cls[k] || 0) + (h.amount || 0);
+    });
+  });
+  cls.cash = P.cash?.available || 0;
+
+  const ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto'];
+  const BAND = REBALANCE_BAND;
+
+  // 자산군 중 gap이 있는 것만 라우팅 표시
+  const gapItems = ORDER.map(function(k) {
+    const cur = tot ? ((cls[k]||0)/tot)*100 : 0;
+    const tgt = target[k] || 0;
+    const gap = cur - tgt;
+    return { k, cur, tgt, gap, defAmt: Math.round((-gap/100)*tot) };
+  }).filter(function(x) { return Math.abs(x.gap) > 0.5; });
+
+  if (!gapItems.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--green);font-size:12px;padding:12px;font-weight:600">✓ 전 자산군 목표 비중 달성 — 리밸런싱 불필요</div>';
+    return;
+  }
+
+  // 헤더
+  let html = `<div style="display:grid;grid-template-columns:90px 1fr 80px 80px 80px 120px;gap:0;padding:6px 0 8px;border-bottom:2px solid var(--border);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">
+    <span>자산군</span><span>실행 계좌 (우선순위)</span>
+    <span style="text-align:right">현재%</span><span style="text-align:right">목표%</span>
+    <span style="text-align:right">편차</span><span style="text-align:right">부족/초과금액</span>
+  </div>`;
+
+  gapItems.forEach(function(item) {
+    const { k, cur, tgt, gap, defAmt } = item;
+    const col = CLS_COLOR[k] || '#9ca3af';
+    const label = (ASSET_ROLE[k]?.icon||'') + ' ' + (ASSET_LABEL_KO[k]||k);
+    const isBuy = gap < 0;
+    const isOver = gap > BAND;
+    const isUnder = gap < -BAND;
+    const gapColor = isUnder ? 'var(--green)' : isOver ? 'var(--red)' : 'var(--text3)';
+    const actionTag = isUnder
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--green-l);color:var(--green)">추가매수</span>`
+      : isOver
+      ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--red-l);color:var(--red)">초과</span>`
+      : `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--bg);color:var(--text3)">미미</span>`;
+
+    // 실행 계좌 라우팅
+    let routingHtml = '';
+    if (isBuy) {
+      const candidates = getEligibleAccountsForAsset(k);
+      if (candidates.length) {
+        routingHtml = candidates.slice(0,3).map(function(a, idx) {
+          const badge = idx === 0
+            ? `<span style="font-size:9px;padding:1px 5px;border-radius:8px;background:var(--accent-l);color:var(--accent);font-weight:700">1순위</span>`
+            : `<span style="font-size:9px;color:var(--text3)">${idx+1}순위</span>`;
+          const taxRemain = getAccountTaxRemaining(a);
+          const taxNote = taxRemain > 0 ? `<span style="color:var(--accent);font-size:9px"> +세제혜택 ${fmtF(taxRemain)}</span>` : '';
+          return `<div style="display:flex;align-items:center;gap:5px;padding:2px 0">${badge}<span style="font-size:11px;color:var(--text)">${a.name}</span>${taxNote}</div>`;
+        }).join('');
+      } else {
+        routingHtml = '<span style="font-size:11px;color:var(--text3)">실행 가능 계좌 없음</span>';
+      }
+    } else {
+      routingHtml = '<span style="font-size:11px;color:var(--text3)">— (ISA/연금 내 교체 우선)</span>';
+    }
+
+    // 매수 힌트
+    const hint = isBuy && ASSET_BUY_HINT[k] ? `<div style="font-size:10px;color:var(--accent);margin-top:4px;padding-left:2px">${ASSET_BUY_HINT[k]}</div>` : '';
+
+    html += `<div style="display:grid;grid-template-columns:90px 1fr 80px 80px 80px 120px;gap:0;padding:10px 0;border-bottom:1px solid var(--border);align-items:start">
+      <div style="display:flex;align-items:center;gap:6px;padding-top:2px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0"></span>
+        <span style="font-size:12px;font-weight:700;color:${col}">${label}</span>
+      </div>
+      <div>
+        ${routingHtml}
+        ${hint}
+      </div>
+      <span style="text-align:right;font-size:12px;font-weight:600;padding-top:2px">${cur.toFixed(1)}%</span>
+      <span style="text-align:right;font-size:12px;color:var(--text2);padding-top:2px">${tgt}%</span>
+      <span style="text-align:right;font-size:12px;font-weight:700;color:${gapColor};padding-top:2px">${gap>0?'+':''}${gap.toFixed(1)}%</span>
+      <div style="text-align:right;padding-top:2px">
+        ${actionTag}
+        <div style="font-size:11px;font-weight:600;margin-top:4px;color:${gapColor}">${fmtF(Math.abs(defAmt))}</div>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+
 const ASSET_TARGETS = {
   current: { equity_us:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
   merton:  { equity_us:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7 }
@@ -2483,17 +2557,26 @@ function calcRebal() {
   const cash = parseFloat(document.getElementById('calcAmt')?.value)||0;
   const el = document.getElementById('calcResult');
   if(!P||!cash) { el.innerHTML='<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">투자금액 입력 시 자동 계산됩니다</div>'; return; }
-  const tot = totalWithCash()+cash;
-  const activeAccounts = getActiveAccounts(); const allocs = activeAccounts.map(a=>{ const cur=acctVal(a),target=(a.target_weight||0)/100,dev=tot*target-cur; return{name:a.name,type:a.type,cur,target,dev,alloc:0,idx:activeAccounts.indexOf(a)}; });
-  let rem = cash;
-  [...allocs].sort((a,b)=>b.dev-a.dev).forEach(a=>{ if(a.dev>0&&rem>0){const g=Math.min(a.dev,rem);a.alloc=g;rem-=g;} });
-  if(rem>0.01){const st=allocs.reduce((s,a)=>s+(a.target||0),0);allocs.forEach(a=>{a.alloc=(a.alloc||0)+rem*(a.target||0)/Math.max(st,0.01);});}
-  el.innerHTML = allocs.filter(a=>(a.alloc||0)>1000).sort((a,b)=>b.alloc-a.alloc).map(a=>`
-    <div class="calc-row">
-      <div><div class="calc-lname"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${COLORS[a.idx%COLORS.length]};margin-right:7px"></span>${a.name}</div>
-      <div class="calc-lreason">${getAccountRole({type:a.type,name:a.name})} · 목표 ${(a.target*100).toFixed(0)}% → 현재 ${((a.cur/tot)*100).toFixed(1)}%</div></div>
-      <div class="calc-lamt">${fmtF(Math.round(a.alloc/10000)*10000)}</div>
-    </div>`).join('') || '<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">모든 계좌가 목표 비중에 근접합니다</div>';
+
+  // 자산군 gap 기준으로 배분 계산 (계좌 target_weight 사용 안 함)
+  // buildBuyPlanByAsset은 배열 반환: [{assetKey, assetLabel, gapPct, amount, accountName, accountType, color, hint, ...}]
+  const planRows = buildBuyPlanByAsset(cash);
+  planRows.sort(function(a,b){ return b.amount - a.amount; });
+  el.innerHTML = planRows.filter(function(r){ return r.amount >= 10000; }).map(function(r) {
+    const col = CLS_COLOR[r.assetKey] || '#9ca3af';
+    return `<div class="calc-row">
+      <div>
+        <div class="calc-lname">
+          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${col};margin-right:5px"></span>
+          <b style="color:${col}">${r.assetLabel}</b>
+          <span style="color:var(--text3);font-size:10px;margin-left:6px">→ ${r.accountName}</span>
+          <span style="font-size:9px;color:var(--accent);margin-left:4px">[${r.methodLabel||'신규투입'}]</span>
+        </div>
+        <div class="calc-lreason">자산군 부족 ${r.gapPct.toFixed(1)}%p · ${r.hint}</div>
+      </div>
+      <div class="calc-lamt">${fmtF(Math.round(r.amount/10000)*10000)}</div>
+    </div>`;
+  }).join('') || '<div style="text-align:center;color:var(--text3);font-size:12px;padding:8px">모든 자산군이 목표 비중에 근접합니다</div>';
 }
 
 
