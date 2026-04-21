@@ -1603,7 +1603,7 @@ function renderDonut() {
     const p=((val/tot)*100), c=CLS_COLOR[cls]||'#d1d5db';
     const target = ASSET_TARGETS.current; // JSON TAA 반영값 동적 참조
     const t = target[cls]; const dev = t ? p-t : null;
-    return `<div class="leg"><div class="leg-dot" style="background:${c}"></div><span class="leg-name">${cls}</span><span class="leg-pct">${p.toFixed(1)}%</span>${dev!=null?`<span class="leg-dev ${Math.abs(dev)<3?'neu':dev>0?'neg':'pos'}">${dev>0?'+':''}${dev.toFixed(1)}</span>`:''}</div>`;
+    return `<div class="leg"><div class="leg-dot" style="background:${c}"></div><span class="leg-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span><span class="leg-pct">${p.toFixed(1)}%</span>${dev!=null?`<span class="leg-dev ${Math.abs(dev)<3?'neu':dev>0?'neg':'pos'}">${dev>0?'+':''}${dev.toFixed(1)}</span>`:''}</div>`;
   }).join('');
 }
 
@@ -1877,7 +1877,7 @@ function renderHoldingsAnalysis() {
     return `<div style="display:grid;grid-template-columns:20px 2fr 70px 1fr 1fr 80px 90px;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px${isOver ? ';background:var(--red-l);margin:0 -18px;padding-left:18px;padding-right:18px' : ''}">
       <span style="color:var(--text3);font-size:11px">${flag}</span>
       <span style="font-weight:${i < 5 ? 700 : 500}">${rankBadge}${h.name}${h.ticker ? `<span style="font-size:10px;color:var(--text3);margin-left:4px">${h.ticker}</span>` : ''}</span>
-      <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${clsColor}22;color:${clsColor};font-weight:600;white-space:nowrap">${clsLabel}</span>
+      <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${clsColor}22;color:${clsColor};font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;min-width:52px;text-align:center">${clsLabel}</span>
       <span style="font-size:11px;color:var(--text3)">${h.account.replace('미래에셋 ','').replace('삼성증권 ','')}</span>
       <div style="position:relative;height:4px;background:var(--bg);border-radius:2px">
         <div style="height:100%;width:${Math.min(weightPct, 100)}%;background:${isOver ? 'var(--red)' : clsColor};border-radius:2px;opacity:.8"></div>
