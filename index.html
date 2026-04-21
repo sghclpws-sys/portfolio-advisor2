@@ -2508,13 +2508,14 @@ function getEligibleAccountsForAsset(assetKey) {
     // 세액공제 잔여가 있는 연금저축/IRP는 소진된 것보다 우선 (그룹 내 미세조정)
 
     if (a.type === 'pension' && !isTdfRestrictedAccount(a)) {
-      return taxRemain > 0 ? 100 : 80;  // 소진돼도 ISA(70)보다 앞
+      // 세액공제 한도 소진 시 외부 신규자금 투입 추천 안 함 → 제외(-1)
+      return taxRemain > 0 ? 100 : -1;
     }
     if (a.type === 'irp') {
-      return taxRemain > 0 ? 95 : 75;   // 소진돼도 ISA(70)보다 앞
+      return taxRemain > 0 ? 95 : -1;
     }
     if (a.type === 'isa') {
-      return taxRemain > 0 ? 70 : 20;   // 연금저축+IRP 다음
+      return taxRemain > 0 ? 70 : 20;   // ISA는 한도 소진돼도 비과세 계좌로 활용 가능
     }
     if (a.type === 'taxable') {
       const vehicle = (a.execution_policy || {}).preferred_trade_vehicle || '';
@@ -2532,13 +2533,18 @@ function getEligibleAccountsForAsset(assetKey) {
     return matches ? 10 : 0;
   }
 
-  candidates.sort(function(a, b) {
+  // tier -1 = 세액공제 소진으로 신규자금 투입 제외
+  const filtered = candidates.filter(function(a) {
+    return accountTierScore(a) >= 0;
+  });
+
+  filtered.sort(function(a, b) {
     const sa = accountTierScore(a) + preferredBonus(a);
     const sb = accountTierScore(b) + preferredBonus(b);
     return sb - sa;
   });
 
-  return candidates;
+  return filtered;
 }
 
 function getAssetBaseScores(assetKey, account) {
