@@ -2562,13 +2562,19 @@ function buildBuyPlanByAsset(cashInput) {
   const PRIORITY_WEIGHT = { bond_us:1.4, commodity:1.3, reit:1.1, equity_us:1.0, equity_kr:1.0, crypto:0.8 };
   const ORDER = ['bond_us','commodity','reit','equity_us','equity_kr','crypto'];
 
+  // tot 기준을 자산군 합산으로 맞춤 (cash 포함 분모 불일치 방지)
+  const assetTot = Object.values(cls).reduce(function(s,v){ return s+v; }, 0) - (cls.cash||0);
+  const calcBase = assetTot + (cls.cash||0); // = totalWithCash()와 동일
+
   const deficits = ORDER.map(function(assetKey) {
-    const curPct = tot ? ((cls[assetKey] || 0) / tot) * 100 : 0;
+    const curPct = calcBase ? ((cls[assetKey] || 0) / calcBase) * 100 : 0;
     const tgtPct = target[assetKey] || 0;
     const gapPct = tgtPct - curPct;  // 양수 = 부족
     const weightedGap = gapPct > 0 ? gapPct * (PRIORITY_WEIGHT[assetKey] || 1.0) : 0;
+    console.log('[rebal]', assetKey, 'cur='+curPct.toFixed(1)+'% tgt='+tgtPct+'% gap='+gapPct.toFixed(1)+'% wgap='+weightedGap.toFixed(2));
     return { assetKey, assetLabel: ASSET_LABEL_KO[assetKey] || assetKey, curPct, tgtPct, gapPct, weightedGap };
   }).filter(function(x) { return x.weightedGap > 0; });
+  console.log('[rebal] deficits:', deficits.map(function(d){ return d.assetKey+'('+d.weightedGap.toFixed(1)+')'; }).join(', '));
 
   // 가중 gap 합산으로 비례 배분 (순차 소진 아님 → 모든 부족 자산군에 동시 배분)
   const totalWeightedGap = deficits.reduce(function(s, d) { return s + d.weightedGap; }, 0);
