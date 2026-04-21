@@ -263,7 +263,7 @@ body {
 .h-row:last-child { border-bottom: none; }
 .h-flag { font-size: 11px; flex-shrink: 0; }
 .h-name { flex:1; font-weight: 500; }
-.h-cls { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--bg); color: var(--text3); font-weight: 600; flex-shrink: 0; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
+.h-cls { font-size: 9px; padding: 2px 6px; border-radius: 3px; background: var(--bg); color: var(--text3); font-weight: 600; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; text-align: center; min-width: 48px; }
 .h-amt { font-size: 11px; color: var(--text2); min-width: 65px; text-align: right; }
 .h-pnl { font-size: 11px; font-weight: 600; min-width: 48px; text-align: right; }
 .h-weight { font-size: 10px; color: var(--text3); min-width: 36px; text-align: right; font-weight: 600; }
@@ -1930,7 +1930,7 @@ function renderAccounts() {
       return `<div class="h-row">
         <span class="h-flag">${h.currency_exposure==='USD'?'🇺🇸':h.currency_exposure==='KRW'?'🇰🇷':'₿'}</span>
         <span class="h-name">${h.name}${h.ticker?` <span style="font-size:9px;color:var(--text3)">${h.ticker}</span>`:''}</span>
-        <span class="h-cls">${CLS_LABEL[h.asset_class]||h.asset_class}</span>
+        <span class="h-cls" style="display:inline-flex;align-items:center;justify-content:center;text-align:center;min-width:48px">${CLS_LABEL[h.asset_class]||h.asset_class}</span>
         <span class="h-amt">${fmt(h.amount)}</span>
         <span class="h-weight">${wPct.toFixed(1)}%</span>
         <span class="h-pnl ${pnlCls}">${h.pnl_pct!=null?pct(h.pnl_pct):'—'}</span>
@@ -2180,7 +2180,7 @@ const INVESTOR_PROFILE_SCORE = 4;
 // ── TAA House View: 사용자 입력 taa_house_view가 없을 때는 중립값 사용 ──
 const TAA_HOUSE_VIEW = getDefaultHouseView();
 const ASSET_LABEL_KO = {
-  equity_global:'미국주식', equity_kr:'국내주식', bond_us:'미국채',
+  equity_global:'글로벌주식', equity_kr:'국내주식', bond_us:'미국채권',
   commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
 };
 // JSON execution_policy.preferred_asset_priority 및 보유 종목 기준 정렬
