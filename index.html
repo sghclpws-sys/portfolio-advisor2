@@ -266,6 +266,12 @@ body {
 .h-cls { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--bg); color: var(--text3); font-weight: 600; flex-shrink: 0; }
 .h-amt { font-size: 11px; color: var(--text2); min-width: 65px; text-align: right; }
 .h-pnl { font-size: 11px; font-weight: 600; min-width: 48px; text-align: right; }
+.h-weight { font-size: 10px; color: var(--text3); min-width: 36px; text-align: right; font-weight: 600; }
+.acct-policy { font-size: 11px; color: var(--text2); padding: 8px 16px; border-top: 1px solid var(--border); line-height: 1.6; background: var(--bg); }
+.acct-tax-bar { padding: 8px 16px 10px; border-top: 1px solid var(--border); }
+.acct-cls-bar { display: flex; height: 4px; border-radius: 3px; overflow: hidden; margin: 8px 16px 0; }
+.acct-cls-legend { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 16px 10px; }
+.acct-cls-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 1px; }
 
 /* ── 리밸런싱 테이블 ── */
 .rtable { width: 100%; border-collapse: collapse; }
@@ -1595,7 +1601,7 @@ function renderDonut() {
   document.getElementById('donutSvg').innerHTML=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg)"/>${paths}<circle cx="${cx}" cy="${cy}" r="${r-sw}" fill="var(--surface)"/>`;
   document.getElementById('donutLegend').innerHTML=entries.slice(0,6).map(([cls,val])=>{
     const p=((val/tot)*100), c=CLS_COLOR[cls]||'#d1d5db';
-    const target = { equity_us:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 };
+    const target = ASSET_TARGETS.current; // JSON TAA 반영값 동적 참조
     const t = target[cls]; const dev = t ? p-t : null;
     return `<div class="leg"><div class="leg-dot" style="background:${c}"></div><span class="leg-name">${cls}</span><span class="leg-pct">${p.toFixed(1)}%</span>${dev!=null?`<span class="leg-dev ${Math.abs(dev)<3?'neu':dev>0?'neg':'pos'}">${dev>0?'+':''}${dev.toFixed(1)}</span>`:''}</div>`;
   }).join('');
@@ -1901,25 +1907,92 @@ function renderAccounts() {
     const v = acctVal(a);
     const pnl = (a.assets||[]).reduce((s,h)=>{ if(h.pnl_pct!=null&&h.amount)s+=h.amount-h.amount/(1+h.pnl_pct/100); return s; }, 0);
     const pp = v?(pnl/(v-pnl))*100:0, c = COLORS[ai%COLORS.length];
-    const rows = (a.assets||[]).map(h => `
-      <div class="h-row">
+
+    // ── 계좌 내 자산군 구성 미니바 ──
+    const clsMap = {};
+    (a.assets||[]).forEach(h => { const k = h.asset_class||'other'; clsMap[k]=(clsMap[k]||0)+(h.amount||0); });
+    const clsEntries = Object.entries(clsMap).sort((x,y)=>y[1]-x[1]);
+    const clsBar = clsEntries.map(([k,amt]) => {
+      const w = v ? (amt/v)*100 : 0;
+      return `<div style="flex:${w};background:${CLS_COLOR[k]||'#d1d5db'}" title="${ASSET_LABEL_KO[k]||k} ${w.toFixed(0)}%"></div>`;
+    }).join('');
+    const clsLegend = clsEntries.map(([k,amt]) => {
+      const w = v ? (amt/v)*100 : 0;
+      return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--text2)">
+        <span class="acct-cls-dot" style="background:${CLS_COLOR[k]||'#d1d5db'}"></span>${ASSET_LABEL_KO[k]||k} <b>${w.toFixed(0)}%</b>
+      </span>`;
+    }).join('');
+
+    // ── 종목 행: 비중% 추가 ──
+    const rows = (a.assets||[]).map(h => {
+      const wPct = tot ? ((h.amount||0)/tot)*100 : 0;
+      const pnlCls = h.pnl_pct > 0 ? 'pos' : h.pnl_pct < 0 ? 'neg' : '';
+      return `<div class="h-row">
         <span class="h-flag">${h.currency_exposure==='USD'?'🇺🇸':h.currency_exposure==='KRW'?'🇰🇷':'₿'}</span>
-        <span class="h-name">${h.name}</span>
+        <span class="h-name">${h.name}${h.ticker?` <span style="font-size:9px;color:var(--text3)">${h.ticker}</span>`:''}</span>
         <span class="h-cls">${CLS_LABEL[h.asset_class]||h.asset_class}</span>
         <span class="h-amt">${fmt(h.amount)}</span>
-        <span class="h-pnl ${h.pnl_pct>=0?'pos':h.pnl_pct<0?'neg':''}">${h.pnl_pct!=null?pct(h.pnl_pct):'—'}</span>
-      </div>`).join('');
-    const limit = (a.type === 'isa' || a.type === 'pension' || a.type === 'irp') ? `<div class="acct-limit">${getAccountRole(a)}${a.annual_limit ? ` · 올해 납입 ${fmtF(a.deposited_this_year||0)}` : ''}</div>` : `<div class="acct-limit">${getAccountRole(a)}</div>`;
+        <span class="h-weight">${wPct.toFixed(1)}%</span>
+        <span class="h-pnl ${pnlCls}">${h.pnl_pct!=null?pct(h.pnl_pct):'—'}</span>
+      </div>`;
+    }).join('');
+
+    // ── 세제혜택 바 ──
+    let taxSection = '';
+    if (a.type === 'isa' || a.type === 'pension' || a.type === 'irp') {
+      const lim = a.annual_limit || 0;
+      const dep = a.deposited_this_year || 0;
+      const remain = Math.max(0, lim - dep);
+      const pctFill = lim > 0 ? Math.min((dep/lim)*100, 100) : 0;
+      const barColor = pctFill > 80 ? 'var(--green)' : pctFill > 40 ? 'var(--accent)' : 'var(--border2)';
+      if (lim > 0) {
+        taxSection = `<div class="acct-tax-bar">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span style="font-size:10px;font-weight:600;color:var(--text3)">세제혜택 납입 현황</span>
+            <span style="font-size:10px;color:var(--text2)">잔여 <b style="color:${remain>0?'var(--accent)':'var(--text3)'}">${fmtF(remain)}</b></span>
+          </div>
+          <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pctFill}%;background:${barColor};border-radius:3px;transition:width .6s"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:4px">${fmtF(dep)} / ${fmtF(lim)} 납입 (${pctFill.toFixed(0)}%)</div>
+        </div>`;
+      }
+    }
+
+    // ── 운용 원칙 ──
+    const policyNote = a.execution_policy?.account_objective_note || '';
+    const preferredAssets = (a.execution_policy?.preferred_asset_priority||[]).map(k => ASSET_LABEL_KO[k.replace('_etf','').replace('_stock','').replace('_fund','')] || k).join(' › ');
+    const policySection = policyNote ? `<div class="acct-policy">
+      <span style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">운용 원칙</span><br>
+      ${policyNote}
+      ${preferredAssets ? `<br><span style="font-size:10px;color:var(--text3)">자산 우선순위: </span><span style="font-size:10px;color:var(--accent);font-weight:600">${preferredAssets}</span>` : ''}
+    </div>` : '';
+
+    // ── 계좌 비중 (포트폴리오 전체 대비) ──
+    const acctWeight = tot ? (v/tot)*100 : 0;
+
     return `<div class="acct-card">
       <div class="acct-head">
         <div style="display:flex;align-items:center;flex:1">
           <div class="acct-ind" style="background:${c}"></div>
-          <div><div class="acct-name">${a.name}</div><div class="acct-type">${getAccountRegion(a)} · ${getAccountRole(a)} · ${getBucketTag(a)}</div></div>
+          <div>
+            <div class="acct-name">${a.name}</div>
+            <div class="acct-type">${getAccountRegion(a)} · ${getBucketTag(a)} · 포트폴리오 내 <b>${acctWeight.toFixed(1)}%</b></div>
+          </div>
         </div>
-        <div class="acct-right"><div class="acct-val">${fmt(v)}</div><div class="acct-pnl ${pnl>=0?'pos':'neg'}">${pct(pp)}</div></div>
+        <div class="acct-right">
+          <div class="acct-val">${fmt(v)}</div>
+          <div class="acct-pnl ${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}${fmtF(Math.round(Math.abs(pnl)))} (${pct(pp)})</div>
+        </div>
       </div>
-      <div class="h-list">${rows||'<div style="padding:10px 0;color:var(--text3);font-size:12px">종목 없음</div>'}</div>
-      ${limit}
+      <div class="acct-cls-bar">${clsBar||'<div style="flex:1;background:var(--border)"></div>'}</div>
+      <div class="acct-cls-legend">${clsLegend}</div>
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 16px 2px;font-size:10px;font-weight:600;color:var(--text3)">
+        <span style="flex:1"></span><span style="min-width:65px;text-align:right">평가금액</span><span style="min-width:36px;text-align:right">비중</span><span style="min-width:48px;text-align:right">수익률</span>
+      </div>
+      <div class="h-list">${rows||'<div style="padding:10px 0;color:var(--text3);font-size:12px;text-align:center">종목 없음</div>'}</div>
+      ${taxSection}
+      ${policySection}
     </div>`;
   }).join('');
   // BTC price
@@ -1965,13 +2038,8 @@ function renderAssetRouting() {
 
   const tot = totalWithCash();
   const target = ASSET_TARGETS.current;
-  const cls = {};
-  getActiveAccounts().forEach(function(a) {
-    expandTdfLookthrough(a.assets).forEach(function(h) {
-      const k = h.asset_class || 'other';
-      cls[k] = (cls[k] || 0) + (h.amount || 0);
-    });
-  });
+  // classBreakdown()과 동일한 집계 사용 (getExpandedHoldings 경유)
+  const cls = classBreakdown();
   cls.cash = P.cash?.available || 0;
 
   const ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto'];
@@ -1983,12 +2051,9 @@ function renderAssetRouting() {
     const tgt = target[k] || 0;
     const gap = cur - tgt;
     return { k, cur, tgt, gap, defAmt: Math.round((-gap/100)*tot) };
-  }).filter(function(x) { return Math.abs(x.gap) > 0.5; });
+  }); // 필터 없음 — 모든 자산군 표시 (gap 0인 경우도 현황 파악용으로 표시)
 
-  if (!gapItems.length) {
-    el.innerHTML = '<div style="text-align:center;color:var(--green);font-size:12px;padding:12px;font-weight:600">✓ 전 자산군 목표 비중 달성 — 리밸런싱 불필요</div>';
-    return;
-  }
+  // 항상 모든 자산군 표시
 
   // 헤더
   let html = `<div style="display:grid;grid-template-columns:90px 1fr 80px 80px 80px 120px;gap:0;padding:6px 0 8px;border-bottom:2px solid var(--border);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">
@@ -2004,12 +2069,13 @@ function renderAssetRouting() {
     const isBuy = gap < 0;
     const isOver = gap > BAND;
     const isUnder = gap < -BAND;
+    const isOk = Math.abs(gap) <= BAND;
     const gapColor = isUnder ? 'var(--green)' : isOver ? 'var(--red)' : 'var(--text3)';
     const actionTag = isUnder
       ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--green-l);color:var(--green)">추가매수</span>`
       : isOver
       ? `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--red-l);color:var(--red)">초과</span>`
-      : `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--bg);color:var(--text3)">미미</span>`;
+      : `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--bg);color:var(--text3)">±OK</span>`;
 
     // 실행 계좌 라우팅
     let routingHtml = '';
@@ -2058,7 +2124,7 @@ function renderAssetRouting() {
 
 
 const ASSET_TARGETS = {
-  current: { equity_us:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
+  current: { equity_us:55, equity_kr:9, bond_us:12, commodity:10, reit:3, crypto:3, cash:8 }, // TAA 반영값 (JSON taa_house_view 기준)
   merton:  { equity_us:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7 }
 };
 
@@ -2117,13 +2183,14 @@ const ASSET_LABEL_KO = {
   equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채',
   commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
 };
+// JSON execution_policy.preferred_asset_priority 및 보유 종목 기준 정렬
 const ASSET_BUY_HINT = {
-  bond_us:   '→ 연금저축: TIGER 미국채10년선물 / TIGER 미국30년국채',
-  commodity: '→ 연금저축: TIGER 골드선물(H) / KODEX WTI',
-  reit:      '→ ISA: RISE 글로벌리얼티인컴',
-  equity_us: '→ ISA / 연금저축: KODEX S&P500 / KODEX 나스닥100',
-  equity_kr: '→ ISA: TIGER 코리아배당다우존스',
-  crypto:    '→ 업비트 BTC 보유 중',
+  bond_us:   '→ 연금저축(ETF) 1순위: TIGER 미국채10년선물 / TIGER 미국30년국채스트립액티브 · IRP 2순위',
+  commodity: '→ 연금저축(ETF) 1순위: TIGER 골드선물(H) / KODEX WTI원유선물 / HANARO 글로벌금채굴기업',
+  reit:      '→ ISA 1순위: RISE 글로벌리얼티인컴',
+  equity_us: '→ ISA 1순위: KODEX 미국S&P500 / KODEX 미국나스닥100 / KODEX 미국배당다우존스',
+  equity_kr: '→ ISA 1순위: TIGER 코리아배당다우존스 / PLUS 고배당주',
+  crypto:    '→ 업비트: BTC 보유 중 (신규매수 지양 · 비중 관리 우선)',
 };
 
 // ── Asset Location: 계좌별 최적 자산 배치 원칙 ──
@@ -2220,7 +2287,7 @@ function expandTdfLookthrough(assets) {
   const result = [];
   (assets||[]).forEach(h => {
     const lt = TDF_LOOKTHROUGH[h.id];
-    if (lt && (h.asset_type === 'fund' || h.asset_class === 'fund' || h.asset_class === 'irp')) {
+    if (lt && (h.asset_type === 'fund' || h.asset_class === 'fund')) {
       // TDF를 내부 자산군별로 분해
       Object.entries(lt).forEach(([cls, ratio]) => {
         result.push({ ...h, asset_class: cls, amount: h.amount * ratio, _tdf_source: h.name });
@@ -2380,14 +2447,15 @@ function getAccountDisplayColor(accountName) {
 
 function getEligibleAccountsForAsset(assetKey) {
   const accounts = getActiveAccounts();
+  // JSON purchase_routing_rules.asset_routing 기준으로 정렬
   const rules = {
-    equity_us: ['isa','pension','taxable'],
-    equity_kr: ['isa','taxable','pension'],
-    bond_us: ['pension','irp','isa'],
-    commodity: ['pension','isa','irp'],
-    reit: ['isa','pension','taxable'],
-    crypto: ['crypto_exchange'],
-    cash: ['isa','taxable']
+    equity_us: ['isa','pension','taxable'],   // equity_us_etf: isa → pension_etf → taxable_etf
+    equity_kr: ['isa','taxable','pension'],   // equity_kr_etf: isa → taxable
+    bond_us:   ['pension','irp','isa'],       // bond_us_etf: pension_etf → irp → isa
+    commodity: ['pension','isa','irp'],       // commodity_etf: pension_etf → pension_tdf_cash → isa → irp
+    reit:      ['isa','pension','taxable'],   // reit: isa → pension_etf → taxable
+    crypto:    ['crypto_exchange'],
+    cash:      ['isa','taxable']
   };
   const preferredTypes = rules[assetKey] || ['isa','pension','irp','taxable'];
   return accounts.filter(function(a) {
@@ -3686,6 +3754,8 @@ function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
 // ══════════════════════════════════════════
 function syncTAAtoTargets() {
   // TAA House View의 조정을 SAA에 더해 current target에 반영
+  // P 없으면 초기값(JSON TAA 기준으로 이미 세팅된 current) 유지
+  if (!P) return;
   var prof = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
   var newTarget = {};
   var ORDER = ['equity_us', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
