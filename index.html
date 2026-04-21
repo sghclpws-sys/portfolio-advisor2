@@ -263,7 +263,7 @@ body {
 .h-row:last-child { border-bottom: none; }
 .h-flag { font-size: 11px; flex-shrink: 0; }
 .h-name { flex:1; font-weight: 500; }
-.h-cls { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--bg); color: var(--text3); font-weight: 600; flex-shrink: 0; }
+.h-cls { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: var(--bg); color: var(--text3); font-weight: 600; flex-shrink: 0; text-align: center; display: inline-flex; align-items: center; justify-content: center; }
 .h-amt { font-size: 11px; color: var(--text2); min-width: 65px; text-align: right; }
 .h-pnl { font-size: 11px; font-weight: 600; min-width: 48px; text-align: right; }
 .h-weight { font-size: 10px; color: var(--text3); min-width: 36px; text-align: right; font-weight: 600; }
@@ -413,7 +413,7 @@ body {
   </div>
   <div class="nav">
     <div class="nav-section">관리</div>
-    <div class="nav-item active" data-page="home"><span class="nav-icon">◈</span>지금 상태</div>
+    <div class="nav-item active" data-page="home"><span class="nav-icon">◈</span>포트폴리오</div>
     <div class="nav-item" data-page="accounts"><span class="nav-icon">≡</span>계좌 현황</div>
     <div class="nav-item" data-page="rebalance"><span class="nav-icon">⇌</span>리밸런싱</div>
     <div class="nav-section">시장</div>
@@ -432,7 +432,7 @@ body {
 <!-- MAIN -->
 <div class="main">
   <div class="topbar">
-    <div class="page-title" id="pageTitle">지금 상태</div>
+    <div class="page-title" id="pageTitle">포트폴리오</div>
     <div class="topbar-right">
       <span class="live-tag"><span class="live-dot"></span>LIVE</span>
       <button class="btn btn-outline btn-sm" onclick="refreshAll()">↻ 시세 갱신</button>
@@ -1009,13 +1009,13 @@ let P = null; // portfolio
 let M = { btc:null, eth:null, sol:null, fx:null, fg:null, rates:{} };
 
 const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#ea580c','#65a30d'];
-const CLS_COLOR = { equity_us:'#2563eb', equity_kr:'#059669', bond_us:'#7c3aed', commodity:'#d97706', reit:'#0891b2', crypto:'#ea580c', cash:'#9ca3af', irp:'#65a30d', 기타:'#d1d5db' };
-const CLS_LABEL = { equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', irp:'IRP', fund:'펀드' };
+const CLS_COLOR = { equity_global:'#2563eb', equity_kr:'#059669', bond_us:'#7c3aed', commodity:'#d97706', reit:'#0891b2', crypto:'#ea580c', cash:'#9ca3af', irp:'#65a30d', 기타:'#d1d5db' };
+const CLS_LABEL = { equity_global:'글로벌주식', equity_kr:'국내주식', bond_us:'미국채권', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', irp:'IRP', fund:'펀드' };
 const ACCT_PURPOSE = { taxable:'일반계좌', isa:'ISA', pension:'연금저축', irp:'IRP', crypto_exchange:'암호화폐' };
 const PAGE_TITLES = { home:'지금 상태', accounts:'계좌 현황', rebalance:'리밸런싱', macro:'매크로', strategy:'WM 전략', analytics:'투자 분석' };
 
 const REBALANCE_BAND = 5;
-const ASSET_ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+const ASSET_ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
 
 function getMacroAssumptions() {
   return P?.macro_assumptions || {};
@@ -1069,7 +1069,7 @@ function getExpandedHoldings() {
 
 function isUsdExposureHolding(h) {
   if (h.currency_exposure === 'USD') return true;
-  if (['equity_us','bond_us','reit'].indexOf(h.asset_class) !== -1) return true;
+  if (['equity_global','bond_us','reit'].indexOf(h.asset_class) !== -1) return true;
   return false;
 }
 
@@ -1127,14 +1127,14 @@ function normalizePortfolioData(parsed) {
   function deriveExecutionAssetClass(h) {
     if (h.execution_asset_class) return h.execution_asset_class;
     if (h.asset_type === 'etf') {
-      if (h.asset_class === 'equity_us') return 'equity_us_etf';
+      if (h.asset_class === 'equity_global') return 'equity_global_etf';
       if (h.asset_class === 'equity_kr') return 'equity_kr_etf';
       if (h.asset_class === 'bond_us') return 'bond_us_etf';
       if (h.asset_class === 'commodity') return 'commodity_etf';
       if (h.asset_class === 'reit') return 'reit_etf';
     }
     if (h.asset_type === 'stock') {
-      if (h.asset_class === 'equity_us') return 'equity_us_stock';
+      if (h.asset_class === 'equity_global') return 'equity_global_stock';
       if (h.asset_class === 'equity_kr') return 'equity_kr_stock';
     }
     if (h.asset_type === 'fund' && (h.id || '').toLowerCase().includes('tdf')) return 'tdf_fund';
@@ -1144,8 +1144,8 @@ function normalizePortfolioData(parsed) {
 
   function defaultPreferredAccountTypes(executionAssetClass) {
     const map = {
-      equity_us_etf: ['isa','pension','taxable'],
-      equity_us_stock: ['taxable'],
+      equity_global_etf: ['isa','pension','taxable'],
+      equity_global_stock: ['taxable'],
       equity_kr_etf: ['isa','taxable','pension'],
       equity_kr_stock: ['taxable','isa'],
       bond_us_etf: ['pension','irp','isa'],
@@ -1183,7 +1183,7 @@ function normalizePortfolioData(parsed) {
       a.execution_policy.allow_rebalance_target = (a.execution_policy.allow_rebalance_target === undefined) ? false : a.execution_policy.allow_rebalance_target;
       a.execution_policy.allow_direct_bond_recommendation = (a.execution_policy.allow_direct_bond_recommendation === undefined) ? false : a.execution_policy.allow_direct_bond_recommendation;
       a.execution_policy.preferred_buy_assets = a.execution_policy.preferred_buy_assets || ['commodity'];
-      a.execution_policy.blocked_primary_rebalance_assets = a.execution_policy.blocked_primary_rebalance_assets || ['bond_us','equity_us','equity_kr','reit','crypto'];
+      a.execution_policy.blocked_primary_rebalance_assets = a.execution_policy.blocked_primary_rebalance_assets || ['bond_us','equity_global','equity_kr','reit','crypto'];
       a.execution_policy.preferred_instrument_groups = a.execution_policy.preferred_instrument_groups || ['fund','etf'];
       a.execution_policy.rebalance_priority = a.execution_policy.rebalance_priority || 'restricted';
     }
@@ -1392,7 +1392,7 @@ function runRuleEngine() {
   const bd = classBreakdown();
   // TAA 반영 목표 사용 (syncTAAtoTargets로 업데이트된 값)
   const assetTarget = ASSET_TARGETS.current;
-  const ORDER_CHECK = ['equity_us','bond_us','equity_kr','commodity','reit'];
+  const ORDER_CHECK = ['equity_global','bond_us','equity_kr','commodity','reit'];
   ORDER_CHECK.forEach(k => {
     const curPct = tot ? ((bd[k]||0)/tot)*100 : 0;
     const tgtPct = assetTarget[k]||0;
@@ -1648,7 +1648,7 @@ function renderDeviationList() {
   const bd = { ...classBreakdown(), cash: P?.cash?.available||0 };
   const target = ASSET_TARGETS.current;
   const BAND = REBALANCE_BAND;
-  const ORDER = ['equity_us','bond_us','equity_kr','commodity','reit','crypto'];
+  const ORDER = ['equity_global','bond_us','equity_kr','commodity','reit','crypto'];
   
   const triggered = ORDER.filter(k => {
     const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
@@ -1705,7 +1705,7 @@ function getExpandedPortfolioMetrics() {
   let usd = 0;
   getActiveAccounts().forEach(a => {
     expandTdfLookthrough(a.assets).forEach(h => {
-      if (h.currency_exposure === 'USD' || h.asset_class === 'equity_us' || h.asset_class === 'bond_us' || h.asset_class === 'reit') usd += (h.amount || 0);
+      if (h.currency_exposure === 'USD' || h.asset_class === 'equity_global' || h.asset_class === 'bond_us' || h.asset_class === 'reit') usd += (h.amount || 0);
     });
   });
   return { tot, bd, usdPct: tot ? (usd / tot) * 100 : 0 };
@@ -1719,7 +1719,7 @@ function renderPBHomeComment() {
     return;
   }
   const { tot, bd, usdPct } = getExpandedPortfolioMetrics();
-  const eqPct = tot ? (((bd.equity_us||0)+(bd.equity_kr||0))/tot)*100 : 0;
+  const eqPct = tot ? (((bd.equity_global||0)+(bd.equity_kr||0))/tot)*100 : 0;
   const bondPct = tot ? ((bd.bond_us||0)/tot)*100 : 0;
   const cryptoPct = tot ? ((bd.crypto||0)/tot)*100 : 0;
   const comments = [];
@@ -1744,7 +1744,7 @@ function renderPBRebalComment() {
   }
   const { tot, bd } = getExpandedPortfolioMetrics();
   const target = ASSET_TARGETS.current || {};
-  const order = ['equity_us','bond_us','equity_kr','commodity','reit','crypto'];
+  const order = ['equity_global','bond_us','equity_kr','commodity','reit','crypto'];
   const deficits = [];
   const excesses = [];
   order.forEach(k => {
@@ -2042,7 +2042,7 @@ function renderAssetRouting() {
   const cls = classBreakdown();
   cls.cash = P.cash?.available || 0;
 
-  const ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto'];
+  const ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto'];
   const BAND = REBALANCE_BAND;
 
   // 자산군 중 gap이 있는 것만 라우팅 표시
@@ -2084,11 +2084,11 @@ function renderAssetRouting() {
       if (candidates.length) {
         routingHtml = candidates.slice(0,3).map(function(a, idx) {
           const badge = idx === 0
-            ? `<span style="font-size:9px;padding:1px 5px;border-radius:8px;background:var(--accent-l);color:var(--accent);font-weight:700">1순위</span>`
-            : `<span style="font-size:9px;color:var(--text3)">${idx+1}순위</span>`;
+            ? `<span style="font-size:9px;padding:1px 5px;border-radius:8px;background:var(--accent-l);color:var(--accent);font-weight:700;min-width:34px;display:inline-block;text-align:center">1순위</span>`
+            : `<span style="font-size:9px;color:var(--text3);min-width:34px;display:inline-block">${idx+1}순위</span>`;
           const taxRemain = getAccountTaxRemaining(a);
           const taxNote = taxRemain > 0 ? `<span style="color:var(--accent);font-size:9px"> +세제혜택 ${fmtF(taxRemain)}</span>` : '';
-          return `<div style="display:flex;align-items:center;gap:5px;padding:2px 0">${badge}<span style="font-size:11px;color:var(--text)">${a.name}</span>${taxNote}</div>`;
+          return `<div style="display:flex;align-items:center;gap:6px;padding:2px 0">${badge}<span style="font-size:11px;color:var(--text)">${a.name}</span>${taxNote}</div>`;
         }).join('');
       } else {
         routingHtml = '<span style="font-size:11px;color:var(--text3)">실행 가능 계좌 없음</span>';
@@ -2124,13 +2124,13 @@ function renderAssetRouting() {
 
 
 const ASSET_TARGETS = {
-  current: { equity_us:55, equity_kr:9, bond_us:12, commodity:10, reit:3, crypto:3, cash:8 }, // TAA 반영값 (JSON taa_house_view 기준)
-  merton:  { equity_us:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7 }
+  current: { equity_global:55, equity_kr:9, bond_us:12, commodity:10, reit:3, crypto:3, cash:8 }, // TAA 반영값 (JSON taa_house_view 기준)
+  merton:  { equity_global:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7 }
 };
 
 // ── Global WM: 자산군 역할 정의 ──
 const ASSET_ROLE = {
-  equity_us:  { role:'성장',   icon:'📈', color:'#2563eb', desc:'장기 복리 수익의 핵심 엔진. 포트폴리오 성장 동력.' },
+  equity_global:  { role:'성장',   icon:'📈', color:'#2563eb', desc:'장기 복리 수익의 핵심 엔진. 포트폴리오 성장 동력.' },
   equity_kr:  { role:'성장',   icon:'📈', color:'#059669', desc:'국내 시장 노출. 환율 헤지 + 로컬 성장 포착.' },
   bond_us:    { role:'방어',   icon:'🛡️', color:'#7c3aed', desc:'주식과 음의 상관관계. 하락장 완충 + 쿠폰 현금흐름.' },
   commodity:  { role:'헤지',   icon:'🔰', color:'#d97706', desc:'인플레이션·지정학 헤지. 실물자산 노출.' },
@@ -2144,31 +2144,31 @@ const WM_PROFILES = [
   {
     grade: 'Conservative', ko: '안정형', score: 1,
     desc: '자본 보전 최우선. 변동성 최소화.',
-    saa: { equity_us:15, equity_kr:5, bond_us:50, commodity:5, reit:5, crypto:0, cash:20 },
+    saa: { equity_global:15, equity_kr:5, bond_us:50, commodity:5, reit:5, crypto:0, cash:20 },
     maxDrawdown: -10, targetReturn: 4.5,
   },
   {
     grade: 'Moderate', ko: '안정성장형', score: 2,
     desc: '안정성과 성장 균형. 중간 변동성 허용.',
-    saa: { equity_us:30, equity_kr:5, bond_us:35, commodity:8, reit:7, crypto:0, cash:15 },
+    saa: { equity_global:30, equity_kr:5, bond_us:35, commodity:8, reit:7, crypto:0, cash:15 },
     maxDrawdown: -18, targetReturn: 6.0,
   },
   {
     grade: 'Balanced', ko: '균형형', score: 3,
     desc: '장기 성장 추구. 단기 변동성 감내.',
-    saa: { equity_us:45, equity_kr:8, bond_us:25, commodity:8, reit:5, crypto:2, cash:7 },
+    saa: { equity_global:45, equity_kr:8, bond_us:25, commodity:8, reit:5, crypto:2, cash:7 },
     maxDrawdown: -25, targetReturn: 7.5,
   },
   {
     grade: 'Growth', ko: '성장형', score: 4,
     desc: '성장 중심. 높은 변동성 허용. 장기 지평.',
-    saa: { equity_us:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
+    saa: { equity_global:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
     maxDrawdown: -35, targetReturn: 9.0,
   },
   {
     grade: 'Aggressive', ko: '공격형', score: 5,
     desc: '최대 성장 추구. 단기 손실 -40%+ 감내 가능.',
-    saa: { equity_us:65, equity_kr:12, bond_us:5, commodity:8, reit:3, crypto:7, cash:0 },
+    saa: { equity_global:65, equity_kr:12, bond_us:5, commodity:8, reit:3, crypto:7, cash:0 },
     maxDrawdown: -45, targetReturn: 11.0,
   },
 ];
@@ -2180,7 +2180,7 @@ const INVESTOR_PROFILE_SCORE = 4;
 // ── TAA House View: 사용자 입력 taa_house_view가 없을 때는 중립값 사용 ──
 const TAA_HOUSE_VIEW = getDefaultHouseView();
 const ASSET_LABEL_KO = {
-  equity_us:'미국주식', equity_kr:'국내주식', bond_us:'미국채',
+  equity_global:'미국주식', equity_kr:'국내주식', bond_us:'미국채',
   commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
 };
 // JSON execution_policy.preferred_asset_priority 및 보유 종목 기준 정렬
@@ -2188,7 +2188,7 @@ const ASSET_BUY_HINT = {
   bond_us:   '→ 연금저축(ETF) 1순위: TIGER 미국채10년선물 / TIGER 미국30년국채스트립액티브 · IRP 2순위',
   commodity: '→ 연금저축(ETF) 1순위: TIGER 골드선물(H) / KODEX WTI원유선물 / HANARO 글로벌금채굴기업',
   reit:      '→ ISA 1순위: RISE 글로벌리얼티인컴',
-  equity_us: '→ ISA 1순위: KODEX 미국S&P500 / KODEX 미국나스닥100 / KODEX 미국배당다우존스',
+  equity_global: '→ ISA 1순위: KODEX 미국S&P500 / KODEX 미국나스닥100 / KODEX 미국배당다우존스',
   equity_kr: '→ ISA 1순위: TIGER 코리아배당다우존스 / PLUS 고배당주',
   crypto:    '→ 업비트: BTC 보유 중 (신규매수 지양 · 비중 관리 우선)',
 };
@@ -2196,7 +2196,7 @@ const ASSET_BUY_HINT = {
 // ── Asset Location: 계좌별 최적 자산 배치 원칙 ──
 // JPM Private Bank 방식: 세후 수익률 최대화를 위해 자산을 계좌에 배치
 const ASSET_LOCATION = {
-  equity_us:  { best: 'ISA', second: '연금저축', worst: '일반(22%양도세)', reason: '성장 자산은 비과세/과세이연 계좌 우선. 일반계좌 매도 시 22% 세금.' },
+  equity_global:  { best: 'ISA', second: '연금저축', worst: '일반(22%양도세)', reason: '성장 자산은 비과세/과세이연 계좌 우선. 일반계좌 매도 시 22% 세금.' },
   equity_kr:  { best: 'ISA', second: '일반(국내비과세)', worst: null, reason: '국내주식 양도세 없음. ISA 비과세 한도 활용 우선.' },
   bond_us:    { best: '연금저축', second: 'IRP', worst: 'ISA(기회비용)', reason: '이자 과세이연 효과. 연금 계좌에서 자유 전환 가능.' },
   commodity:  { best: '연금저축', second: 'ISA', worst: '일반', reason: '원자재 ETF 분배금 과세이연. 연금 내 전환 비용 없음.' },
@@ -2227,7 +2227,7 @@ const BUCKETS = [
     purpose: 'ISA 비과세 · 배당+성장 · 세제 혜택 극대화',
     accounts: ['미래에셋 ISA'],
     acctTypes: ['isa'],
-    assetClasses: ['equity_us', 'equity_kr', 'reit'],
+    assetClasses: ['equity_global', 'equity_kr', 'reit'],
   },
   {
     id: 'long_compounding',
@@ -2238,7 +2238,7 @@ const BUCKETS = [
     purpose: '연금저축 · IRP · 과세이연 복리 · TDF',
     accounts: ['미래에셋 연금저축 (ETF)', '미래에셋 연금저축 (TDF)', '개인형IRP'],
     acctTypes: ['pension', 'irp'],
-    assetClasses: ['bond_us', 'commodity', 'equity_us'],
+    assetClasses: ['bond_us', 'commodity', 'equity_global'],
   },
   {
     id: 'aggressive',
@@ -2249,7 +2249,7 @@ const BUCKETS = [
     purpose: '미국 개별주 · 성장 ETF · 달러 노출 확대',
     accounts: ['미래에셋 일반계좌', '삼성증권 일반계좌', '유진/SK증권'],
     acctTypes: ['taxable'],
-    assetClasses: ['equity_us', 'equity_kr'],
+    assetClasses: ['equity_global', 'equity_kr'],
   },
   {
     id: 'satellite',
@@ -2276,10 +2276,10 @@ const RISK_LIMITS = {
 // TDF Look-through 비율 정의 (종목 id 기준)
 // 출처: 미래에셋·한화 TDF 글라이드패스 2026년 기준 추정치
 const TDF_LOOKTHROUGH = {
-  tdf2055:      { equity_us: 0.75, equity_kr: 0.10, bond_us: 0.10, commodity: 0.03, cash: 0.02 },
-  tdf2050:      { equity_us: 0.70, equity_kr: 0.10, bond_us: 0.15, commodity: 0.03, cash: 0.02 },
-  mirae_tdf2050:{ equity_us: 0.70, equity_kr: 0.10, bond_us: 0.15, commodity: 0.03, cash: 0.02 },
-  hanwha_tdf2050:{ equity_us: 0.68, equity_kr: 0.10, bond_us: 0.17, commodity: 0.03, cash: 0.02 },
+  tdf2055:      { equity_global: 0.75, equity_kr: 0.10, bond_us: 0.10, commodity: 0.03, cash: 0.02 },
+  tdf2050:      { equity_global: 0.70, equity_kr: 0.10, bond_us: 0.15, commodity: 0.03, cash: 0.02 },
+  mirae_tdf2050:{ equity_global: 0.70, equity_kr: 0.10, bond_us: 0.15, commodity: 0.03, cash: 0.02 },
+  hanwha_tdf2050:{ equity_global: 0.68, equity_kr: 0.10, bond_us: 0.17, commodity: 0.03, cash: 0.02 },
 };
 
 // TDF Look-through 분해 함수
@@ -2344,7 +2344,7 @@ function renderAssetCls() {
   }).join('');
 
   // 자산군 행 렌더링 (fund 버킷 없음 — TDF는 look-through 분해됨)
-  const ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  const ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
   const rows = ORDER.map(k => {
     const val = cls[k]||0;
     const cur = tot ? (val/tot)*100 : 0;
@@ -2451,14 +2451,14 @@ function getEligibleAccountsForAsset(assetKey) {
   // ── Step 1: 자산군의 instrument 유형 판단 ──
   // stock 계열 → 일반계좌(taxable, vehicle=stock)만
   // ETF/fund 계열 → 세제혜택 계좌 pool (pension/irp/isa) + 마지막 수단으로 taxable ETF
-  const STOCK_ASSETS = ['equity_us_stock', 'equity_kr_stock'];
-  const ETF_ASSETS   = ['equity_us_etf', 'equity_kr_etf', 'bond_us_etf', 'commodity_etf', 'reit_etf', 'bond_us_fund'];
-  // assetKey는 asset_class 단위 (equity_us, bond_us 등) → execution_asset_class 아님
+  const STOCK_ASSETS = ['equity_global_stock', 'equity_kr_stock'];
+  const ETF_ASSETS   = ['equity_global_etf', 'equity_kr_etf', 'bond_us_etf', 'commodity_etf', 'reit_etf', 'bond_us_fund'];
+  // assetKey는 asset_class 단위 (equity_global, bond_us 등) → execution_asset_class 아님
   // 자산군별 기본 instrument 유형
-  const ASSET_IS_STOCK = { equity_us_stock: true, equity_kr_stock: true };
-  const isStockAsset = (assetKey === 'equity_us' || assetKey === 'equity_kr');
-  // equity_us/kr는 ETF로도 살 수 있으므로 계좌 vehicle로 판단
-  // → taxable(stock) 계좌에서 equity_us/kr 살 때는 stock으로, ETF 계좌에서는 ETF로
+  const ASSET_IS_STOCK = { equity_global_stock: true, equity_kr_stock: true };
+  const isStockAsset = (assetKey === 'equity_global' || assetKey === 'equity_kr');
+  // equity_global/kr는 ETF로도 살 수 있으므로 계좌 vehicle로 판단
+  // → taxable(stock) 계좌에서 equity_global/kr 살 때는 stock으로, ETF 계좌에서는 ETF로
   // 여기서는 "어느 계좌 pool에 들어가는가"를 결정
 
   // crypto → crypto_exchange만
@@ -2476,8 +2476,8 @@ function getEligibleAccountsForAsset(assetKey) {
 
     const vehicle = (a.execution_policy || {}).preferred_trade_vehicle || '';
 
-    // equity_us / equity_kr: stock 계좌(일반계좌)도 후보 포함
-    if (assetKey === 'equity_us' || assetKey === 'equity_kr') {
+    // equity_global / equity_kr: stock 계좌(일반계좌)도 후보 포함
+    if (assetKey === 'equity_global' || assetKey === 'equity_kr') {
       return ['isa','pension','irp','taxable'].includes(a.type);
     }
     // bond_us, commodity, reit: ETF/fund 계좌만 (taxable stock 계좌 제외)
@@ -2543,7 +2543,7 @@ function getEligibleAccountsForAsset(assetKey) {
 
 function getAssetBaseScores(assetKey, account) {
   const isTdf = (account.name || '').includes('(TDF)');
-  if (assetKey === 'equity_us') {
+  if (assetKey === 'equity_global') {
     if (account.type === 'isa') return 100;
     if (account.type === 'pension' && !isTdf) return 70;
     if (account.type === 'taxable') return 45;
@@ -2626,8 +2626,8 @@ function buildBuyPlanByAsset(cashInput) {
 
   // gap% 기준으로 부족 자산군 산출 (TAA 우선순위 반영 가중치 포함)
   // priorityWeight: 방어자산(bond/commodity) 우선 → 성장자산 순
-  const PRIORITY_WEIGHT = { bond_us:1.4, commodity:1.3, reit:1.1, equity_us:1.0, equity_kr:1.0, crypto:0.8 };
-  const ORDER = ['bond_us','commodity','reit','equity_us','equity_kr','crypto'];
+  const PRIORITY_WEIGHT = { bond_us:1.4, commodity:1.3, reit:1.1, equity_global:1.0, equity_kr:1.0, crypto:0.8 };
+  const ORDER = ['bond_us','commodity','reit','equity_global','equity_kr','crypto'];
 
   // tot 기준을 자산군 합산으로 맞춤 (cash 포함 분모 불일치 방지)
   const assetTot = Object.values(cls).reduce(function(s,v){ return s+v; }, 0) - (cls.cash||0);
@@ -2796,7 +2796,7 @@ function renderRebalHistory() {
 
 // ── 자산군별 파라미터 (역사적 추정치) ──
 const ASSET_PARAMS = {
-  equity_us:  { mu: 0.08, sigma: 0.17, label: '미국주식' },
+  equity_global:  { mu: 0.08, sigma: 0.17, label: '글로벌주식' },
   equity_kr:  { mu: 0.08, sigma: 0.22, label: '국내주식' },
   bond_us:    { mu: 0.04, sigma: 0.07, label: '미국채'   },
   commodity:  { mu: 0.05, sigma: 0.20, label: '원자재'   },
@@ -2807,18 +2807,18 @@ const ASSET_PARAMS = {
 
 // ── 자산군 간 상관계수 행렬 (간략화) ──
 const CORR = {
-  equity_us: { equity_us:1.00, equity_kr:0.55, bond_us:-0.10, commodity:0.15, reit:0.65, crypto:0.20, cash:0.00 },
-  equity_kr: { equity_us:0.55, equity_kr:1.00, bond_us:-0.05, commodity:0.10, reit:0.50, crypto:0.15, cash:0.00 },
-  bond_us:   { equity_us:-0.10,equity_kr:-0.05,bond_us:1.00,  commodity:0.05, reit:0.20, crypto:-0.05,cash:0.05  },
-  commodity: { equity_us:0.15, equity_kr:0.10, bond_us:0.05,  commodity:1.00, reit:0.25, crypto:0.10, cash:0.00 },
-  reit:      { equity_us:0.65, equity_kr:0.50, bond_us:0.20,  commodity:0.25, reit:1.00, crypto:0.15, cash:0.00 },
-  crypto:    { equity_us:0.20, equity_kr:0.15, bond_us:-0.05, commodity:0.10, reit:0.15, crypto:1.00, cash:0.00 },
-  cash:      { equity_us:0.00, equity_kr:0.00, bond_us:0.05,  commodity:0.00, reit:0.00, crypto:0.00, cash:1.00 },
+  equity_global: { equity_global:1.00, equity_kr:0.55, bond_us:-0.10, commodity:0.15, reit:0.65, crypto:0.20, cash:0.00 },
+  equity_kr: { equity_global:0.55, equity_kr:1.00, bond_us:-0.05, commodity:0.10, reit:0.50, crypto:0.15, cash:0.00 },
+  bond_us:   { equity_global:-0.10,equity_kr:-0.05,bond_us:1.00,  commodity:0.05, reit:0.20, crypto:-0.05,cash:0.05  },
+  commodity: { equity_global:0.15, equity_kr:0.10, bond_us:0.05,  commodity:1.00, reit:0.25, crypto:0.10, cash:0.00 },
+  reit:      { equity_global:0.65, equity_kr:0.50, bond_us:0.20,  commodity:0.25, reit:1.00, crypto:0.15, cash:0.00 },
+  crypto:    { equity_global:0.20, equity_kr:0.15, bond_us:-0.05, commodity:0.10, reit:0.15, crypto:1.00, cash:0.00 },
+  cash:      { equity_global:0.00, equity_kr:0.00, bond_us:0.05,  commodity:0.00, reit:0.00, crypto:0.00, cash:1.00 },
 };
 
 // ── 포트폴리오 μ, σ 계산 (가중평균 + 공분산 반영) ──
 function calcPortfolioStats(weights) {
-  // weights: { equity_us: 0.55, bond_us: 0.10, ... } (합계 1)
+  // weights: { equity_global: 0.55, bond_us: 0.10, ... } (합계 1)
   const keys = Object.keys(weights).filter(k => weights[k] > 0);
   
   // μ_p = Σ w_i · μ_i
@@ -2917,7 +2917,7 @@ function runAnalytics() {
   const wStar = Math.min(mertonWeight(mu_eq, rf, lambda, sigma), 1.0); // 상한 100%
   const wRf   = Math.max(1 - wStar, 0);
 
-  // 주식을 equity_us(85%) + equity_kr(15%)로 배분
+  // 주식을 equity_global(85%) + equity_kr(15%)로 배분
   // 채권/원자재/리츠는 무위험 비중에서 배분
   const bond      = wRf * 0.55;
   const commodity = wRf * 0.25;
@@ -2929,7 +2929,7 @@ function runAnalytics() {
   // 합계 맞추기 (반올림 오차 보정)
   const total = eq_us + eq_kr + bond + commodity + reit + cash;
   ASSET_TARGETS.merton = {
-    equity_us:  Math.round(eq_us  / total * 100),
+    equity_global:  Math.round(eq_us  / total * 100),
     equity_kr:  Math.round(eq_kr  / total * 100),
     bond_us:    Math.round(bond   / total * 100),
     commodity:  Math.round(commodity / total * 100),
@@ -3035,7 +3035,7 @@ function renderMertonSection(lambda, mu, rf, sigma) {
   var wRfPct   = 100 - wStarPct;
 
   var curWeights = getCurrentWeights();
-  var curEqPct   = curWeights ? ((curWeights.equity_us||0) + (curWeights.equity_kr||0)) * 100 : null;
+  var curEqPct   = curWeights ? ((curWeights.equity_global||0) + (curWeights.equity_kr||0)) * 100 : null;
 
   badge.textContent = 'w* = ' + wStarPct.toFixed(1) + '%';
   badge.style.background = wStarPct > 80 ? 'var(--orange-l)' : wStarPct > 60 ? 'var(--green-l)' : 'var(--accent-l)';
@@ -3113,7 +3113,7 @@ function renderSharpeSection(lambda, rf) {
   var sigma_p   = stats.sigma_p;
   var SR_cur    = sharpeRatio(mu_p, sigma_p, rf);
   var U_cur     = calcUtility(mu_p, sigma_p, lambda);
-  var w6040     = { equity_us:0.60, equity_kr:0.05, bond_us:0.35 };
+  var w6040     = { equity_global:0.60, equity_kr:0.05, bond_us:0.35 };
   var st6040    = calcPortfolioStats(w6040);
   var SR_6040   = sharpeRatio(st6040.mu_p, st6040.sigma_p, rf);
   var srGrade   = SR_cur >= 1.0 ? { g:'우수', c:'var(--green)' }
@@ -3164,7 +3164,7 @@ function renderUtilitySection(lambda, mu, rf, sigma) {
   if (!tblEl || !canvasEl) return;
 
   const curWeights = getCurrentWeights();
-  const curEqPct = curWeights ? ((curWeights.equity_us||0)+(curWeights.equity_kr||0))*100 : null;
+  const curEqPct = curWeights ? ((curWeights.equity_global||0)+(curWeights.equity_kr||0))*100 : null;
   const wStar = mertonWeight(mu, rf, lambda, sigma) * 100;
 
   // 비중별 효용 계산 (0%~120% 주식, 나머지 무위험)
@@ -3186,7 +3186,7 @@ function renderUtilitySection(lambda, mu, rf, sigma) {
   tblEl.innerHTML = `
     <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">비중별 효용 비교</div>
     <div style="display:flex;flex-direction:column;gap:3px">
-      <div style="display:grid;grid-template-columns:45px 48px 48px 48px 48px;gap:4px;font-size:9px;font-weight:700;color:var(--text3);padding:0 4px;text-transform:uppercase">
+      <div style="display:grid;grid-template-columns:56px 1fr 1fr 1fr 1fr;gap:4px;font-size:9px;font-weight:700;color:var(--text3);padding:0 4px;text-transform:uppercase">
         <span>주식%</span><span style="text-align:right">μ_p</span><span style="text-align:right">σ_p</span><span style="text-align:right">U</span><span style="text-align:right">SR</span>
       </div>
       ${keyPoints.map(w => {
@@ -3197,8 +3197,8 @@ function renderUtilitySection(lambda, mu, rf, sigma) {
         const bg = isOptimal ? 'var(--accent-l)' : isCurrent ? 'var(--green-l)' : isMax ? 'var(--yellow-l)' : 'var(--bg)';
         const fw = (isOptimal || isCurrent) ? 700 : 400;
         const tag = isOptimal ? ' ← w*' : isCurrent ? ' ← 현재' : '';
-        return `<div style="display:grid;grid-template-columns:45px 48px 48px 48px 48px;gap:4px;padding:5px 4px;background:${bg};border-radius:5px;font-size:11px;font-weight:${fw}">
-          <span>${w}%${tag?`<span style="font-size:9px;color:var(--accent)">${tag}</span>`:''}</span>
+        return `<div style="display:grid;grid-template-columns:56px 1fr 1fr 1fr 1fr;gap:4px;padding:5px 4px;background:${bg};border-radius:5px;font-size:11px;font-weight:${fw}">
+          <span style="white-space:nowrap">${w}%${tag?`<span style="font-size:9px;color:var(--accent);white-space:nowrap">${tag}</span>`:''}</span>
           <span style="text-align:right">${(s.mu_p*100).toFixed(1)}%</span>
           <span style="text-align:right">${(s.sigma_p*100).toFixed(1)}%</span>
           <span style="text-align:right;color:${s.U===maxU?'var(--green)':'inherit'}">${(s.U*100).toFixed(2)}%</span>
@@ -3375,7 +3375,7 @@ function renderDecisionMatrix(lambda, mu, rf, sigma) {
 
   // 최적 포트폴리오 (머튼 비중)
   const optWeights = {
-    equity_us: wStar * 0.85,
+    equity_global: wStar * 0.85,
     equity_kr: wStar * 0.15,
     bond_us: Math.max(0, 1 - wStar) * 0.7,
     commodity: Math.max(0, 1 - wStar) * 0.2,
@@ -3506,7 +3506,7 @@ function renderSAATarget() {
   if (!el) return;
   var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
   var saa = p.saa;
-  var ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  var ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
 
   var html = '<div style="display:flex;flex-direction:column;gap:6px">';
   ORDER.forEach(function(k) {
@@ -3588,7 +3588,7 @@ function renderGapAnalysis() {
   bd.cash = (P.cash && P.cash.available) ? P.cash.available : 0;
 
   var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
-  var ORDER = ['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  var ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
 
   var rows = '';
   var actions = [];
@@ -3772,7 +3772,7 @@ function checkRiskLimits() {
   }
 
   // 주식 총합 한도
-  var equityTotal = tot ? (((bd.equity_us || 0) + (bd.equity_kr || 0)) / tot) * 100 : 0;
+  var equityTotal = tot ? (((bd.equity_global || 0) + (bd.equity_kr || 0)) / tot) * 100 : 0;
   if (equityTotal > RISK_LIMITS.equity_total_max) {
     alerts.push({
       priority: 'MEDIUM',
@@ -3819,7 +3819,7 @@ function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
     }
   }
 
-  if (assetKey === 'equity_us' || assetKey === 'equity_kr' || assetKey === 'reit') {
+  if (assetKey === 'equity_global' || assetKey === 'equity_kr' || assetKey === 'reit') {
     if (isaRemain > 0 && isa) {
       return { label: 'ISA 우선', detail: '잔여 한도 + ETF 매수 적합성 반영', acct: isa.name };
     }
@@ -3844,7 +3844,7 @@ function syncTAAtoTargets() {
   if (!P) return;
   var prof = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
   var newTarget = {};
-  var ORDER = ['equity_us', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
+  var ORDER = ['equity_global', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
 
   var hv = getHouseView();
   ORDER.forEach(function(k) {
@@ -4033,7 +4033,7 @@ function buildCtx() {
   try {
     var bd2=classBreakdown(); bd2.cash=(P.cash&&P.cash.available)||0;
     var prof=WM_PROFILES[INVESTOR_PROFILE_SCORE-1];
-    const ORDER_ALL=['equity_us','equity_kr','bond_us','commodity','reit','crypto','cash'];
+    const ORDER_ALL=['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
     s+='\nSAA갭: ';
     ORDER_ALL.forEach(function(k){
       var cur=tot?((bd2[k]||0)/tot)*100:0;
