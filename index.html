@@ -3921,18 +3921,54 @@ async function fetchFG() {
 async function fetchFRED() {
   const key = localStorage.getItem('fredApiKey')||'';
   if(!key) return;
-  const series = [{id:'DGS10',name:'미국채 10Y',key:'t10y'},{id:'DGS2',name:'미국채 2Y',key:'t2y'},{id:'FEDFUNDS',name:'연방기금금리',key:'ffr'},{id:'DGS30',name:'미국채 30Y',key:'t30y'}];
+  
+  const FRED_BASE = `https://api.stlouisfed.org/fred/series/observations`;
+  const PROXIES = [
+    u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`
+  ];
+  
+  const series = [
+    {id:'DGS10', name:'미국채 10Y', key:'t10y'},
+    {id:'DGS2',  name:'미국채 2Y',  key:'t2y'},
+    {id:'FEDFUNDS', name:'연방기금금리', key:'ffr'},
+    {id:'DGS30', name:'미국채 30Y', key:'t30y'}
+  ];
+
   for(const s of series) {
-    try {
-      const r = await fetch(`https://api.stlouisfed.org/fred/series/observations?series_id=${s.id}&api_key=${key}&file_type=json&limit=2&sort_order=desc`);
-      const d = await r.json();
-      const obs = d.observations?.filter(o=>o.value!=='.')||[];
-      if(obs.length>=2) M.rates[s.key] = {value:parseFloat(obs[0].value),change:parseFloat(obs[0].value)-parseFloat(obs[1].value),name:s.name};
-    } catch(e) {}
+    const targetUrl = `${FRED_BASE}?series_id=${s.id}&api_key=${key}&file_type=json&limit=2&sort_order=desc`;
+    let parsed = null;
+
+    for(const makeProxy of PROXIES) {
+      try {
+        const r = await fetch(makeProxy(targetUrl));
+        const raw = await r.json();
+        // allorigins는 { contents: "..." } 구조로 감쌈
+        const d = raw.contents ? JSON.parse(raw.contents) : raw;
+        const obs = d.observations?.filter(o => o.value !== '.') || [];
+        if(obs.length >= 2) {
+          parsed = {
+            value:  parseFloat(obs[0].value),
+            change: parseFloat(obs[0].value) - parseFloat(obs[1].value),
+            name:   s.name
+          };
+          break; // 성공하면 다음 프록시 시도 불필요
+        }
+      } catch(e) {
+        console.warn(`[FRED] ${s.id} 프록시 실패:`, e);
+      }
+    }
+
+    if(parsed) M.rates[s.key] = parsed;
   }
+
   renderRates();
-  const t10=M.rates.t10y;
-  if(t10){document.getElementById('m-t10').textContent=t10.value.toFixed(2)+'%';document.getElementById('m-t10-sub').textContent=t10.value>4?'고금리 구간':'중립 구간';}
+  const t10 = M.rates.t10y;
+  if(t10) {
+    document.getElementById('m-t10').textContent = t10.value.toFixed(2)+'%';
+    document.getElementById('m-t10-sub').textContent = t10.value > 4 ? '고금리 구간' : '중립 구간';
+  }
+}
 }
 
 // fetchIndices removed — S&P500/NASDAQ 실시간 데이터 사용 안 함 (TradingView 위젯 참조)
