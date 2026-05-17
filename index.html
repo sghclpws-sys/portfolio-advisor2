@@ -2618,37 +2618,30 @@ function splitAmountAcrossAccounts(assetKey, amount) {
 function buildBuyPlanByAsset(cashInput) {
   const target = ASSET_TARGETS.current;
   const tot = totalWithCash();
-  const postMoneyTot = tot + cashInput;
 
-  // classBreakdown()과 동일한 집계 경로
   const cls = classBreakdown();
   cls.cash = (P?.cash?.available || 0);
 
-  // gap% 기준으로 부족 자산군 산출 (TAA 우선순위 반영 가중치 포함)
-  // priorityWeight: 방어자산(bond/commodity) 우선 → 성장자산 순
   const PRIORITY_WEIGHT = { bond_us:1.4, commodity:1.3, reit:1.1, equity_global:1.0, equity_kr:1.0, crypto:0.8 };
   const ORDER = ['bond_us','commodity','reit','equity_global','equity_kr','crypto'];
 
-  // tot 기준을 자산군 합산으로 맞춤 (cash 포함 분모 불일치 방지)
-  const assetTot = Object.values(cls).reduce(function(s,v){ return s+v; }, 0) - (cls.cash||0);
-  const calcBase = assetTot + (cls.cash||0); // = totalWithCash()와 동일
+  const calcBase = Object.values(cls).reduce(function(s,v){ return s+v; }, 0);
 
   const deficits = ORDER.map(function(assetKey) {
     const curPct = calcBase ? ((cls[assetKey] || 0) / calcBase) * 100 : 0;
     const tgtPct = target[assetKey] || 0;
-    const gapPct = tgtPct - curPct;  // 양수 = 부족
+    const gapPct = tgtPct - curPct;
     const weightedGap = gapPct > 0 ? gapPct * (PRIORITY_WEIGHT[assetKey] || 1.0) : 0;
     return { assetKey, assetLabel: ASSET_LABEL_KO[assetKey] || assetKey, curPct, tgtPct, gapPct, weightedGap };
   }).filter(function(x) { return x.weightedGap > 0; });
 
-  // 가중 gap 합산으로 비례 배분 (순차 소진 아님 → 모든 부족 자산군에 동시 배분)
   const totalWeightedGap = deficits.reduce(function(s, d) { return s + d.weightedGap; }, 0);
 
   const planRows = [];
   let allocatedTotal = 0;
 
   deficits.forEach(function(d, idx) {
-    // 비례 배분량 (1만원 단위 절사, 마지막 항목은 나머지 전부)
+    // ── 자산군별 배분액 계산 (비례 배분, 1만원 절사) ──
     let allocAmt;
     if (idx === deficits.length - 1) {
       allocAmt = cashInput - allocatedTotal;
@@ -2659,15 +2652,18 @@ function buildBuyPlanByAsset(cashInput) {
     if (allocAmt < 10000) return;
 
     allocatedTotal += allocAmt;
-    const method = assessRebalancingMethod(d.assetKey, allocAmt, cashInput);
-    const splitRows = splitAmountAcrossAccounts(d.assetKey, allocAmt);
 
-    if (!splitRows.length) {
-      // 실행 가능 계좌 없을 경우 표시만 하고 amount=0
+    // ── 자산군당 최적 계좌 1개만 선택 ──
+    const candidates = getEligibleAccountsForAsset(d.assetKey);
+    const topAccount = candidates[0];
+    const method = assessRebalancingMethod(d.assetKey, allocAmt, cashInput);
+
+    if (!topAccount) {
       planRows.push({
         assetKey: d.assetKey, assetLabel: d.assetLabel,
         curPct: d.curPct, tgtPct: d.tgtPct, gapPct: d.gapPct,
-        amount: allocAmt, accountName: '실행 가능 계좌 없음', accountType: '',
+        amount: allocAmt,
+        accountName: '실행 가능 계좌 없음', accountType: '',
         color: CLS_COLOR[d.assetKey] || '#9ca3af',
         hint: ASSET_BUY_HINT[d.assetKey] || '추가 매수',
         methodLabel: '계좌 검토 필요', methodDetail: ''
@@ -2675,33 +2671,35 @@ function buildBuyPlanByAsset(cashInput) {
       return;
     }
 
-    splitRows.forEach(function(r) {
-      planRows.push({
-        assetKey: d.assetKey, assetLabel: d.assetLabel,
-        curPct: d.curPct, tgtPct: d.tgtPct, gapPct: d.gapPct,
-        amount: r.amount, accountName: r.accountName, accountType: r.accountType,
-        color: r.color,
-        hint: ASSET_BUY_HINT[d.assetKey] || '추가 매수',
-        methodLabel: method?.label || '신규자금 투입',
-        methodDetail: method?.detail || ''
-      });
+    planRows.push({
+      assetKey: d.assetKey, assetLabel: d.assetLabel,
+      curPct: d.curPct, tgtPct: d.tgtPct, gapPct: d.gapPct,
+      amount: allocAmt,
+      accountName: topAccount.name, accountType: topAccount.type,
+      color: getAccountDisplayColor(topAccount.name),
+      hint: ASSET_BUY_HINT[d.assetKey] || '추가 매수',
+      methodLabel: method?.label || '신규자금 투입',
+      methodDetail: method?.detail || ''
     });
   });
 
-  // 잔여 자금은 gap 1순위 자산군으로
+  // ── 잔여자금 → gap 1순위 자산군 최적 계좌 1개 ──
   const leftover = cashInput - allocatedTotal;
   if (leftover >= 10000 && deficits.length > 0) {
     const top = deficits[0];
-    splitAmountAcrossAccounts(top.assetKey, leftover).forEach(function(r) {
+    const candidates = getEligibleAccountsForAsset(top.assetKey);
+    const topAccount = candidates[0];
+    if (topAccount) {
       planRows.push({
         assetKey: top.assetKey, assetLabel: top.assetLabel,
         curPct: top.curPct, tgtPct: top.tgtPct, gapPct: top.gapPct,
-        amount: r.amount, accountName: r.accountName, accountType: r.accountType,
-        color: r.color,
+        amount: leftover,
+        accountName: topAccount.name, accountType: topAccount.type,
+        color: getAccountDisplayColor(topAccount.name),
         hint: ASSET_BUY_HINT[top.assetKey] || '추가 매수',
         methodLabel: '잔여자금 — gap 1순위 배치', methodDetail: ''
       });
-    });
+    }
   }
 
   return planRows;
