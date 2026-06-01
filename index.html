@@ -2276,12 +2276,11 @@ const RISK_LIMITS = {
 // TDF Look-through 비율 정의 (종목 id 기준)
 // 출처: 미래에셋·한화 TDF 글라이드패스 2026년 기준 추정치
 const TDF_LOOKTHROUGH = {
-  tdf2055:      { equity_global: 0.75, equity_kr: 0.10, bond_us: 0.10, commodity: 0.03, cash: 0.02 },
-  tdf2050:      { equity_global: 0.70, equity_kr: 0.10, bond_us: 0.15, commodity: 0.03, cash: 0.02 },
-  mirae_tdf2050:{ equity_global: 0.70, equity_kr: 0.10, bond_us: 0.15, commodity: 0.03, cash: 0.02 },
-  hanwha_tdf2050:{ equity_global: 0.68, equity_kr: 0.10, bond_us: 0.17, commodity: 0.03, cash: 0.02 },
+  tdf2055:           { equity_global: 0.85, bond_us: 0.15 },
+  irp_tdf2050_mirae: { equity_global: 0.80, bond_us: 0.20 },
+  irp_tdf2050_hanwha:{ equity_global: 0.80, bond_us: 0.20 },
 };
-
+  
 // TDF Look-through 분해 함수
 function expandTdfLookthrough(assets) {
   const result = [];
