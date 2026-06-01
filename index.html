@@ -3836,16 +3836,22 @@ function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
 // 4. TAA → ASSET_TARGETS 자동 연결
 // ══════════════════════════════════════════
 function syncTAAtoTargets() {
-  // TAA House View의 조정을 SAA에 더해 current target에 반영
-  // P 없으면 초기값(JSON TAA 기준으로 이미 세팅된 current) 유지
   if (!P) return;
-  var prof = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
   var newTarget = {};
   var ORDER = ['equity_global', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
-
   var hv = getHouseView();
+  // SAA는 WM_PROFILES 참고값이 아닌 portfolio.json saa_targets 기준
+  var saaMap = {
+    equity_global: (P.saa_targets?.equity_us_etf_pct||0) + (P.saa_targets?.equity_us_individual_pct||0) + (P.saa_targets?.equity_dividend_pct||0),
+    equity_kr:     P.saa_targets?.equity_kr_pct    || 0,
+    bond_us:       P.saa_targets?.bond_us_pct       || 0,
+    commodity:     P.saa_targets?.commodity_pct     || 0,
+    reit:          P.saa_targets?.reit_pct          || 0,
+    crypto:        P.saa_targets?.crypto_pct        || 0,
+    cash:          P.saa_targets?.cash_pct          || 0,
+  };
   ORDER.forEach(function(k) {
-    var saa = prof.saa[k] || 0;
+    var saa = saaMap[k] || 0;
     var taaAdj = 0;
     hv.views.forEach(function(v) { if (v.asset === k) taaAdj = v.adj; });
     newTarget[k] = Math.max(0, saa + taaAdj);
