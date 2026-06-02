@@ -1746,7 +1746,6 @@ function renderPBRebalComment() {
   }
   const { tot, bd } = getExpandedPortfolioMetrics();
   const target = ASSET_TARGETS.current || {};
-  const order = ['equity_global','equity_dividend','bond_us','equity_kr','commodity','reit','crypto'];
   const deficits = [];
   const excesses = [];
   order.forEach(k => {
@@ -2044,7 +2043,7 @@ function renderAssetRouting() {
   const cls = classBreakdown();
   cls.cash = P.cash?.available || 0;
 
-  const ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto'];
+  const ORDER = ['equity_global','equity_dividend','equity_kr','bond_us','commodity','reit','crypto'];
   const BAND = REBALANCE_BAND;
 
   // 자산군 중 gap이 있는 것만 라우팅 표시
@@ -2346,7 +2345,7 @@ function renderAssetCls() {
   }).join('');
 
   // 자산군 행 렌더링 (fund 버킷 없음 — TDF는 look-through 분해됨)
-  const ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  const ORDER = ['equity_global','equity_dividend','equity_kr','bond_us','commodity','reit','crypto','cash'];
   const rows = ORDER.map(k => {
     const val = cls[k]||0;
     const cur = tot ? (val/tot)*100 : 0;
