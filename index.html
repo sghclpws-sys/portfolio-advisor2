@@ -3838,12 +3838,13 @@ function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
 function syncTAAtoTargets() {
   if (!P) return;
   var newTarget = {};
-  var ORDER = ['equity_global', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
+  var ORDER = ['equity_global', 'equity_kr', 'equity_dividend', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
   var hv = getHouseView();
   // SAA는 WM_PROFILES 참고값이 아닌 portfolio.json saa_targets 기준
   var saaMap = {
     equity_global: (P.saa_targets?.equity_us_etf_pct||0) + (P.saa_targets?.equity_us_individual_pct||0) + (P.saa_targets?.equity_dividend_pct||0),
     equity_kr:     P.saa_targets?.equity_kr_pct    || 0,
+    equity_dividend: P.saa_targets?.equity_dividend_pct || 0,
     bond_us:       P.saa_targets?.bond_us_pct       || 0,
     commodity:     P.saa_targets?.commodity_pct     || 0,
     reit:          P.saa_targets?.reit_pct          || 0,
