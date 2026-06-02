@@ -1650,7 +1650,7 @@ function renderDeviationList() {
   const bd = { ...classBreakdown(), cash: P?.cash?.available||0 };
   const target = ASSET_TARGETS.current;
   const BAND = REBALANCE_BAND;
-  const ORDER = ['equity_global','bond_us','equity_kr','commodity','reit','crypto'];
+  const ORDER = ['equity_global','equity_dividend','bond_us','equity_kr','commodity','reit','crypto'];
   
   const triggered = ORDER.filter(k => {
     const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
