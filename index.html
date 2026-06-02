@@ -1015,7 +1015,7 @@ const ACCT_PURPOSE = { taxable:'일반계좌', isa:'ISA', pension:'연금저축'
 const PAGE_TITLES = { home:'지금 상태', accounts:'계좌 현황', rebalance:'리밸런싱', macro:'매크로', strategy:'WM 전략', analytics:'투자 분석' };
 
 const REBALANCE_BAND = 5;
-const ASSET_ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+const ASSET_ORDER = ['equity_global','equity_kr','equity_dividend','bond_us','commodity','reit','crypto','cash'];
 
 function getMacroAssumptions() {
   return P?.macro_assumptions || {};
@@ -1394,8 +1394,8 @@ if(sigIds.includes('EXTREME_FEAR')) {
   const bd = classBreakdown();
   // TAA 반영 목표 사용 (syncTAAtoTargets로 업데이트된 값)
   const assetTarget = ASSET_TARGETS.current;
-  const order = ['equity_global','equity_dividend','bond_us','equity_kr','commodity','reit','crypto'];
-  ORDER_CHECK.forEach(k => {
+  const assetOrder = ['equity_global','equity_dividend','bond_us','equity_kr','commodity','reit','crypto'];
+  assetOrder.forEach(k => {
     const curPct = tot ? ((bd[k]||0)/tot)*100 : 0;
     const tgtPct = assetTarget[k]||0;
     const dev = curPct - tgtPct;
@@ -1450,8 +1450,8 @@ if(sigIds.includes('EXTREME_FEAR')) {
     });
   }
 
-  const order = { HIGH:0, MEDIUM:1, LOW:2, INFO:3 };
-  return actions.sort((a,b) => order[a.priority]-order[b.priority]);
+  const priorityOrder = { HIGH:0, MEDIUM:1, LOW:2, INFO:3 };
+  return actions.sort((a,b) => priorityOrder[a.priority]-priorityOrder[b.priority]);
 }
 
 // ── 시그널 임계값 ──
@@ -1748,7 +1748,7 @@ function renderPBRebalComment() {
   const target = ASSET_TARGETS.current || {};
   const deficits = [];
   const excesses = [];
-  order.forEach(k => {
+  ['equity_global','equity_dividend','bond_us','equity_kr','commodity','reit','crypto','cash'].forEach(k => {
     const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
     const gap = cur - (target[k]||0);
     if (gap <= -REBALANCE_BAND) deficits.push({k, gap, amt: Math.round((-gap/100)*tot)});
