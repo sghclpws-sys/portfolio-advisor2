@@ -2126,14 +2126,15 @@ function renderAssetRouting() {
 
 
 const ASSET_TARGETS = {
-  current: { equity_global:58, equity_kr:2, bond_us:5, commodity:5, reit:3, crypto:8, cash:7 }, // SAA 확정값 (2026-04-20) · TAA adj는 taa_house_view에서 별도 반영
-  merton:  { equity_global:50, equity_kr:5,  bond_us:15, commodity:8, reit:5, crypto:5, cash:7 }
+  current: { equity_global:58, equity_kr:2, equity_dividend:8, bond_us:5, commodity:5, reit:3, crypto:8, cash:7 },
+  merton:  { equity_global:50, equity_kr:5, equity_dividend:5, bond_us:15, commodity:8, reit:5, crypto:5, cash:7 }
 };
 
 // ── Global WM: 자산군 역할 정의 ──
 const ASSET_ROLE = {
   equity_global:  { role:'성장',   icon:'📈', color:'#2563eb', desc:'장기 복리 수익의 핵심 엔진. 포트폴리오 성장 동력.' },
   equity_kr:  { role:'성장',   icon:'📈', color:'#059669', desc:'국내 시장 노출. 환율 헤지 + 로컬 성장 포착.' },
+  equity_dividend: { role:'인컴', icon:'💰', color:'#16a34a', desc:'국내외 배당ETF. 현금흐름 창출. 변동성 완충.' },
   bond_us:    { role:'방어',   icon:'🛡️', color:'#7c3aed', desc:'주식과 음의 상관관계. 하락장 완충 + 쿠폰 현금흐름.' },
   commodity:  { role:'헤지',   icon:'🔰', color:'#d97706', desc:'인플레이션·지정학 헤지. 실물자산 노출.' },
   reit:       { role:'현금흐름', icon:'🏢', color:'#0891b2', desc:'배당 현금흐름. 부동산 노출. 인플레이션 연동.' },
@@ -2182,8 +2183,8 @@ const INVESTOR_PROFILE_SCORE = 4;
 // ── TAA House View: 사용자 입력 taa_house_view가 없을 때는 중립값 사용 ──
 const TAA_HOUSE_VIEW = getDefaultHouseView();
 const ASSET_LABEL_KO = {
-  equity_global:'글로벌주식', equity_kr:'국내주식', bond_us:'미국채권',
-  commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
+  equity_global:'글로벌주식', equity_kr:'국내주식', equity_dividend:'배당자산',
+  bond_us:'미국채권', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
 };
 // JSON execution_policy.preferred_asset_priority 및 보유 종목 기준 정렬
 const ASSET_BUY_HINT = {
@@ -3505,7 +3506,7 @@ function renderSAATarget() {
   if (!el) return;
   var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
   var saa = p.saa;
-  var ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  var ORDER = ['equity_global', 'equity_kr', 'equity_dividend', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
 
   var html = '<div style="display:flex;flex-direction:column;gap:6px">';
   ORDER.forEach(function(k) {
