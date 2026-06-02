@@ -1069,7 +1069,7 @@ function getExpandedHoldings() {
 
 function isUsdExposureHolding(h) {
   if (h.currency_exposure === 'USD') return true;
-  if (['equity_global','bond_us','reit'].indexOf(h.asset_class) !== -1) return true;
+  if (['equity_global','equity_dividend','bond_us','reit'].indexOf(h.asset_class) !== -1) return true;
   return false;
 }
 
@@ -1394,7 +1394,7 @@ if(sigIds.includes('EXTREME_FEAR')) {
   const bd = classBreakdown();
   // TAA 반영 목표 사용 (syncTAAtoTargets로 업데이트된 값)
   const assetTarget = ASSET_TARGETS.current;
-  const ORDER_CHECK = ['equity_global','bond_us','equity_kr','commodity','reit'];
+  const order = ['equity_global','equity_dividend','bond_us','equity_kr','commodity','reit','crypto'];
   ORDER_CHECK.forEach(k => {
     const curPct = tot ? ((bd[k]||0)/tot)*100 : 0;
     const tgtPct = assetTarget[k]||0;
@@ -1746,7 +1746,7 @@ function renderPBRebalComment() {
   }
   const { tot, bd } = getExpandedPortfolioMetrics();
   const target = ASSET_TARGETS.current || {};
-  const order = ['equity_global','bond_us','equity_kr','commodity','reit','crypto'];
+  const order = ['equity_global','equity_dividend','bond_us','equity_kr','commodity','reit','crypto'];
   const deficits = [];
   const excesses = [];
   order.forEach(k => {
