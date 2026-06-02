@@ -1330,16 +1330,18 @@ function runRuleEngine() {
   const cryptoWeight = tot ? (cryptoVal/tot)*100 : 0;
   const cryptoTarget = cryptoAcct?.target_weight || 5;
 
-  // RULE 2: 극도의 공포 → 전체 DCA
-  if(sigIds.includes('EXTREME_FEAR')) {
-    actions.push({
-      priority: 'HIGH',
-      account: '전체 계좌',
-      title: '분할매수 적극 검토',
-      reason: `Fear & Greed ${M.fg?.score} — 역사적 과매도 구간. 공격적 DCA 타이밍.`,
-      amount: 0
-    });
-  }
+// RULE 2: 극도의 공포 → 코인 포지션 홀드 확인
+if(sigIds.includes('EXTREME_FEAR')) {
+  const btcWeight = (state.account_states || []).find(a => a.name === '거래소(코인)')?.weight || 0;
+  const btcTarget = (state.account_states || []).find(a => a.name === '거래소(코인)')?.target_weight || 5;
+  actions.push({
+    priority: 'MEDIUM',
+    account: '거래소(코인)',
+    title: 'BTC 홀드 유지 — 손절 자제',
+    reason: `암호화폐 Fear & Greed ${M.fg?.score} — 극도의 공포 구간. BTC 현재 비중 ${btcWeight.toFixed(1)}% (목표 ${btcTarget}%). 손실 포지션 유지, 추가 매수 없이 회복 대기.`,
+    amount: 0
+  });
+}
 
   // RULE 3: USD 강세 → 익스포저 현황 안내
   if(sigIds.includes('USD_STRONG')) {
