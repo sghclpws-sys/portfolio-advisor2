@@ -733,8 +733,6 @@ body {
       <div class="card-hd"><div class="card-title">암호화폐 시장</div><span style="font-size:10px;color:var(--text3)">CoinGecko</span></div>
       <div class="card-body"><div class="crypto-grid" id="cryptoGrid"><div class="skel" style="height:70px"></div><div class="skel" style="height:70px"></div><div class="skel" style="height:70px"></div></div></div>
     </div>
-
-    <!-- ══ TAA 판단 지표 패널 ══ -->
     <div class="card" style="margin-top:14px">
       <div class="card-hd">
         <div>
@@ -743,9 +741,7 @@ body {
         </div>
         <span id="taa-updated-badge" style="font-size:10px;color:var(--text3)">—</span>
       </div>
-      <div class="card-body" id="taaSignalPanel">
-        <div class="skel" style="height:120px"></div>
-      </div>
+      <div class="card-body" id="taaSignalPanel"><div class="skel" style="height:120px"></div></div>
     </div>
   </div>
 
@@ -2145,13 +2141,13 @@ const ASSET_TARGETS = {
 
 // ── Global WM: 자산군 역할 정의 ──
 const ASSET_ROLE = {
-  equity_global:  { role:'성장',   icon:'📈', color:'#2563eb', desc:'장기 복리 수익의 핵심 엔진. ETF 38% + 개별주 22% = 60% 성장버킷.' },
-  equity_kr:  { role:'성장',   icon:'📈', color:'#059669', desc:'국내 시장 노출. 배당ETF(PLUS고배당·TIGER코리아배당) 포함.' },
-  bond_us:    { role:'방어',   icon:'🛡️', color:'#7c3aed', desc:'주식과 음의 상관관계. 리밸런싱 재원 + 쿠폰 현금흐름.' },
-  commodity:  { role:'헤지',   icon:'🔰', color:'#d97706', desc:'인플레이션·지정학 헤지. 달러약세 대응. 실물자산 노출.' },
-  reit:       { role:'비사용', icon:'🏢', color:'#9ca3af', desc:'SAA 목표 0%. 실거주부동산(힐스테이트신촌)이 부동산 노출 커버.' },
-  crypto:     { role:'위성',   icon:'🔭', color:'#ea580c', desc:'고위험-고수익 위성 자산. 현재 손실 구간 — 동결 중.' },
-  cash:       { role:'유동성', icon:'💧', color:'#9ca3af', desc:'단기 유동성. 월급 현금흐름이 주요 버퍼 역할 대체.' },
+  equity_global:  { role:'성장',   icon:'📈', color:'#2563eb', desc:'장기 복리 수익의 핵심 엔진. 포트폴리오 성장 동력.' },
+  equity_kr:  { role:'성장',   icon:'📈', color:'#059669', desc:'국내 시장 노출. 환율 헤지 + 로컬 성장 포착.' },
+  bond_us:    { role:'방어',   icon:'🛡️', color:'#7c3aed', desc:'주식과 음의 상관관계. 하락장 완충 + 쿠폰 현금흐름.' },
+  commodity:  { role:'헤지',   icon:'🔰', color:'#d97706', desc:'인플레이션·지정학 헤지. 실물자산 노출.' },
+  reit:       { role:'현금흐름', icon:'🏢', color:'#0891b2', desc:'배당 현금흐름. 부동산 노출. 인플레이션 연동.' },
+  crypto:     { role:'위성',   icon:'🔭', color:'#ea580c', desc:'고위험-고수익 위성 자산. 포트폴리오 다각화.' },
+  cash:       { role:'유동성', icon:'💧', color:'#9ca3af', desc:'리밸런싱 탄약. 기회 대기 자금. 단기 유동성.' },
 };
 
 // ── Global WM: Risk Profile 등급별 SAA ──
@@ -2200,11 +2196,12 @@ const ASSET_LABEL_KO = {
 };
 // JSON execution_policy.preferred_asset_priority 및 보유 종목 기준 정렬
 const ASSET_BUY_HINT = {
-  bond_us:   '→ 연금저축(ETF) 1순위: KODEX 미국10년국채액티브(H) / TIGER 미국채10년선물 · IRP 2순위',
-  commodity: '→ 연금저축(ETF) 1순위: TIGER 골드선물(H) / HANARO 글로벌금채굴기업 / KODEX WTI원유선물',
-  equity_global: '→ ISA 1순위: KODEX 미국S&P500 / KODEX 미국나스닥100 · KODEX 미국배당다우존스(글로벌ETF 버킷)',
-  equity_kr: '→ ISA: TIGER 코리아배당다우존스 / PLUS 고배당주 (국내주식 버킷으로 편입)',
-  crypto:    '→ 업비트: BTC 보유 중 (동결 — 수익 전환 후 5%로 트림 예정)',
+  bond_us:   '→ 연금저축(ETF) 1순위: TIGER 미국채10년선물 / TIGER 미국30년국채스트립액티브 · IRP 2순위',
+  commodity: '→ 연금저축(ETF) 1순위: TIGER 골드선물(H) / KODEX WTI원유선물 / HANARO 글로벌금채굴기업',
+  reit:      '→ ISA 1순위: RISE 글로벌리얼티인컴',
+  equity_global: '→ ISA 1순위: KODEX 미국S&P500 / KODEX 미국나스닥100 / KODEX 미국배당다우존스',
+  equity_kr: '→ ISA 1순위: TIGER 코리아배당다우존스 / PLUS 고배당주',
+  crypto:    '→ 업비트: BTC 보유 중 (신규매수 지양 · 비중 관리 우선)',
 };
 
 // ── Asset Location: 계좌별 최적 자산 배치 원칙 ──
@@ -3566,18 +3563,7 @@ function renderTAAView() {
     var sc   = stanceColor[v.stance];
     var sb   = stanceBg[v.stance];
     var sl   = stanceLabel[v.stance];
-    var _st2 = P?.saa_targets || {};
-    var _eqEtf2 = _st2.equity_global_etf_pct || _st2.equity_us_etf_pct || 0;
-    var saaBase2 = {
-      equity_global: _eqEtf2 + (_st2.equity_us_individual_pct||0) + (_st2.equity_dividend_pct||0),
-      equity_kr:  _st2.equity_kr_pct   || 0,
-      bond_us:    _st2.bond_us_pct      || 0,
-      commodity:  _st2.commodity_pct    || 0,
-      reit:       _st2.reit_pct         || 0,
-      crypto:     _st2.crypto_pct       || 0,
-      cash:       _st2.cash_pct         || 0,
-    };
-    var p    = saaBase2[v.asset] || 0;
+    var p    = WM_PROFILES[INVESTOR_PROFILE_SCORE-1].saa[v.asset] || 0;
     var tp   = p + v.adj;
     html += '<div style="padding:10px 12px;background:' + sb + ';border-radius:8px;border-left:3px solid ' + sc + '">';
     html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
@@ -3609,26 +3595,15 @@ function renderGapAnalysis() {
   var bd  = Object.assign({}, classBreakdown());
   bd.cash = (P.cash && P.cash.available) ? P.cash.available : 0;
 
+  var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
   var ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
-  // JSON saa_targets 기준 — 신구 필드명 모두 폴백 지원
-  var _st = P.saa_targets || {};
-  var _eqEtf = _st.equity_global_etf_pct || _st.equity_us_etf_pct || 0;
-  var saaBase = {
-    equity_global: _eqEtf + (_st.equity_us_individual_pct||0) + (_st.equity_dividend_pct||0),
-    equity_kr:  _st.equity_kr_pct   || 0,
-    bond_us:    _st.bond_us_pct      || 0,
-    commodity:  _st.commodity_pct    || 0,
-    reit:       _st.reit_pct         || 0,
-    crypto:     _st.crypto_pct       || 0,
-    cash:       _st.cash_pct         || 0,
-  };
 
   var rows = '';
   var actions = [];
   ORDER.forEach(function(k) {
     var curAmt = bd[k] || 0;
     var curPct = tot ? (curAmt/tot)*100 : 0;
-    var saaPct = saaBase[k] || 0;
+    var saaPct = p.saa[k] || 0;
     var taaAdj = getHouseViewAdj(k);
     var targetPct = saaPct + taaAdj;
     var gap = curPct - targetPct;
@@ -3876,20 +3851,17 @@ function syncTAAtoTargets() {
   var newTarget = {};
   var ORDER = ['equity_global', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
   var hv = getHouseView();
-  // SAA는 WM_PROFILES 참고값이 아닌 portfolio.json saa_targets 기준
-  // 신규 필드(equity_global_etf_pct) 또는 구 필드(equity_us_etf_pct) 모두 폴백 지원
-  var st = P.saa_targets || {};
-  var eqEtf = st.equity_global_etf_pct || st.equity_us_etf_pct || 0;
-  var eqInd = st.equity_us_individual_pct || 0;
-  var eqDiv = st.equity_dividend_pct || 0; // 구 SAA 배당 슬리브도 equity_global로 합산
+  // SAA = JSON saa_targets 기준 (신구 필드명 폴백)
+  var _st = P.saa_targets || {};
+  var _eqEtf = _st.equity_global_etf_pct || _st.equity_us_etf_pct || 0;
   var saaMap = {
-    equity_global: eqEtf + eqInd + eqDiv,
-    equity_kr:  st.equity_kr_pct   || 0,
-    bond_us:    st.bond_us_pct      || 0,
-    commodity:  st.commodity_pct    || 0,
-    reit:       st.reit_pct         || 0,
-    crypto:     st.crypto_pct       || 0,
-    cash:       st.cash_pct         || 0,
+    equity_global: _eqEtf + (_st.equity_us_individual_pct||0) + (_st.equity_dividend_pct||0),
+    equity_kr:     _st.equity_kr_pct   || 0,
+    bond_us:       _st.bond_us_pct     || 0,
+    commodity:     _st.commodity_pct   || 0,
+    reit:          _st.reit_pct        || 0,
+    crypto:        _st.crypto_pct      || 0,
+    cash:          _st.cash_pct        || 0,
   };
   ORDER.forEach(function(k) {
     var saa = saaMap[k] || 0;
@@ -3915,114 +3887,96 @@ function syncTAAtoTargets() {
 // ══════════════════════════════════════════
 // MACRO PAGE
 // ══════════════════════════════════════════
-function renderMacroPage() { updateBTC(); updateFG(); renderRates(); renderCrypto(); renderPBMacroComment(); renderTAASignalPanel(); }
+function renderMacroPage() { updateBTC(); updateFG(); renderRates(); renderCrypto(); renderPBMacroComment(); if(document.getElementById('taaSignalPanel')) renderTAASignalPanel(); }
 
 function renderTAASignalPanel() {
   var el = document.getElementById('taaSignalPanel');
   var badge = document.getElementById('taa-updated-badge');
   if (!el || !P) return;
   var ma = P.macro_assumptions || {};
-  var hv = P.taa_house_view || {};
+  if (badge) badge.textContent = 'updated ' + (ma.updated_at || '-');
 
-  if (badge) badge.textContent = 'updated ' + (ma.updated_at || '—');
-
-  // 신호 판정 헬퍼
-  function signalTag(label, color, bg) {
+  function sig(label, color, bg) {
     return '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:' + bg + ';color:' + color + '">' + label + '</span>';
   }
 
-  // CAPE 신호
   var cape = ma.cape;
-  var capeSignal = cape >= 38 ? signalTag('과열', 'var(--red)', 'var(--red-l)')
-                : cape >= 28 ? signalTag('고평가', 'var(--orange)', 'var(--orange-l)')
-                : cape >= 18 ? signalTag('중립', 'var(--text2)', 'var(--bg)')
-                             : signalTag('저평가', 'var(--green)', 'var(--green-l)');
+  var capeS = cape >= 38 ? sig('과열','var(--red)','var(--red-l)')
+            : cape >= 28 ? sig('고평가','var(--orange)','var(--orange-l)')
+            : cape >= 18 ? sig('중립','var(--text2)','var(--bg)')
+                         : sig('저평가','var(--green)','var(--green-l)');
 
-  // VIX 신호
   var vix = ma.vix;
-  var vixSignal = vix <= 15 ? signalTag('낙관 과열', 'var(--orange)', 'var(--orange-l)')
-               : vix <= 20 ? signalTag('안정', 'var(--green)', 'var(--green-l)')
-               : vix <= 30 ? signalTag('경계', 'var(--yellow)', 'var(--yellow-l)')
-                           : signalTag('공포', 'var(--red)', 'var(--red-l)');
+  var vixS = vix <= 15 ? sig('낙관과열','var(--orange)','var(--orange-l)')
+           : vix <= 20 ? sig('안정','var(--green)','var(--green-l)')
+           : vix <= 30 ? sig('경계','var(--yellow)','var(--yellow-l)')
+                       : sig('공포','var(--red)','var(--red-l)');
 
-  // ERP 신호
   var erp = ma.forward_erp;
-  var erpSignal = erp === undefined ? '—'
-               : erp < 0.5 ? signalTag('주식 비매력', 'var(--red)', 'var(--red-l)')
-               : erp < 2   ? signalTag('중립', 'var(--text2)', 'var(--bg)')
-                            : signalTag('주식 매력', 'var(--green)', 'var(--green-l)');
+  var erpS = erp == null ? '-'
+           : erp < 0.005 ? sig('주식비매력','var(--red)','var(--red-l)')
+           : erp < 0.02  ? sig('중립','var(--text2)','var(--bg)')
+                         : sig('주식매력','var(--green)','var(--green-l)');
 
-  // US10Y 신호
   var t10 = ma.us10y;
-  var t10Signal = t10 >= 4.5 ? signalTag('채권 매력', 'var(--accent)', 'var(--accent-l)')
-               : t10 >= 3.5 ? signalTag('중립', 'var(--text2)', 'var(--bg)')
-                             : signalTag('채권 저수익', 'var(--text3)', 'var(--bg)');
+  var t10S = t10 >= 4.5 ? sig('채권매력','var(--accent)','var(--accent-l)')
+           : t10 >= 3.5 ? sig('중립','var(--text2)','var(--bg)')
+                        : sig('채권저수익','var(--text3)','var(--bg)');
 
-  // Merton w* 신호
   var wstar = ma.merton_w_star;
-  var currentEq = 62; // 신규 SAA 글로벌주식 60% + 국내 2%
-  var mertonSignal = wstar === undefined ? '—'
-    : wstar > currentEq + 10 ? signalTag('추가매수 여력', 'var(--green)', 'var(--green-l)')
-    : wstar > currentEq      ? signalTag('적정 하단', 'var(--text2)', 'var(--bg)')
-    : wstar > currentEq - 10 ? signalTag('적정 상단', 'var(--yellow)', 'var(--yellow-l)')
-                              : signalTag('과다 노출', 'var(--red)', 'var(--red-l)');
+  var curEq = 62;
+  var wstarS = wstar == null ? '-'
+    : wstar > curEq + 10 ? sig('추가매수여력','var(--green)','var(--green-l)')
+    : wstar > curEq      ? sig('적정하단','var(--text2)','var(--bg)')
+    : wstar > curEq - 10 ? sig('적정상단','var(--yellow)','var(--yellow-l)')
+                         : sig('과다노출','var(--red)','var(--red-l)');
 
-  // 매크로 종합 신호 계산
-  var bullCount = 0, bearCount = 0;
-  if (cape !== undefined) { if(cape < 28) bullCount++; else if(cape >= 35) bearCount++; }
-  if (vix !== undefined) { if(vix > 25) bullCount++; else if(vix < 16) bearCount++; }
-  if (erp !== undefined) { if(erp > 2) bullCount++; else if(erp < 0.5) bearCount++; }
-  if (t10 !== undefined) { if(t10 >= 4.5) bullCount++; }
-  var overallBias = bearCount >= 2 ? ['주식 비중 축소 압력', 'var(--red)', 'var(--red-l)']
-                  : bullCount >= 2 ? ['주식 추가매수 여력', 'var(--green)', 'var(--green-l)']
-                                   : ['중립 — SAA 유지', 'var(--text2)', 'var(--bg)'];
+  var bearCount = 0;
+  if (cape != null && cape >= 35) bearCount++;
+  if (vix != null && vix < 16) bearCount++;
+  if (erp != null && erp < 0.005) bearCount++;
+
+  var overallColor = bearCount >= 2 ? 'var(--red)' : 'var(--text2)';
+  var overallBg    = bearCount >= 2 ? 'var(--red-l)' : 'var(--bg)';
+  var overallLabel = bearCount >= 2 ? '주식 비중 축소 압력' : '중립 - SAA 유지';
 
   var rows = [
-    { label:'CAPE (Shiller PE)',  val: cape !== undefined ? cape.toFixed(2) : '—',   signal: capeSignal,   note: ma._cape_note || '' },
-    { label:'VIX (내재변동성)',    val: vix  !== undefined ? vix.toFixed(2)  : '—',   signal: vixSignal,    note: ma._vix_note  || '' },
-    { label:'Forward ERP (%)',    val: erp  !== undefined ? (erp*100).toFixed(2)+'%' : '—', signal: erpSignal, note: ma._forward_erp_note || '' },
-    { label:'US 10Y 금리 (%)',    val: t10  !== undefined ? t10.toFixed(2)+'%' : '—', signal: t10Signal,   note: ma._us10y_note || '미국채 10년' },
-    { label:'Forward P/E',        val: ma.forward_pe !== undefined ? ma.forward_pe.toFixed(1) : '—', signal: '', note: ma._forward_pe_note || '' },
-    { label:'Merton w* (주식적정)', val: wstar !== undefined ? wstar.toFixed(1)+'%' : '—', signal: mertonSignal, note: ma._merton_note || '' },
-    { label:'USD/KRW',            val: ma.usd_krw !== undefined ? ma.usd_krw.toLocaleString() : '—', signal: '', note: ma._usd_krw_note || '' },
-    { label:'Fed Rate (%)',        val: ma.fed_rate !== undefined ? ma.fed_rate.toFixed(2)+'%' : '—', signal: '', note: ma._fed_note || '' },
+    { label:'CAPE (Shiller PE)',   val: cape != null ? cape.toFixed(2) : '-',         signal: capeS,  note: ma._cape_note || '' },
+    { label:'VIX (내재변동성)',     val: vix  != null ? vix.toFixed(2)  : '-',         signal: vixS,   note: ma._vix_note  || '' },
+    { label:'Forward ERP (%)',     val: erp  != null ? (erp*100).toFixed(2)+'%' : '-', signal: erpS,   note: ma._forward_erp_note || '' },
+    { label:'US 10Y 금리 (%)',     val: t10  != null ? t10.toFixed(2)+'%' : '-',       signal: t10S,   note: ma._us10y_note || '' },
+    { label:'Forward P/E',         val: ma.forward_pe != null ? ma.forward_pe.toFixed(1) : '-', signal: '', note: ma._forward_pe_note || '' },
+    { label:'Merton w* (주식적정)', val: wstar != null ? wstar.toFixed(1)+'%' : '-',   signal: wstarS, note: ma._merton_note || '' },
+    { label:'USD/KRW',             val: ma.usd_krw != null ? ma.usd_krw.toLocaleString() : '-', signal: '', note: ma._usd_krw_note || '' },
+    { label:'Fed Rate (%)',         val: ma.fed_rate != null ? ma.fed_rate.toFixed(2)+'%' : '-', signal: '', note: ma._fed_note || '' },
   ];
 
-  var html = '';
+  var html = '<div style="padding:10px 14px;border-radius:8px;background:' + overallBg + ';margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-size:12px;font-weight:600;color:' + overallColor + '">종합 TAA 신호: ' + overallLabel + '</span>'
+    + '<span style="font-size:11px;color:var(--text3)">약세신호 ' + bearCount + '개</span></div>';
 
-  // 종합 신호 배너
-  html += '<div style="padding:10px 14px;border-radius:8px;background:' + overallBias[2] + ';margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">'
-        + '<span style="font-size:12px;font-weight:600;color:' + overallBias[1] + '">종합 TAA 신호: ' + overallBias[0] + '</span>'
-        + '<span style="font-size:11px;color:var(--text3)">강세 ' + bullCount + ' / 약세 ' + bearCount + '</span>'
-        + '</div>';
-
-  // 지표 테이블
   html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
   html += '<thead><tr style="border-bottom:1px solid var(--border)">'
-        + '<th style="text-align:left;padding:7px 10px;font-weight:600;color:var(--text3);font-size:11px">지표</th>'
-        + '<th style="text-align:center;padding:7px 10px;font-weight:600;color:var(--text3);font-size:11px">현재값</th>'
-        + '<th style="text-align:center;padding:7px 10px;font-weight:600;color:var(--text3);font-size:11px">TAA 신호</th>'
-        + '<th style="text-align:left;padding:7px 10px;font-weight:600;color:var(--text3);font-size:11px">참고</th>'
-        + '</tr></thead><tbody>';
+    + '<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--text3);font-weight:600">지표</th>'
+    + '<th style="text-align:center;padding:7px 10px;font-size:11px;color:var(--text3);font-weight:600">현재값</th>'
+    + '<th style="text-align:center;padding:7px 10px;font-size:11px;color:var(--text3);font-weight:600">신호</th>'
+    + '<th style="text-align:left;padding:7px 10px;font-size:11px;color:var(--text3);font-weight:600">참고</th>'
+    + '</tr></thead><tbody>';
 
   rows.forEach(function(r, i) {
-    var bg = i % 2 === 0 ? '' : 'background:var(--bg)';
+    var bg = i % 2 === 1 ? 'background:var(--bg)' : '';
     html += '<tr style="border-bottom:1px solid var(--border);' + bg + '">'
-          + '<td style="padding:8px 10px;font-weight:500">' + r.label + '</td>'
-          + '<td style="padding:8px 10px;text-align:center;font-weight:700;font-size:14px">' + r.val + '</td>'
-          + '<td style="padding:8px 10px;text-align:center">' + (r.signal || '—') + '</td>'
-          + '<td style="padding:8px 10px;font-size:11px;color:var(--text3);max-width:280px">' + r.note + '</td>'
-          + '</tr>';
+      + '<td style="padding:8px 10px;font-weight:500">' + r.label + '</td>'
+      + '<td style="padding:8px 10px;text-align:center;font-weight:700;font-size:14px">' + r.val + '</td>'
+      + '<td style="padding:8px 10px;text-align:center">' + (r.signal || '-') + '</td>'
+      + '<td style="padding:8px 10px;font-size:11px;color:var(--text3)">' + r.note + '</td>'
+      + '</tr>';
   });
 
   html += '</tbody></table></div>';
-
-  // 매크로 노트
   if (ma.note) {
-    html += '<div style="margin-top:12px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7">'
-          + '<b>매크로 메모</b><br>' + ma.note + '</div>';
+    html += '<div style="margin-top:12px;padding:10px 14px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.7"><b>매크로 메모</b><br>' + ma.note + '</div>';
   }
-
   el.innerHTML = html;
 }
 
@@ -4220,20 +4174,13 @@ function buildCtx() {
   // SAA GAP 정보
   try {
     var bd2=classBreakdown(); bd2.cash=(P.cash&&P.cash.available)||0;
-    var _stp=P.saa_targets||{};
-    var _eqEtfP=_stp.equity_global_etf_pct||_stp.equity_us_etf_pct||0;
-    var saaForPrompt = {
-      equity_global: _eqEtfP+(_stp.equity_us_individual_pct||0)+(_stp.equity_dividend_pct||0),
-      equity_kr:  _stp.equity_kr_pct||0, bond_us: _stp.bond_us_pct||0,
-      commodity:  _stp.commodity_pct||0, reit: _stp.reit_pct||0,
-      crypto:     _stp.crypto_pct||0,    cash: _stp.cash_pct||0,
-    };
+    var prof=WM_PROFILES[INVESTOR_PROFILE_SCORE-1];
     const ORDER_ALL=['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
     s+='\nSAA갭: ';
     ORDER_ALL.forEach(function(k){
       var cur=tot?((bd2[k]||0)/tot)*100:0;
       var taa=getHouseViewAdj(k);
-      var tgt=(saaForPrompt[k]||0)+taa;
+      var tgt=(prof.saa[k]||0)+taa;
       var gap=cur-tgt;
       if(Math.abs(gap)>=REBALANCE_BAND) s+=ASSET_LABEL_KO[k]+'='+(gap>0?'+':'')+gap.toFixed(1)+'%p ';
     });
@@ -4331,7 +4278,7 @@ function saveData() {
     renderHome();
     runCoastFire(); // Coast FIRE 자동 계산
     showToast('✓ 포트폴리오 데이터 저장 완료');
-  } catch(e) { showToast('⚠ JSON 오류: ' + e.message.slice(0,80)); }
+  } catch(e) { showToast('⚠ JSON 형식 오류 — portfolio.json 전체 내용을 붙여넣으세요'); }
 }
 
 function clearData() {
