@@ -2177,7 +2177,7 @@ const WM_PROFILES = [
   {
     grade: 'Growth', ko: '성장형', score: 4,
     desc: '성장 중심. 높은 변동성 허용. 장기 지평.',
-    saa: { equity_global:55, equity_kr:10, bond_us:10, commodity:8, reit:5, crypto:5, cash:7 },
+    saa: { equity_global:60, equity_kr:2, bond_us:7, commodity:5, reit:0, crypto:8, cash:4 },
     maxDrawdown: -35, targetReturn: 9.0,
   },
   {
@@ -3566,7 +3566,18 @@ function renderTAAView() {
     var sc   = stanceColor[v.stance];
     var sb   = stanceBg[v.stance];
     var sl   = stanceLabel[v.stance];
-    var p    = WM_PROFILES[INVESTOR_PROFILE_SCORE-1].saa[v.asset] || 0;
+    var _st2 = P?.saa_targets || {};
+    var _eqEtf2 = _st2.equity_global_etf_pct || _st2.equity_us_etf_pct || 0;
+    var saaBase2 = {
+      equity_global: _eqEtf2 + (_st2.equity_us_individual_pct||0) + (_st2.equity_dividend_pct||0),
+      equity_kr:  _st2.equity_kr_pct   || 0,
+      bond_us:    _st2.bond_us_pct      || 0,
+      commodity:  _st2.commodity_pct    || 0,
+      reit:       _st2.reit_pct         || 0,
+      crypto:     _st2.crypto_pct       || 0,
+      cash:       _st2.cash_pct         || 0,
+    };
+    var p    = saaBase2[v.asset] || 0;
     var tp   = p + v.adj;
     html += '<div style="padding:10px 12px;background:' + sb + ';border-radius:8px;border-left:3px solid ' + sc + '">';
     html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
@@ -3598,15 +3609,26 @@ function renderGapAnalysis() {
   var bd  = Object.assign({}, classBreakdown());
   bd.cash = (P.cash && P.cash.available) ? P.cash.available : 0;
 
-  var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
   var ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  // JSON saa_targets 기준 — 신구 필드명 모두 폴백 지원
+  var _st = P.saa_targets || {};
+  var _eqEtf = _st.equity_global_etf_pct || _st.equity_us_etf_pct || 0;
+  var saaBase = {
+    equity_global: _eqEtf + (_st.equity_us_individual_pct||0) + (_st.equity_dividend_pct||0),
+    equity_kr:  _st.equity_kr_pct   || 0,
+    bond_us:    _st.bond_us_pct      || 0,
+    commodity:  _st.commodity_pct    || 0,
+    reit:       _st.reit_pct         || 0,
+    crypto:     _st.crypto_pct       || 0,
+    cash:       _st.cash_pct         || 0,
+  };
 
   var rows = '';
   var actions = [];
   ORDER.forEach(function(k) {
     var curAmt = bd[k] || 0;
     var curPct = tot ? (curAmt/tot)*100 : 0;
-    var saaPct = p.saa[k] || 0;
+    var saaPct = saaBase[k] || 0;
     var taaAdj = getHouseViewAdj(k);
     var targetPct = saaPct + taaAdj;
     var gap = curPct - targetPct;
@@ -3855,14 +3877,19 @@ function syncTAAtoTargets() {
   var ORDER = ['equity_global', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
   var hv = getHouseView();
   // SAA는 WM_PROFILES 참고값이 아닌 portfolio.json saa_targets 기준
+  // 신규 필드(equity_global_etf_pct) 또는 구 필드(equity_us_etf_pct) 모두 폴백 지원
+  var st = P.saa_targets || {};
+  var eqEtf = st.equity_global_etf_pct || st.equity_us_etf_pct || 0;
+  var eqInd = st.equity_us_individual_pct || 0;
+  var eqDiv = st.equity_dividend_pct || 0; // 구 SAA 배당 슬리브도 equity_global로 합산
   var saaMap = {
-    equity_global: (P.saa_targets?.equity_global_etf_pct||0) + (P.saa_targets?.equity_us_individual_pct||0),
-    equity_kr:     P.saa_targets?.equity_kr_pct    || 0,
-    bond_us:       P.saa_targets?.bond_us_pct       || 0,
-    commodity:     P.saa_targets?.commodity_pct     || 0,
-    reit:          P.saa_targets?.reit_pct          || 0,
-    crypto:        P.saa_targets?.crypto_pct        || 0,
-    cash:          P.saa_targets?.cash_pct          || 0,
+    equity_global: eqEtf + eqInd + eqDiv,
+    equity_kr:  st.equity_kr_pct   || 0,
+    bond_us:    st.bond_us_pct      || 0,
+    commodity:  st.commodity_pct    || 0,
+    reit:       st.reit_pct         || 0,
+    crypto:     st.crypto_pct       || 0,
+    cash:       st.cash_pct         || 0,
   };
   ORDER.forEach(function(k) {
     var saa = saaMap[k] || 0;
@@ -4193,13 +4220,20 @@ function buildCtx() {
   // SAA GAP 정보
   try {
     var bd2=classBreakdown(); bd2.cash=(P.cash&&P.cash.available)||0;
-    var prof=WM_PROFILES[INVESTOR_PROFILE_SCORE-1];
+    var _stp=P.saa_targets||{};
+    var _eqEtfP=_stp.equity_global_etf_pct||_stp.equity_us_etf_pct||0;
+    var saaForPrompt = {
+      equity_global: _eqEtfP+(_stp.equity_us_individual_pct||0)+(_stp.equity_dividend_pct||0),
+      equity_kr:  _stp.equity_kr_pct||0, bond_us: _stp.bond_us_pct||0,
+      commodity:  _stp.commodity_pct||0, reit: _stp.reit_pct||0,
+      crypto:     _stp.crypto_pct||0,    cash: _stp.cash_pct||0,
+    };
     const ORDER_ALL=['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
     s+='\nSAA갭: ';
     ORDER_ALL.forEach(function(k){
       var cur=tot?((bd2[k]||0)/tot)*100:0;
       var taa=getHouseViewAdj(k);
-      var tgt=(prof.saa[k]||0)+taa;
+      var tgt=(saaForPrompt[k]||0)+taa;
       var gap=cur-tgt;
       if(Math.abs(gap)>=REBALANCE_BAND) s+=ASSET_LABEL_KO[k]+'='+(gap>0?'+':'')+gap.toFixed(1)+'%p ';
     });
