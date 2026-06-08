@@ -4331,7 +4331,7 @@ function saveData() {
     renderHome();
     runCoastFire(); // Coast FIRE 자동 계산
     showToast('✓ 포트폴리오 데이터 저장 완료');
-  } catch(e) { showToast('⚠ JSON 형식 오류 — portfolio.json 전체 내용을 붙여넣으세요'); }
+  } catch(e) { showToast('⚠ JSON 오류: ' + e.message.slice(0,80)); }
 }
 
 function clearData() {
