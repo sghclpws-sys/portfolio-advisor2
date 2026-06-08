@@ -1342,8 +1342,8 @@ function runRuleEngine() {
 
 // RULE 2: 극도의 공포 → 코인 포지션 홀드 확인
 if(sigIds.includes('EXTREME_FEAR')) {
-  const btcWeight = (state.account_states || []).find(a => a.name === '거래소(코인)')?.weight || 0;
-  const btcTarget = (state.account_states || []).find(a => a.name === '거래소(코인)')?.target_weight || 5;
+  const btcWeight = cryptoWeight;
+  const btcTarget = cryptoTarget;
   actions.push({
     priority: 'MEDIUM',
     account: '거래소(코인)',
