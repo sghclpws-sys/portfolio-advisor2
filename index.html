@@ -1598,7 +1598,9 @@ function renderPortfolioSummary() {
 
 function renderDonut() {
   if(!P) return;
-  const bd = classBreakdown(), tot = getActiveAccounts().reduce((s,a)=>s+acctVal(a),0);
+  const bd = classBreakdown();
+  bd.cash = (P.cash?.available || 0);
+  const tot = totalWithCash();
   if(!tot) return;
   const entries = Object.entries(bd).sort((a,b)=>b[1]-a[1]);
   const cx=50, cy=50, r=38, sw=13; let angle=-Math.PI/2, paths='';
@@ -2135,7 +2137,7 @@ function renderAssetRouting() {
 
 
 const ASSET_TARGETS = {
-  current: { equity_global:60, equity_kr:2, bond_us:7, commodity:5, reit:0, crypto:8, cash:4 },
+  current: { equity_global:74, equity_kr:2, bond_us:7, commodity:5, reit:0, crypto:8, cash:4 },
   merton:  { equity_global:50, equity_kr:5, bond_us:15, commodity:8, reit:0, crypto:5, cash:7 }
 };
 
@@ -2173,7 +2175,7 @@ const WM_PROFILES = [
   {
     grade: 'Growth', ko: '성장형', score: 4,
     desc: '성장 중심. 높은 변동성 허용. 장기 지평.',
-    saa: { equity_global:60, equity_kr:2, bond_us:7, commodity:5, reit:0, crypto:8, cash:4 },
+    saa: { equity_global:74, equity_kr:2, bond_us:7, commodity:5, reit:0, crypto:8, cash:4 },
     maxDrawdown: -35, targetReturn: 9.0,
   },
   {
