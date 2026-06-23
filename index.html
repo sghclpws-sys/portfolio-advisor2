@@ -724,7 +724,7 @@ body {
         <div class="tradingview-widget-container">
           <div class="tradingview-widget-container__widget"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-          {"colorTheme":"light","dateRange":"1D","showChart":true,"locale":"kr","isTransparent":true,"showSymbolLogo":false,"width":"100%","height":"360","tabs":[{"title":"지수","symbols":[{"s":"FOREXCOM:SPXUSD","d":"S&P 500"},{"s":"NASDAQ:NDX","d":"NASDAQ 100"},{"s":"KRX:KOSPI","d":"KOSPI"}]},{"title":"원자재","symbols":[{"s":"TVC:GOLD","d":"금"},{"s":"TVC:USOIL","d":"WTI 유가"}]},{"title":"암호화폐","symbols":[{"s":"BITSTAMP:BTCUSD","d":"Bitcoin"},{"s":"BITSTAMP:ETHUSD","d":"Ethereum"}]},{"title":"환율","symbols":[{"s":"FX_IDC:USDKRW","d":"USD/KRW"}]}]}
+          {"colorTheme":"light","dateRange":"1D","showChart":true,"locale":"kr","isTransparent":true,"showSymbolLogo":false,"width":"100%","height":"360","tabs":[{"title":"지수","symbols":[{"s":"FOREXCOM:SPXUSD","d":"S&P 500"},{"s":"NASDAQ:NDX","d":"NASDAQ 100"},{"s":"KRX:KOSPI","d":"KOSPI"}]},{"title":"금/유가","symbols":[{"s":"TVC:GOLD","d":"금"},{"s":"TVC:USOIL","d":"WTI 유가"}]},{"title":"암호화폐","symbols":[{"s":"BITSTAMP:BTCUSD","d":"Bitcoin"},{"s":"BITSTAMP:ETHUSD","d":"Ethereum"}]},{"title":"환율","symbols":[{"s":"FX_IDC:USDKRW","d":"USD/KRW"}]}]}
           </script>
         </div>
       </div>
@@ -1019,13 +1019,13 @@ let P = null; // portfolio
 let M = { btc:null, eth:null, sol:null, fx:null, fg:null, rates:{} };
 
 const COLORS = ['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2','#ea580c','#65a30d'];
-const CLS_COLOR = { equity_global:'#2563eb', equity_kr:'#059669', bond_us:'#7c3aed', commodity:'#d97706', reit:'#0891b2', crypto:'#ea580c', cash:'#9ca3af', irp:'#65a30d', 기타:'#d1d5db' };
-const CLS_LABEL = { equity_global:'글로벌주식', equity_kr:'국내주식', bond_us:'미국채권', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', irp:'IRP', fund:'펀드' };
+const CLS_COLOR = { equity_global:'#2563eb', equity_kr:'#059669', bond_us:'#7c3aed', gold:'#d97706', oil:'#92400e', commodity:'#d97706', reit:'#0891b2', crypto:'#ea580c', cash:'#9ca3af', irp:'#65a30d', 기타:'#d1d5db' };
+const CLS_LABEL = { equity_global:'글로벌주식', equity_kr:'국내주식', bond_us:'미국채권', gold:'금', oil:'유가', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금', irp:'IRP', fund:'펀드' };
 const ACCT_PURPOSE = { taxable:'일반계좌', isa:'ISA', pension:'연금저축', irp:'IRP', crypto_exchange:'암호화폐' };
 const PAGE_TITLES = { home:'지금 상태', accounts:'계좌 현황', rebalance:'리밸런싱', macro:'매크로', strategy:'WM 전략', analytics:'투자 분석' };
 
 const REBALANCE_BAND = 5;
-const ASSET_ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+const ASSET_ORDER = ['equity_global','equity_kr','bond_us','gold','oil','reit','crypto','cash'];
 
 function getMacroAssumptions() {
   return P?.macro_assumptions || {};
@@ -1046,6 +1046,11 @@ function normalizeHouseViewViews(rawViews) {
   (rawViews || []).forEach(function(v) {
     if (v && v.asset) map[v.asset] = v;
   });
+  // 구버전 commodity TAA 입력만 있는 경우 금/유가에 보수적으로 승계
+  if (map.commodity && !map.gold && !map.oil) {
+    map.gold = Object.assign({}, map.commodity, { asset:'gold', reason:'구버전 commodity TAA를 금 버킷에 승계: ' + (map.commodity.reason || '') });
+    map.oil  = Object.assign({}, map.commodity, { asset:'oil', adj:0, reason:'구버전 commodity TAA 입력은 유가에는 자동 가산하지 않음. oil_pct 별도 관리 필요.' });
+  }
   return ASSET_ORDER.map(function(asset) {
     return map[asset] || { asset: asset, stance: 'neutral', adj: 0, reason: 'taa_house_view 입력 필요' };
   });
@@ -1134,12 +1139,24 @@ function normalizePortfolioData(parsed) {
   if (!parsed || !Array.isArray(parsed.accounts)) return parsed;
   const p = JSON.parse(JSON.stringify(parsed));
 
+  function normalizeAssetClassByName(h) {
+    const cls = h.asset_class || '';
+    if (cls === 'gold' || cls === 'oil') return cls;
+    if (cls !== 'commodity') return cls;
+    const name = (h.name || '').toLowerCase();
+    if (name.includes('wti') || name.includes('원유') || name.includes('oil') || name.includes('유가')) return 'oil';
+    if (name.includes('금') || name.includes('골드') || name.includes('gold') || name.includes('krx')) return 'gold';
+    return 'commodity';
+  }
+
   function deriveExecutionAssetClass(h) {
     if (h.execution_asset_class) return h.execution_asset_class;
     if (h.asset_type === 'etf') {
       if (h.asset_class === 'equity_global') return 'equity_global_etf';
       if (h.asset_class === 'equity_kr') return 'equity_kr_etf';
       if (h.asset_class === 'bond_us') return 'bond_us_etf';
+      if (h.asset_class === 'gold') return 'gold_etf';
+      if (h.asset_class === 'oil') return 'oil_etf';
       if (h.asset_class === 'commodity') return 'commodity_etf';
       if (h.asset_class === 'reit') return 'reit_etf';
     }
@@ -1159,6 +1176,8 @@ function normalizePortfolioData(parsed) {
       equity_kr_etf: ['isa','taxable','pension'],
       equity_kr_stock: ['taxable','isa'],
       bond_us_etf: ['pension','irp','isa'],
+      gold_etf: ['pension','isa','irp'],
+      oil_etf: ['pension','isa','taxable'],
       commodity_etf: ['pension','isa','irp'],
       reit_etf: ['isa','pension','taxable'],
       tdf_fund: ['pension','irp'],
@@ -1192,7 +1211,7 @@ function normalizePortfolioData(parsed) {
     if ((a.name||'').includes('미래에셋 연금저축 (TDF)')) {
       a.execution_policy.allow_rebalance_target = (a.execution_policy.allow_rebalance_target === undefined) ? false : a.execution_policy.allow_rebalance_target;
       a.execution_policy.allow_direct_bond_recommendation = (a.execution_policy.allow_direct_bond_recommendation === undefined) ? false : a.execution_policy.allow_direct_bond_recommendation;
-      a.execution_policy.preferred_buy_assets = a.execution_policy.preferred_buy_assets || ['commodity'];
+      a.execution_policy.preferred_buy_assets = a.execution_policy.preferred_buy_assets || ['gold'];
       a.execution_policy.blocked_primary_rebalance_assets = a.execution_policy.blocked_primary_rebalance_assets || ['bond_us','equity_global','equity_kr','reit','crypto'];
       a.execution_policy.preferred_instrument_groups = a.execution_policy.preferred_instrument_groups || ['fund','etf'];
       a.execution_policy.rebalance_priority = a.execution_policy.rebalance_priority || 'restricted';
@@ -1202,6 +1221,7 @@ function normalizePortfolioData(parsed) {
     }
 
     (a.assets || []).forEach(h => {
+      h.asset_class = normalizeAssetClassByName(h);
       h.execution_asset_class = deriveExecutionAssetClass(h);
       h.instrument_group = h.instrument_group || (
         h.asset_type === 'etf' ? 'etf' :
@@ -1760,7 +1780,7 @@ function renderPBRebalComment() {
   const target = ASSET_TARGETS.current || {};
   const deficits = [];
   const excesses = [];
-  ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'].forEach(k => {
+  ASSET_ORDER.forEach(k => {
     const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
     const gap = cur - (target[k]||0);
     if (gap <= -REBALANCE_BAND) deficits.push({k, gap, amt: Math.round((-gap/100)*tot)});
@@ -2137,12 +2157,12 @@ function renderAssetRouting() {
 
 
 const ASSET_TARGETS = {
-  current: { equity_global:74, equity_kr:2, bond_us:7, commodity:5, reit:0, crypto:8, cash:4 },
-  merton:  { equity_global:50, equity_kr:5, bond_us:15, commodity:8, reit:0, crypto:5, cash:17 }
+  current: { equity_global:74, equity_kr:2, bond_us:7, gold:4, oil:1, reit:0, crypto:8, cash:4 },
+  merton:  { equity_global:50, equity_kr:5, bond_us:15, gold:6, oil:2, reit:0, crypto:5, cash:17 }
 };
 
 function normalizeAssetTarget(rawTarget) {
-  const keys = ASSET_ORDER || ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  const keys = ASSET_ORDER || ['equity_global','equity_kr','bond_us','gold','oil','reit','crypto','cash'];
   const target = {};
   keys.forEach(function(k) { target[k] = Number(rawTarget && rawTarget[k]) || 0; });
 
@@ -2181,7 +2201,9 @@ const ASSET_ROLE = {
   equity_global:  { role:'성장',   icon:'📈', color:'#2563eb', desc:'장기 복리 수익의 핵심 엔진. 포트폴리오 성장 동력.' },
   equity_kr:  { role:'성장',   icon:'📈', color:'#059669', desc:'국내 시장 노출. 환율 헤지 + 로컬 성장 포착.' },
   bond_us:    { role:'방어',   icon:'🛡️', color:'#7c3aed', desc:'주식과 음의 상관관계. 하락장 완충 + 쿠폰 현금흐름.' },
-  commodity:  { role:'헤지',   icon:'🔰', color:'#d97706', desc:'인플레이션·지정학 헤지. 실물자산 노출.' },
+  gold:       { role:'헤지',   icon:'🥇', color:'#d97706', desc:'실질금리·달러·위험회피 국면에 대응하는 금 노출. 금현물·골드선물·금채굴 포함.' },
+  oil:        { role:'실물',   icon:'🛢️', color:'#92400e', desc:'에너지 가격과 지정학 리스크에 대한 전술적 노출. WTI 관련 ETF 포함.' },
+  commodity:  { role:'헤지',   icon:'🔰', color:'#d97706', desc:'구버전 원자재 버킷. 신규 JSON에서는 gold/oil로 분리.' },
   reit:       { role:'현금흐름', icon:'🏢', color:'#0891b2', desc:'배당 현금흐름. 부동산 노출. 인플레이션 연동.' },
   crypto:     { role:'위성',   icon:'🔭', color:'#ea580c', desc:'고위험-고수익 위성 자산. 포트폴리오 다각화.' },
   cash:       { role:'유동성', icon:'💧', color:'#9ca3af', desc:'리밸런싱 탄약. 기회 대기 자금. 단기 유동성.' },
@@ -2192,31 +2214,31 @@ const WM_PROFILES = [
   {
     grade: 'Conservative', ko: '안정형', score: 1,
     desc: '자본 보전 최우선. 변동성 최소화.',
-    saa: { equity_global:15, equity_kr:5, bond_us:50, commodity:5, reit:5, crypto:0, cash:20 },
+    saa: { equity_global:15, equity_kr:5, bond_us:50, gold:4, oil:1, reit:5, crypto:0, cash:20 },
     maxDrawdown: -10, targetReturn: 4.5,
   },
   {
     grade: 'Moderate', ko: '안정성장형', score: 2,
     desc: '안정성과 성장 균형. 중간 변동성 허용.',
-    saa: { equity_global:30, equity_kr:5, bond_us:35, commodity:8, reit:7, crypto:0, cash:15 },
+    saa: { equity_global:30, equity_kr:5, bond_us:35, gold:6, oil:2, reit:7, crypto:0, cash:15 },
     maxDrawdown: -18, targetReturn: 6.0,
   },
   {
     grade: 'Balanced', ko: '균형형', score: 3,
     desc: '장기 성장 추구. 단기 변동성 감내.',
-    saa: { equity_global:45, equity_kr:8, bond_us:25, commodity:8, reit:5, crypto:2, cash:7 },
+    saa: { equity_global:45, equity_kr:8, bond_us:25, gold:6, oil:2, reit:5, crypto:2, cash:7 },
     maxDrawdown: -25, targetReturn: 7.5,
   },
   {
     grade: 'Growth', ko: '성장형', score: 4,
     desc: '성장 중심. 높은 변동성 허용. 장기 지평.',
-    saa: { equity_global:74, equity_kr:2, bond_us:7, commodity:5, reit:0, crypto:8, cash:4 },
+    saa: { equity_global:74, equity_kr:2, bond_us:7, gold:4, oil:1, reit:0, crypto:8, cash:4 },
     maxDrawdown: -35, targetReturn: 9.0,
   },
   {
     grade: 'Aggressive', ko: '공격형', score: 5,
     desc: '최대 성장 추구. 단기 손실 -40%+ 감내 가능.',
-    saa: { equity_global:65, equity_kr:12, bond_us:5, commodity:8, reit:3, crypto:7, cash:0 },
+    saa: { equity_global:65, equity_kr:12, bond_us:5, gold:6, oil:2, reit:3, crypto:7, cash:0 },
     maxDrawdown: -45, targetReturn: 11.0,
   },
 ];
@@ -2229,12 +2251,14 @@ const INVESTOR_PROFILE_SCORE = 4;
 const TAA_HOUSE_VIEW = getDefaultHouseView();
 const ASSET_LABEL_KO = {
   equity_global:'글로벌주식', equity_kr:'국내주식',
-  bond_us:'미국채권', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
+  bond_us:'미국채권', gold:'금', oil:'유가', commodity:'원자재', reit:'리츠', crypto:'암호화폐', cash:'현금'
 };
 // JSON execution_policy.preferred_asset_priority 및 보유 종목 기준 정렬
 const ASSET_BUY_HINT = {
   bond_us:   '→ 연금저축(ETF) 1순위: TIGER 미국채10년선물 / TIGER 미국30년국채스트립액티브 · IRP 2순위',
-  commodity: '→ 연금저축(ETF) 1순위: TIGER 골드선물(H) / KODEX WTI원유선물 / HANARO 글로벌금채굴기업',
+  gold:      '→ ISA/연금저축: ACE KRX금현물 / TIGER 골드선물(H) / HANARO 글로벌금채굴기업',
+  oil:       '→ 일반/ISA: KODEX WTI원유선물(H) · 목표 1%까지만 전술 보강',
+  commodity: '→ 구버전 원자재 버킷: 신규 JSON에서는 금/유가로 분리',
   reit:      '→ ISA 1순위: RISE 글로벌리얼티인컴',
   equity_global: '→ ISA 1순위: KODEX 미국S&P500 / KODEX 미국나스닥100 / KODEX 미국배당다우존스',
   equity_kr: '→ ISA 1순위: TIGER 코리아배당다우존스 / PLUS 고배당주',
@@ -2247,7 +2271,9 @@ const ASSET_LOCATION = {
   equity_global:  { best: 'ISA', second: '연금저축', worst: '일반(22%양도세)', reason: '성장 자산은 비과세/과세이연 계좌 우선. 일반계좌 매도 시 22% 세금.' },
   equity_kr:  { best: 'ISA', second: '일반(국내비과세)', worst: null, reason: '국내주식 양도세 없음. ISA 비과세 한도 활용 우선.' },
   bond_us:    { best: '연금저축', second: 'IRP', worst: 'ISA(기회비용)', reason: '이자 과세이연 효과. 연금 계좌에서 자유 전환 가능.' },
-  commodity:  { best: '연금저축', second: 'ISA', worst: '일반', reason: '원자재 ETF 분배금 과세이연. 연금 내 전환 비용 없음.' },
+  gold:       { best: 'ISA', second: '연금저축', worst: '일반', reason: '금현물/골드선물/금채굴은 금 버킷. ISA 비과세와 연금 과세이연 계좌 우선.' },
+  oil:        { best: '일반계좌 또는 ISA', second: '연금저축', worst: '고비중 장기보유', reason: 'WTI 선물형은 롤오버와 변동성이 커서 목표 1% 내 전술 노출로 관리.' },
+  commodity:  { best: '연금저축', second: 'ISA', worst: '일반', reason: '구버전 원자재 버킷. 신규 JSON에서는 금/유가로 분리.' },
   reit:       { best: 'ISA', second: '연금저축', worst: '일반', reason: '리츠 배당 비과세. ISA 연 200만 비과세 한도 활용.' },
   crypto:     { best: '업비트(분리)', second: null, worst: null, reason: 'BTC는 분리 운용. 비중 5% 상한 준수.' },
   cash:       { best: 'ISA(파킹통장)', second: '일반CMA', worst: null, reason: '단기 유동성. ISA 내 파킹 시 이자 비과세.' },
@@ -2286,7 +2312,7 @@ const BUCKETS = [
     purpose: '연금저축 · IRP · 과세이연 복리 · TDF',
     accounts: ['미래에셋 연금저축 (ETF)', '미래에셋 연금저축 (TDF)', '개인형IRP'],
     acctTypes: ['pension', 'irp'],
-    assetClasses: ['bond_us', 'commodity', 'equity_global'],
+    assetClasses: ['bond_us', 'gold', 'oil', 'equity_global'],
   },
   {
     id: 'aggressive',
@@ -2391,7 +2417,7 @@ function renderAssetCls() {
   }).join('');
 
   // 자산군 행 렌더링 (fund 버킷 없음 — TDF는 look-through 분해됨)
-  const ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  const ORDER = ASSET_ORDER;
   const rows = ORDER.map(k => {
     const val = cls[k]||0;
     const cur = tot ? (val/tot)*100 : 0;
@@ -2499,7 +2525,7 @@ function getEligibleAccountsForAsset(assetKey) {
   // stock 계열 → 일반계좌(taxable, vehicle=stock)만
   // ETF/fund 계열 → 세제혜택 계좌 pool (pension/irp/isa) + 마지막 수단으로 taxable ETF
   const STOCK_ASSETS = ['equity_global_stock', 'equity_kr_stock'];
-  const ETF_ASSETS   = ['equity_global_etf', 'equity_kr_etf', 'bond_us_etf', 'commodity_etf', 'reit_etf', 'bond_us_fund'];
+  const ETF_ASSETS   = ['equity_global_etf', 'equity_kr_etf', 'bond_us_etf', 'gold_etf', 'oil_etf', 'commodity_etf', 'reit_etf', 'bond_us_fund'];
   // assetKey는 asset_class 단위 (equity_global, bond_us 등) → execution_asset_class 아님
   // 자산군별 기본 instrument 유형
   const ASSET_IS_STOCK = { equity_global_stock: true, equity_kr_stock: true };
@@ -2527,8 +2553,8 @@ function getEligibleAccountsForAsset(assetKey) {
     if (assetKey === 'equity_global' || assetKey === 'equity_kr') {
       return ['isa','pension','irp','taxable'].includes(a.type);
     }
-    // bond_us, commodity, reit: ETF/fund 계좌만 (taxable stock 계좌 제외)
-    if (assetKey === 'bond_us' || assetKey === 'commodity' || assetKey === 'reit') {
+    // bond_us, gold, oil, reit: ETF/fund 계좌만 (taxable stock 계좌 제외)
+    if (assetKey === 'bond_us' || assetKey === 'gold' || assetKey === 'oil' || assetKey === 'commodity' || assetKey === 'reit') {
       if (a.type === 'taxable' && vehicle === 'stock') return false;
       return ['pension','irp','isa','taxable'].includes(a.type);
     }
@@ -2605,6 +2631,17 @@ function getAssetBaseScores(assetKey, account) {
     if (account.type === 'irp') return 85;
     if (account.type === 'isa') return 55;
   }
+  if (assetKey === 'gold') {
+    if (account.type === 'isa') return 100;
+    if (account.type === 'pension' && !isTdf) return 90;
+    if (isTdf) return 75;
+    if (account.type === 'irp') return 55;
+  }
+  if (assetKey === 'oil') {
+    if (account.type === 'taxable') return 85;
+    if (account.type === 'isa') return 70;
+    if (account.type === 'pension' && !isTdf) return 45;
+  }
   if (assetKey === 'commodity') {
     if (account.type === 'pension' && !isTdf) return 95;
     if (isTdf) return 85;
@@ -2669,8 +2706,8 @@ function buildBuyPlanByAsset(cashInput) {
   const cls = classBreakdown();
   cls.cash = (P?.cash?.available || 0);
 
-  const PRIORITY_WEIGHT = { bond_us:1.4, commodity:1.3, reit:1.1, equity_global:1.0, equity_kr:1.0, crypto:0.8 };
-  const ORDER = ['bond_us','commodity','reit','equity_global','equity_kr','crypto'];
+  const PRIORITY_WEIGHT = { bond_us:1.4, gold:1.2, oil:0.8, reit:1.1, equity_global:1.0, equity_kr:1.0, crypto:0.8 };
+  const ORDER = ['bond_us','gold','oil','reit','equity_global','equity_kr','crypto'];
 
   const calcBase = Object.values(cls).reduce(function(s,v){ return s+v; }, 0);
 
@@ -2844,6 +2881,8 @@ const ASSET_PARAMS = {
   equity_global:  { mu: 0.08, sigma: 0.17, label: '글로벌주식' },
   equity_kr:  { mu: 0.08, sigma: 0.22, label: '국내주식' },
   bond_us:    { mu: 0.04, sigma: 0.07, label: '미국채'   },
+  gold:       { mu: 0.04, sigma: 0.18, label: '금'       },
+  oil:        { mu: 0.03, sigma: 0.35, label: '유가'     },
   commodity:  { mu: 0.05, sigma: 0.20, label: '원자재'   },
   reit:       { mu: 0.08, sigma: 0.19, label: '리츠'     },
   crypto:     { mu: 0.20, sigma: 0.75, label: '암호화폐' },
@@ -2852,13 +2891,15 @@ const ASSET_PARAMS = {
 
 // ── 자산군 간 상관계수 행렬 (간략화) ──
 const CORR = {
-  equity_global: { equity_global:1.00, equity_kr:0.55, bond_us:-0.10, commodity:0.15, reit:0.65, crypto:0.20, cash:0.00 },
-  equity_kr: { equity_global:0.55, equity_kr:1.00, bond_us:-0.05, commodity:0.10, reit:0.50, crypto:0.15, cash:0.00 },
-  bond_us:   { equity_global:-0.10,equity_kr:-0.05,bond_us:1.00,  commodity:0.05, reit:0.20, crypto:-0.05,cash:0.05  },
-  commodity: { equity_global:0.15, equity_kr:0.10, bond_us:0.05,  commodity:1.00, reit:0.25, crypto:0.10, cash:0.00 },
-  reit:      { equity_global:0.65, equity_kr:0.50, bond_us:0.20,  commodity:0.25, reit:1.00, crypto:0.15, cash:0.00 },
-  crypto:    { equity_global:0.20, equity_kr:0.15, bond_us:-0.05, commodity:0.10, reit:0.15, crypto:1.00, cash:0.00 },
-  cash:      { equity_global:0.00, equity_kr:0.00, bond_us:0.05,  commodity:0.00, reit:0.00, crypto:0.00, cash:1.00 },
+  equity_global: { equity_global:1.00, equity_kr:0.55, bond_us:-0.10, gold:0.00, oil:0.20, commodity:0.15, reit:0.65, crypto:0.20, cash:0.00 },
+  equity_kr:     { equity_global:0.55, equity_kr:1.00, bond_us:-0.05, gold:0.00, oil:0.15, commodity:0.10, reit:0.50, crypto:0.15, cash:0.00 },
+  bond_us:       { equity_global:-0.10,equity_kr:-0.05,bond_us:1.00, gold:0.20, oil:0.00, commodity:0.05, reit:0.20, crypto:-0.05,cash:0.05  },
+  gold:          { equity_global:0.00, equity_kr:0.00, bond_us:0.20, gold:1.00, oil:0.05, commodity:0.70, reit:0.05, crypto:0.00, cash:0.00 },
+  oil:           { equity_global:0.20, equity_kr:0.15, bond_us:0.00, gold:0.05, oil:1.00, commodity:0.70, reit:0.25, crypto:0.10, cash:0.00 },
+  commodity:     { equity_global:0.15, equity_kr:0.10, bond_us:0.05, gold:0.70, oil:0.70, commodity:1.00, reit:0.25, crypto:0.10, cash:0.00 },
+  reit:          { equity_global:0.65, equity_kr:0.50, bond_us:0.20, gold:0.05, oil:0.25, commodity:0.25, reit:1.00, crypto:0.15, cash:0.00 },
+  crypto:        { equity_global:0.20, equity_kr:0.15, bond_us:-0.05, gold:0.00, oil:0.10, commodity:0.10, reit:0.15, crypto:1.00, cash:0.00 },
+  cash:          { equity_global:0.00, equity_kr:0.00, bond_us:0.05, gold:0.00, oil:0.00, commodity:0.00, reit:0.00, crypto:0.00, cash:1.00 },
 };
 
 // ── 포트폴리오 μ, σ 계산 (가중평균 + 공분산 반영) ──
@@ -2963,21 +3004,23 @@ function runAnalytics() {
   const wRf   = Math.max(1 - wStar, 0);
 
   // 주식을 equity_global(85%) + equity_kr(15%)로 배분
-  // 채권/원자재/리츠는 무위험 비중에서 배분
+  // 채권/금/유가/리츠는 무위험 비중에서 배분
   const bond      = wRf * 0.55;
-  const commodity = wRf * 0.25;
+  const gold      = wRf * 0.20;
+  const oil       = wRf * 0.05;
   const reit      = wRf * 0.10;
   const cash      = wRf * 0.10;
   const eq_us     = wStar * 0.85;
   const eq_kr     = wStar * 0.15;
 
   // 합계 맞추기 (반올림 오차 보정)
-  const total = eq_us + eq_kr + bond + commodity + reit + cash;
+  const total = eq_us + eq_kr + bond + gold + oil + reit + cash;
   ASSET_TARGETS.merton = {
     equity_global:  Math.round(eq_us  / total * 100),
     equity_kr:  Math.round(eq_kr  / total * 100),
     bond_us:    Math.round(bond   / total * 100),
-    commodity:  Math.round(commodity / total * 100),
+    gold:       Math.round(gold / total * 100),
+    oil:        Math.round(oil / total * 100),
     reit:       Math.round(reit   / total * 100),
     crypto:     0,
     cash:       Math.round(cash   / total * 100),
@@ -3423,7 +3466,8 @@ function renderDecisionMatrix(lambda, mu, rf, sigma) {
     equity_global: wStar * 0.85,
     equity_kr: wStar * 0.15,
     bond_us: Math.max(0, 1 - wStar) * 0.7,
-    commodity: Math.max(0, 1 - wStar) * 0.2,
+    gold: Math.max(0, 1 - wStar) * 0.16,
+    oil: Math.max(0, 1 - wStar) * 0.04,
     reit: Math.max(0, 1 - wStar) * 0.1,
     crypto: 0,
     cash: Math.max(0, 1 - wStar - 0.05),
@@ -3551,7 +3595,7 @@ function renderSAATarget() {
   if (!el) return;
   var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
   var saa = p.saa;
-  var ORDER = ['equity_global', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
+  var ORDER = ASSET_ORDER;
 
   var html = '<div style="display:flex;flex-direction:column;gap:6px">';
   ORDER.forEach(function(k) {
@@ -3633,7 +3677,7 @@ function renderGapAnalysis() {
   bd.cash = (P.cash && P.cash.available) ? P.cash.available : 0;
 
   var p = WM_PROFILES[INVESTOR_PROFILE_SCORE - 1];
-  var ORDER = ['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+  var ORDER = ASSET_ORDER;
 
   var rows = '';
   var actions = [];
@@ -3823,7 +3867,7 @@ function checkRiskLimits() {
       priority: 'MEDIUM',
       account: '전체',
       title: '주식 총비중 ' + equityTotal.toFixed(1) + '% — Growth 등급 상한(' + RISK_LIMITS.equity_total_max + '%) 초과',
-      reason: 'Growth 프로파일 주식 상한 초과 · 방어자산(채권·원자재) 비중 확대 필요 · ISA/연금 내 교체 우선',
+      reason: 'Growth 프로파일 주식 상한 초과 · 방어자산(채권·금) 비중 확대 필요 · ISA/연금 내 교체 우선',
       amount: 0
     });
   }
@@ -3852,7 +3896,7 @@ function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
     };
   }
 
-  if (assetKey === 'bond_us' || assetKey === 'commodity') {
+  if (assetKey === 'bond_us' || assetKey === 'gold' || assetKey === 'oil' || assetKey === 'commodity') {
     if (pensionRemain > 0 && pension) {
       return { label: '연금저축 우선', detail: '잔여 세제혜택 우선 활용', acct: pension.name };
     }
@@ -3886,7 +3930,7 @@ function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
 function syncTAAtoTargets() {
   if (!P) return;
   var newTarget = {};
-  var ORDER = ['equity_global', 'equity_kr', 'bond_us', 'commodity', 'reit', 'crypto', 'cash'];
+  var ORDER = ASSET_ORDER;
   var hv = getHouseView();
   // SAA = JSON saa_targets 기준 (신구 필드명 폴백)
   var _st = P.saa_targets || {};
@@ -3895,7 +3939,9 @@ function syncTAAtoTargets() {
     equity_global: _eqEtf + (_st.equity_us_individual_pct||0) + (_st.equity_dividend_pct||0),
     equity_kr:     _st.equity_kr_pct   || 0,
     bond_us:       _st.bond_us_pct     || 0,
-    commodity:     _st.commodity_pct   || 0,
+    gold:          (_st.gold_pct !== undefined ? _st.gold_pct : ((_st.commodity_pct || 0) * 0.8)),
+    oil:           (_st.oil_pct  !== undefined ? _st.oil_pct  : ((_st.commodity_pct || 0) * 0.2)),
+    commodity:     0,
     reit:          _st.reit_pct        || 0,
     crypto:        _st.crypto_pct      || 0,
     cash:          _st.cash_pct        || 0,
@@ -4209,7 +4255,7 @@ function buildCtx() {
   try {
     var bd2=classBreakdown(); bd2.cash=(P.cash&&P.cash.available)||0;
     var prof=WM_PROFILES[INVESTOR_PROFILE_SCORE-1];
-    const ORDER_ALL=['equity_global','equity_kr','bond_us','commodity','reit','crypto','cash'];
+    const ORDER_ALL=ASSET_ORDER;
     s+='\nSAA갭: ';
     ORDER_ALL.forEach(function(k){
       var cur=tot?((bd2[k]||0)/tot)*100:0;
@@ -4264,9 +4310,9 @@ const SYS=`당신은 SONG의 전담 Private Wealth Manager입니다. UBS/GS/JPM 
 - 계좌: 미래에셋(개별주/ISA/연금ETF/연금TDF), 삼성증권(개별주), 유진/SK(국내주식), IRP, 업비트(BTC)
 
 [WM 프레임워크]
-SAA 목표 (Growth등급): 미국주식58% · 국내주식2% · 미국채5% · 원자재5% · 리츠3% · BTC8% · 현금7%
+SAA 목표 (Growth등급): 글로벌주식74% · 국내주식2% · 미국채7% · 금4% · 유가1% · 리츠0% · BTC8% · 현금4%
 TAA House View: portfolio.json의 taa_house_view 기준
-자산군 역할: 미국주식=성장엔진 / 채권=방어완충 / 원자재=헤지 / BTC=위성 / 현금=유동성
+자산군 역할: 글로벌주식=성장엔진 / 채권=방어완충 / 금=헤지 / 유가=전술 실물노출 / BTC=위성 / 현금=유동성
 실행순서: ISA 먼저 → 연금 → 신규자금 → 일반계좌(최후)
 
 [당신의 역할]
