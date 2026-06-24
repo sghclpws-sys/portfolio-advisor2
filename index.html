@@ -139,7 +139,7 @@ body {
 /* ── 메인 그리드 ── */
 .main-grid {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 420px;
   gap: 14px;
   margin-bottom: 16px;
 }
@@ -459,6 +459,20 @@ body {
     <div class="main-grid">
       <div class="left-col">
 
+        <!-- PB COMMENT: HOME -->
+        <div class="card">
+          <div class="card-hd">
+            <div>
+              <div class="card-title">Private Banker 코멘트</div>
+              <div class="card-sub">현재 포트폴리오 포지셔닝 요약</div>
+            </div>
+          </div>
+          <div class="card-body" id="pbHomeComment">
+            <div class="empty" style="padding:20px"><div class="empty-icon">💬</div>데이터를 입력하면 코멘트가 표시됩니다</div>
+          </div>
+        
+
+
         <!-- 목표 버킷 (Morgan Stanley Goals Planning 방식) -->
         <div class="card" style="margin-bottom:0">
           <div class="card-hd">
@@ -472,25 +486,12 @@ body {
           </div>
         </div>
 
-        <!-- PB COMMENT: HOME -->
-        <div class="card">
-          <div class="card-hd">
-            <div>
-              <div class="card-title">Private Banker 코멘트</div>
-              <div class="card-sub">현재 포트폴리오 포지셔닝 요약</div>
-            </div>
-          </div>
-          <div class="card-body" id="pbHomeComment">
-            <div class="empty" style="padding:20px"><div class="empty-icon">💬</div>데이터를 입력하면 코멘트가 표시됩니다</div>
-          </div>
-        </div>
-
 <!-- 액션 리스트 -->
         <div class="card">
           <div class="card-hd">
             <div>
               <div class="card-title">지금 할 일</div>
-              <div class="card-sub">WM 룰 엔진 · SAA+TAA 드리프트 · 매도회피 우선 · 세금효율 순서</div>
+              <div class="card-sub">WM 룰 엔진 · SAA 기준 드리프트 · TAA 참고 · 세금효율 순서</div>
             </div>
             <button class="btn btn-outline btn-sm" onclick="recalcActions()">↻ 재계산</button>
           </div>
@@ -536,20 +537,12 @@ body {
           <div class="card-hd"><div class="card-title">자산군 배분</div></div>
           <div class="card-body">
             <div class="donut-wrap">
-              <svg width="100" height="100" id="donutSvg">
-                <circle cx="50" cy="50" r="38" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
-                <text x="50" y="50" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="var(--text3)" font-family="Pretendard">로딩</text>
+              <svg width="118" height="118" id="donutSvg">
+                <circle cx="59" cy="59" r="44" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+                <text x="59" y="59" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="var(--text3)" font-family="Pretendard">로딩</text>
               </svg>
               <div class="donut-legend" id="donutLegend"></div>
             </div>
-          </div>
-        </div>
-
-        <!-- 납입 현황 -->
-        <div class="card">
-          <div class="card-hd"><div class="card-title">세제 한도 현황</div></div>
-          <div class="card-body" id="taxStatus">
-            <div class="empty" style="padding:20px"><div class="empty-icon">💰</div>데이터 로딩 중</div>
           </div>
         </div>
 
@@ -558,11 +551,20 @@ body {
           <div class="card-hd">
             <div>
               <div class="card-title">리밸런싱 트리거</div>
-              <div class="card-sub">자산군 ±5% 이탈 시 RED</div>
+              <div class="card-sub">SAA ±5% 이탈 시 RED · TAA는 참고</div>
             </div>
           </div>
           <div class="card-body" id="deviationList">
             <div class="empty" style="padding:20px"><div class="empty-icon">⇌</div>데이터 로딩 중</div>
+          </div>
+        
+
+
+        <!-- 납입 현황 -->
+        <div class="card">
+          <div class="card-hd"><div class="card-title">세제 한도 현황</div></div>
+          <div class="card-body" id="taxStatus">
+            <div class="empty" style="padding:20px"><div class="empty-icon">💰</div>데이터 로딩 중</div>
           </div>
         </div>
 
@@ -606,8 +608,8 @@ body {
   <div class="content page" id="page-rebalance">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--accent)">
-        <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:2px">SAA+TAA RULE</div>
-        ±5%p 드리프트 감지 시 실행 · <span id="taa-sync-badge" style="color:var(--accent)">TAA 연동 중...</span>
+        <div style="font-size:10px;font-weight:700;color:var(--accent);margin-bottom:2px">SAA RULE</div>
+        SAA 기준 ±5%p 드리프트 감지 · <span id="taa-sync-badge" style="color:var(--accent)">TAA 참고 표시 중...</span>
       </div>
       <div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text2);border-left:3px solid var(--green)">
         <div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:2px">매도 회피 우선순위</div>
@@ -724,7 +726,7 @@ body {
         <div class="tradingview-widget-container">
           <div class="tradingview-widget-container__widget"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js" async>
-          {"colorTheme":"light","dateRange":"1D","showChart":true,"locale":"kr","isTransparent":true,"showSymbolLogo":false,"width":"100%","height":"360","tabs":[{"title":"지수","symbols":[{"s":"FOREXCOM:SPXUSD","d":"S&P 500"},{"s":"NASDAQ:NDX","d":"NASDAQ 100"},{"s":"KRX:KOSPI","d":"KOSPI"}]},{"title":"금/유가","symbols":[{"s":"TVC:GOLD","d":"금"},{"s":"TVC:USOIL","d":"WTI 유가"}]},{"title":"암호화폐","symbols":[{"s":"BITSTAMP:BTCUSD","d":"Bitcoin"},{"s":"BITSTAMP:ETHUSD","d":"Ethereum"}]},{"title":"환율","symbols":[{"s":"FX_IDC:USDKRW","d":"USD/KRW"}]}]}
+          {"colorTheme":"light","dateRange":"1D","showChart":true,"locale":"kr","isTransparent":true,"showSymbolLogo":false,"width":"100%","height":"360","tabs":[{"title":"지수","symbols":[{"s":"FOREXCOM:SPXUSD","d":"S&P 500"},{"s":"NASDAQ:NDX","d":"NASDAQ 100"},{"s":"KRX:KOSPI","d":"KOSPI"}]},{"title":"원자재","symbols":[{"s":"TVC:GOLD","d":"금"},{"s":"TVC:USOIL","d":"WTI 유가"}]},{"title":"암호화폐","symbols":[{"s":"BITSTAMP:BTCUSD","d":"Bitcoin"},{"s":"BITSTAMP:ETHUSD","d":"Ethereum"}]},{"title":"환율","symbols":[{"s":"FX_IDC:USDKRW","d":"USD/KRW"}]}]}
           </script>
         </div>
       </div>
@@ -924,12 +926,12 @@ body {
       <div class="card-body" id="wm-taa-view"></div>
     </div>
 
-    <!-- ④ 현재 포트폴리오 vs SAA+TAA -->
+    <!-- ④ 현재 포트폴리오 vs SAA -->
     <div class="card" style="margin-bottom:14px">
       <div class="card-hd">
         <div>
-          <div class="card-title">현재 포트폴리오 vs SAA+TAA 목표</div>
-          <div class="card-sub">현재 비중 · SAA 목표 · TAA 조정 후 목표 · 역할별 갭</div>
+          <div class="card-title">현재 포트폴리오 vs SAA 목표</div>
+          <div class="card-sub">현재 비중 · SAA 목표 · TAA 참고 · 역할별 갭</div>
         </div>
       </div>
       <div class="card-body" id="wm-gap-analysis"></div>
@@ -1419,10 +1421,10 @@ if(sigIds.includes('EXTREME_FEAR')) {
     });
   }
 
-  // RULE 8: (RULE 7 제거 — 계좌 잔액 목표는 리밸런싱 기준 아님. 자산군 gap 기준 RULE 8 사용) SAA+TAA Drift 트리거 (TAA 자동 연결)
+  // RULE 8: (RULE 7 제거 — 계좌 잔액 목표는 리밸런싱 기준 아님. 자산군 gap 기준 RULE 8 사용) SAA Drift 트리거 (TAA는 참고 표시)
   const BAND = REBALANCE_BAND;
   const bd = classBreakdown();
-  // TAA 반영 목표 사용 (syncTAAtoTargets로 업데이트된 값)
+  // SAA 목표 사용 (TAA는 참고 표시)
   const assetTarget = getAssetTarget('current');
   const assetOrder = ASSET_ORDER;
   assetOrder.forEach(k => {
@@ -1432,9 +1434,9 @@ if(sigIds.includes('EXTREME_FEAR')) {
     if (dev > BAND) {
       actions.push({
         priority: 'HIGH',
-        account: 'SAA+TAA 드리프트',
+        account: 'SAA 드리프트',
         title: `${ASSET_ROLE[k]?.icon||''} ${ASSET_LABEL_KO[k]||k} 비중 초과 +${dev.toFixed(1)}%p — 축소 필요`,
-        reason: `현재 ${curPct.toFixed(1)}% vs SAA+TAA 목표 ${tgtPct}% · ±${BAND}%p 초과 · ISA/연금 내 교체 우선 → 매도 최후수단`,
+        reason: `현재 ${curPct.toFixed(1)}% vs SAA 목표 ${tgtPct}% · ±${BAND}%p 초과 · ISA/연금 내 교체 우선 → 매도 최후수단`,
         amount: Math.round((dev/100)*tot)
       });
     } else if (dev < -BAND) {
@@ -1446,9 +1448,9 @@ if(sigIds.includes('EXTREME_FEAR')) {
       const locHint = ASSET_LOCATION[k] ? ' · 최적계좌: ' + ASSET_LOCATION[k].best : '';
       actions.push({
         priority: 'HIGH',
-        account: 'SAA+TAA 드리프트',
+        account: 'SAA 드리프트',
         title: `${ASSET_ROLE[k]?.icon||''} ${ASSET_LABEL_KO[k]||k} 비중 미달 ${dev.toFixed(1)}%p${methodLabel}`,
-        reason: `현재 ${curPct.toFixed(1)}% vs SAA+TAA 목표 ${tgtPct}%${methodDetail}${locHint} · ${ASSET_BUY_HINT[k]||'추가 매수'}`,
+        reason: `현재 ${curPct.toFixed(1)}% vs SAA 목표 ${tgtPct}%${methodDetail}${locHint} · ${ASSET_BUY_HINT[k]||'추가 매수'}`,
         amount: deficitAmt
       });
     }
@@ -1475,7 +1477,7 @@ if(sigIds.includes('EXTREME_FEAR')) {
       priority: 'INFO',
       account: '전체',
       title: '✓ 이상 없음 — 현재 전략 유지',
-      reason: '시장 안정 · SAA+TAA 정상 범위 · 리스크 한도 준수 · DCA 계획대로 진행',
+      reason: '시장 안정 · SAA 정상 범위 · 리스크 한도 준수 · DCA 계획대로 진행',
       amount: 0
     });
   }
@@ -1504,14 +1506,44 @@ function getSignals() {
 }
 
 function getPortfolioStatus() {
-  const signals = getSignals();
-  const highCount = signals.filter(s => ['EXTREME_FEAR','BTC_DROP'].includes(s.id)).length;
-
   if(!P) return { score:'?', label:'데이터 없음', desc:'포트폴리오 데이터를 입력해주세요', color:'var(--border2)', bg:'var(--bg)' };
-  if(highCount >= 2) return { score:'⚠', label:'주의 필요', desc:`${signals.map(s=>s.label).join(' · ')} — 리밸런싱 및 DCA 검토`, color:'var(--red)', bg:'var(--red-l)' };
-  if(highCount === 1) return { score:'!', label:'점검 권장', desc:`${signals[0].label} 감지 — 액션 리스트 확인`, color:'var(--yellow)', bg:'var(--yellow-l)' };
-  if(signals.length > 0) return { score:'→', label:'모니터링 중', desc:`${signals.map(s=>s.label).join(' · ')}`, color:'var(--accent)', bg:'var(--accent-l)' };
-  return { score:'✓', label:'안정', desc:'현재 이상 신호 없음 · 기존 전략 유지', color:'var(--green)', bg:'var(--green-l)' };
+
+  // 상태 배너는 시장 심리지표(Fear & Greed)나 BTC 단기 등락이 아니라
+  // 포트폴리오 구조 자체의 SAA 이탈 여부만 기준으로 판단한다.
+  const tot = totalWithCash();
+  const bd = Object.assign({}, classBreakdown());
+  bd.cash = P?.cash?.available || 0;
+  const target = getAssetTarget('current'); // SAA 기준
+  const severe = [];
+  const drift = [];
+
+  ASSET_ORDER.forEach(function(k) {
+    const cur = tot ? ((bd[k] || 0) / tot) * 100 : 0;
+    const tgt = target[k] || 0;
+    const gap = cur - tgt;
+    if (Math.abs(gap) >= 10) severe.push({ k, gap });
+    else if (Math.abs(gap) > REBALANCE_BAND) drift.push({ k, gap });
+  });
+
+  if (severe.length > 0) {
+    return {
+      score:'!',
+      label:'구조 점검 필요',
+      desc:`SAA 대비 10%p 이상 이탈: ${severe.map(x => (ASSET_LABEL_KO[x.k]||x.k) + ' ' + (x.gap>0?'+':'') + x.gap.toFixed(1) + '%p').join(' · ')}`,
+      color:'var(--yellow)',
+      bg:'var(--yellow-l)'
+    };
+  }
+  if (drift.length > 0) {
+    return {
+      score:'→',
+      label:'리밸런싱 점검',
+      desc:`SAA 허용밴드 ±${REBALANCE_BAND}%p 이탈: ${drift.map(x => ASSET_LABEL_KO[x.k]||x.k).join(' · ')} — 매도보다 신규자금/계좌 내 전환 우선`,
+      color:'var(--accent)',
+      bg:'var(--accent-l)'
+    };
+  }
+  return { score:'✓', label:'안정', desc:`전 자산군이 SAA 허용밴드 ±${REBALANCE_BAND}%p 내에 있습니다. TAA는 참고 의견으로만 표시됩니다.`, color:'var(--green)', bg:'var(--green-l)' };
 }
 
 // ══════════════════════════════════════════
@@ -1623,7 +1655,7 @@ function renderDonut() {
   const tot = totalWithCash();
   if(!tot) return;
   const entries = Object.entries(bd).sort((a,b)=>b[1]-a[1]);
-  const cx=50, cy=50, r=38, sw=13; let angle=-Math.PI/2, paths='';
+  const cx=59, cy=59, r=44, sw=15; let angle=-Math.PI/2, paths='';
   entries.forEach(([cls,val]) => {
     const ratio=val/tot, sweep=ratio*Math.PI*2;
     const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
@@ -1635,9 +1667,15 @@ function renderDonut() {
   document.getElementById('donutSvg').innerHTML=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg)"/>${paths}<circle cx="${cx}" cy="${cy}" r="${r-sw}" fill="var(--surface)"/>`;
   document.getElementById('donutLegend').innerHTML=entries.map(([cls,val])=>{
     const p=((val/tot)*100), c=CLS_COLOR[cls]||'#d1d5db';
-    const target = getAssetTarget('current'); // JSON TAA 반영값 동적 참조
+    const target = getAssetTarget('current'); // SAA 기준 목표
+    const taaTarget = getAssetTarget('taa');
     const t = target[cls]; const dev = (t !== undefined && t !== null) ? p-t : null;
-    return `<div class="leg"><div class="leg-dot" style="background:${c}"></div><span class="leg-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span><span class="leg-pct">${p.toFixed(1)}%</span>${dev!=null?`<span class="leg-dev ${Math.abs(dev)<3?'neu':dev>0?'neg':'pos'}">${dev>0?'+':''}${dev.toFixed(1)}</span>`:''}</div>`;
+    const taa = taaTarget[cls];
+    const taaAdj = getHouseViewAdj(cls);
+    const taaHtml = (taa !== undefined && Math.abs(taaAdj) > 0.0001)
+      ? `<span style="font-size:9px;color:${taaAdj>0?'var(--green)':'var(--red)'};font-weight:700;margin-left:2px">TAA ${taa.toFixed(1)}%</span>`
+      : '';
+    return `<div class="leg"><div class="leg-dot" style="background:${c}"></div><span class="leg-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span><span class="leg-pct">${p.toFixed(1)}%</span>${dev!=null?`<span class="leg-dev ${Math.abs(dev)<3?'neu':dev>0?'neg':'pos'}">${dev>0?'+':''}${dev.toFixed(1)}</span>`:''}${t!==undefined?`<span style="font-size:9px;color:var(--text3);margin-left:2px">SAA ${t}%</span>`:''}${taaHtml}</div>`;
   }).join('');
 }
 
@@ -1710,7 +1748,8 @@ function renderDeviationList() {
     return `<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
       <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></span>
       <span style="flex:1;font-weight:${isTrigger?700:500}">${ASSET_LABEL_KO[k]||k}</span>
-      <span style="color:var(--text2);font-size:11px">${cur.toFixed(1)}%→${tgt}%</span>
+      <span style="color:var(--text2);font-size:11px">${cur.toFixed(1)}%→SAA ${tgt}%</span>
+      ${Math.abs(getHouseViewAdj(k)) > 0.0001 ? `<span style="font-size:10px;font-weight:700;color:${getHouseViewAdj(k)>0?'var(--green)':'var(--red)'}">TAA ${((getAssetTarget('taa')[k]||0)).toFixed(1)}%</span>` : ''}
       <span style="font-weight:700;color:${devColor};font-size:11px">${dev>0?'+':''}${dev.toFixed(1)}%</span>
       <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${actionBg};color:${actionColor}">${action}</span>
     </div>`;
@@ -2041,7 +2080,7 @@ function renderAccounts() {
 // ══════════════════════════════════════════
 function renderRebal() {
   if(!P) return;
-  syncTAAtoTargets(); // 리밸런싱 열 때 TAA 최신화
+  syncTAAtoTargets(); // JSON SAA/TAA 참고값 최신화
   renderAssetRouting();
   calcRebal();
   renderAssetCls();
@@ -2091,7 +2130,7 @@ function renderAssetRouting() {
   // 헤더
   let html = `<div style="display:grid;grid-template-columns:90px 1fr 80px 80px 80px 120px;gap:0;padding:6px 0 8px;border-bottom:2px solid var(--border);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">
     <span>자산군</span><span>실행 계좌 (우선순위)</span>
-    <span style="text-align:right">현재%</span><span style="text-align:right">목표%</span>
+    <span style="text-align:right">현재%</span><span style="text-align:right">SAA%</span>
     <span style="text-align:right">편차</span><span style="text-align:right">부족/초과금액</span>
   </div>`;
 
@@ -2157,7 +2196,9 @@ function renderAssetRouting() {
 
 
 const ASSET_TARGETS = {
+  // current는 항상 SAA 기준 목표다. TAA는 별도 reference로만 표시한다.
   current: { equity_global:74, equity_kr:2, bond_us:7, gold:4, oil:1, reit:0, crypto:8, cash:4 },
+  taa:     { equity_global:74, equity_kr:2, bond_us:7, gold:4, oil:1, reit:0, crypto:8, cash:4 },
   merton:  { equity_global:50, equity_kr:5, bond_us:15, gold:6, oil:2, reit:0, crypto:5, cash:17 }
 };
 
@@ -2476,7 +2517,7 @@ function renderAssetCls() {
     const cur = tot ? ((cls[k]||0)/tot)*100 : 0;
     return (cur - (target[k]||0)) > REBALANCE_BAND;
   });
-  const modeLabel = _assetMode==='merton'?'머튼 비중':'현재 설정';
+  const modeLabel = _assetMode==='merton'?'머튼 비중':'SAA 기준';
   const tdfNote = tdfDetails.length
     ? `<span style="color:var(--text3)"> · TDF Look-through 적용: ${tdfDetails.map(d=>d.name).join(', ')} (${fmtF(Math.round(tdfTotal))})</span>`
     : '';
@@ -3556,7 +3597,7 @@ function renderDecisionMatrix(lambda, mu, rf, sigma) {
 // WM STRATEGY PAGE
 // ══════════════════════════════════════════
 function renderWMStrategy() {
-  syncTAAtoTargets(); // WM 전략 열 때마다 TAA 최신화
+  syncTAAtoTargets(); // JSON SAA/TAA 참고값 최신화
   renderRiskProfile();
   renderSAATarget();
   renderTAAView();
@@ -3686,7 +3727,8 @@ function renderGapAnalysis() {
     var curPct = tot ? (curAmt/tot)*100 : 0;
     var saaPct = p.saa[k] || 0;
     var taaAdj = getHouseViewAdj(k);
-    var targetPct = saaPct + taaAdj;
+    var taaPct = (getAssetTarget('taa')[k] !== undefined) ? getAssetTarget('taa')[k] : (saaPct + taaAdj);
+    var targetPct = saaPct; // 갭과 액션은 SAA 기준
     var gap = curPct - targetPct;
     var gapAmt = (gap/100) * tot;
     var role = ASSET_ROLE[k];
@@ -3701,7 +3743,7 @@ function renderGapAnalysis() {
     rows += '<td style="font-size:10px;color:var(--text3)">' + role.role + '</td>';
     rows += '<td style="font-weight:700">' + curPct.toFixed(1) + '%</td>';
     rows += '<td style="color:var(--text2)">' + saaPct + '%</td>';
-    rows += '<td style="color:var(--accent);font-weight:600">' + targetPct + '%</td>';
+    rows += '<td style="color:var(--accent);font-weight:600">' + taaPct.toFixed(1) + '%</td>';
     rows += '<td style="font-weight:700;color:' + gapColor + '">' + (gap>0?'+':'') + gap.toFixed(1) + '%p</td>';
     rows += '<td style="font-weight:600;color:' + actionColor + '">' + action + '</td>';
     rows += '<td style="font-size:11px;color:var(--text2)">' + (Math.abs(gap)>=REBALANCE_BAND ? fmt(Math.abs(gapAmt)) : '—') + '</td>';
@@ -3717,14 +3759,14 @@ function renderGapAnalysis() {
     }).join(' &nbsp;·&nbsp; ');
     actionBanner += '</div>';
   } else {
-    actionBanner = '<div style="margin-bottom:12px;padding:10px 14px;background:var(--green-l);border-radius:8px;font-size:12px;color:var(--green);font-weight:600">✓ 모든 자산군이 SAA+TAA 목표 ±5%p 내에 있습니다</div>';
+    actionBanner = '<div style="margin-bottom:12px;padding:10px 14px;background:var(--green-l);border-radius:8px;font-size:12px;color:var(--green);font-weight:600">✓ 모든 자산군이 SAA 목표 ±5%p 내에 있습니다</div>';
   }
 
   el.innerHTML = actionBanner +
     '<div style="overflow-x:auto"><table class="rtable">' +
-    '<thead><tr><th>자산군</th><th>역할</th><th>현재%</th><th>SAA%</th><th>TAA목표%</th><th>갭</th><th>액션</th><th>금액</th></tr></thead>' +
+    '<thead><tr><th>자산군</th><th>역할</th><th>현재%</th><th>SAA%</th><th>TAA참고%</th><th>SAA갭</th><th>액션</th><th>금액</th></tr></thead>' +
     '<tbody>' + rows + '</tbody></table></div>' +
-    '<div style="margin-top:8px;font-size:11px;color:var(--text3)">TAA 목표 = SAA + House View 조정 · 갭 ±'+REBALANCE_BAND+'%p 이내는 허용 범위 · ±'+REBALANCE_BAND+'%p 초과 시 조정 검토</div>';
+    '<div style="margin-top:8px;font-size:11px;color:var(--text3)">갭과 액션은 SAA 기준 · TAA참고 = SAA + House View 조정 · 갭 ±'+REBALANCE_BAND+'%p 이내는 허용 범위 · ±'+REBALANCE_BAND+'%p 초과 시 조정 검토</div>';
 }
 
 
@@ -3929,7 +3971,6 @@ function assessRebalancingMethod(assetKey, deficitAmt, newCashInput) {
 // ══════════════════════════════════════════
 function syncTAAtoTargets() {
   if (!P) return;
-  var newTarget = {};
   var ORDER = ASSET_ORDER;
   var hv = getHouseView();
   // SAA = JSON saa_targets 기준 (신구 필드명 폴백)
@@ -3946,22 +3987,26 @@ function syncTAAtoTargets() {
     crypto:        _st.crypto_pct      || 0,
     cash:          _st.cash_pct        || 0,
   };
+
+  var saaTarget = {};
+  ORDER.forEach(function(k) { saaTarget[k] = saaMap[k] || 0; });
+  saaTarget = normalizeAssetTarget(saaTarget);
+
+  var taaTarget = {};
   ORDER.forEach(function(k) {
-    var saa = saaMap[k] || 0;
+    var saa = saaTarget[k] || 0;
     var taaAdj = 0;
-    hv.views.forEach(function(v) { if (v.asset === k) taaAdj = v.adj; });
-    newTarget[k] = Math.max(0, saa + taaAdj);
+    hv.views.forEach(function(v) { if (v.asset === k) taaAdj = v.adj || 0; });
+    taaTarget[k] = Math.max(0, saa + taaAdj);
   });
+  taaTarget = normalizeAssetTarget(taaTarget);
 
-  // 합계 100% 맞추기: cash로 먼저 조정하고, 부족하면 비현금 자산을 비례 축소
-  newTarget = normalizeAssetTarget(newTarget);
+  // current는 SAA 기준, taa는 참고값으로 분리
+  ASSET_TARGETS.current = saaTarget;
+  ASSET_TARGETS.taa = taaTarget;
 
-  // ASSET_TARGETS.current를 TAA 반영값으로 업데이트
-  ASSET_TARGETS.current = newTarget;
-
-  // 리밸런싱 페이지 배지 업데이트
   var badge = document.getElementById('taa-sync-badge');
-  if (badge) badge.textContent = 'TAA 반영 (' + hv.updated_at + ')';
+  if (badge) badge.textContent = 'TAA 참고 (' + hv.updated_at + ')';
 }
 
 // ══════════════════════════════════════════
@@ -4259,8 +4304,7 @@ function buildCtx() {
     s+='\nSAA갭: ';
     ORDER_ALL.forEach(function(k){
       var cur=tot?((bd2[k]||0)/tot)*100:0;
-      var taa=getHouseViewAdj(k);
-      var tgt=(prof.saa[k]||0)+taa;
+      var tgt=(getAssetTarget('current')[k] !== undefined ? getAssetTarget('current')[k] : (prof.saa[k]||0));
       var gap=cur-tgt;
       if(Math.abs(gap)>=REBALANCE_BAND) s+=ASSET_LABEL_KO[k]+'='+(gap>0?'+':'')+gap.toFixed(1)+'%p ';
     });
@@ -4310,9 +4354,9 @@ const SYS=`당신은 SONG의 전담 Private Wealth Manager입니다. UBS/GS/JPM 
 - 계좌: 미래에셋(개별주/ISA/연금ETF/연금TDF), 삼성증권(개별주), 유진/SK(국내주식), IRP, 업비트(BTC)
 
 [WM 프레임워크]
-SAA 목표 (Growth등급): 글로벌주식74% · 국내주식2% · 미국채7% · 금4% · 유가1% · 리츠0% · BTC8% · 현금4%
+SAA 목표 (Growth등급): 미국주식58% · 국내주식2% · 미국채5% · 원자재5% · 리츠3% · BTC8% · 현금7%
 TAA House View: portfolio.json의 taa_house_view 기준
-자산군 역할: 글로벌주식=성장엔진 / 채권=방어완충 / 금=헤지 / 유가=전술 실물노출 / BTC=위성 / 현금=유동성
+자산군 역할: 미국주식=성장엔진 / 채권=방어완충 / 원자재=헤지 / BTC=위성 / 현금=유동성
 실행순서: ISA 먼저 → 연금 → 신규자금 → 일반계좌(최후)
 
 [당신의 역할]
