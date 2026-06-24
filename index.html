@@ -139,7 +139,7 @@ body {
 /* ── 메인 그리드 ── */
 .main-grid {
   display: grid;
-  grid-template-columns: minmax(760px, 1fr) minmax(520px, 560px);
+  grid-template-columns: minmax(780px, 1fr) minmax(560px, 600px);
   gap: 18px;
   margin-bottom: 16px;
   align-items: start;
@@ -149,7 +149,7 @@ body {
 .right-col {
   display: flex; flex-direction: column; gap: 14px;
   position: sticky; top: 66px; align-self: start;
-  max-height: calc(100vh - 84px); overflow: auto; padding-right: 2px;
+  overflow: visible; padding-right: 2px;
 }
 .snapshot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .snapshot-controls { display: grid; grid-template-columns: 160px 1fr auto; gap: 10px; align-items: end; }
@@ -160,15 +160,15 @@ body {
 .snapshot-row:last-child { border-bottom:none; }
 .snapshot-macro-row { display:grid; grid-template-columns: 1fr 70px 70px 70px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
 @media (max-width: 1500px) {
-  .main-grid { grid-template-columns: minmax(0, 1fr) 500px; }
+  .main-grid { grid-template-columns: minmax(0, 1fr) 540px; }
 }
 @media (max-width: 1280px) {
   .content { padding: 20px 22px; }
-  .main-grid { grid-template-columns: minmax(0, 1fr) 460px; gap: 14px; }
+  .main-grid { grid-template-columns: minmax(0, 1fr) 500px; gap: 14px; }
 }
 @media (max-width: 1080px) {
   .main-grid { grid-template-columns: 1fr; }
-  .right-col { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  .right-col { position: static; overflow: visible; padding-right: 0; }
   .snapshot-grid { grid-template-columns: 1fr; }
 }
 
@@ -261,20 +261,21 @@ body {
   display: flex; align-items: center; justify-content: center; position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
 }
 .alloc-donut-box svg { width: 132px; height: 132px; display:block; }
-.alloc-center-label { position: absolute; inset: 0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; text-align:center; }
+.alloc-center-label { display:none; }
 .alloc-center-label span { font-size: 9px; color: var(--text3); font-weight: 700; letter-spacing: .2px; }
 .alloc-center-label strong { font-size: 16px; line-height: 1.05; font-weight: 850; letter-spacing: -.4px; color: var(--text); margin-top: 2px; }
 .alloc-center-label small { font-size: 9px; color: var(--text3); margin-top: 2px; }
 .alloc-legend-panel { min-width: 0; }
-.alloc-legend-head, .alloc-legend-row { display: grid; grid-template-columns: 12px minmax(72px, 1fr) 48px 46px 50px; gap: 6px; align-items: center; }
+.alloc-legend-head, .alloc-legend-row { display: grid; grid-template-columns: 12px minmax(78px, 1fr) 48px 42px 46px 50px; gap: 6px; align-items: center; }
 .alloc-legend-head { font-size: 9px; font-weight: 750; color: var(--text3); padding: 0 8px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
 .alloc-legend-list { display:flex; flex-direction:column; gap: 4px; }
-.alloc-legend-row { padding: 6px 8px; border-radius: 8px; background: var(--bg); border: 1px solid transparent; }
+.alloc-legend-row { padding: 5px 8px; border-radius: 8px; background: var(--bg); border: 1px solid transparent; }
 .alloc-legend-row.is-alert { background: var(--red-l); border-color: #fecaca; }
 .alloc-dot { width: 8px; height: 8px; border-radius: 50%; display:block; }
 .alloc-name { font-size: 11px; font-weight: 750; color: var(--text); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .alloc-pct { font-size: 12px; font-weight: 850; text-align:right; color: var(--text); }
 .alloc-target { font-size: 10px; text-align:right; color: var(--text3); font-weight: 700; }
+.alloc-taa { font-size: 10px; text-align:right; color: var(--accent); font-weight: 800; }
 .alloc-gap { font-size: 10px; text-align:right; font-weight: 850; }
 .alloc-gap.ok { color: var(--text3); }
 .alloc-gap.over { color: var(--red); }
@@ -288,7 +289,7 @@ body {
   .alloc-visual { grid-template-columns: 138px minmax(0, 1fr); gap: 12px; }
   .alloc-donut-box { width: 138px; height: 138px; }
   .alloc-donut-box svg { width: 122px; height: 122px; }
-  .alloc-legend-head, .alloc-legend-row { grid-template-columns: 10px minmax(62px, 1fr) 42px 40px 46px; gap: 5px; }
+  .alloc-legend-head, .alloc-legend-row { grid-template-columns: 10px minmax(68px, 1fr) 42px 36px 42px 44px; gap: 5px; }
 }
 
 /* ── 계좌 카드 ── */
@@ -529,18 +530,6 @@ body {
           </div>
         </div>
 
-        <!-- 목표 버킷 (Morgan Stanley Goals Planning 방식) -->
-        <div class="card" style="margin-bottom:0">
-          <div class="card-hd">
-            <div>
-              <div class="card-title">목표 버킷</div>
-              <div class="card-sub">계좌 → 목적 기반 재분류 · 버킷별 현재 금액 · 역할 확인</div>
-            </div>
-          </div>
-          <div class="card-body" id="bucketList">
-            <div class="empty"><div class="empty-icon">🪣</div>데이터를 입력하면 버킷이 표시됩니다</div>
-          </div>
-        </div>
 
         <!-- 액션 리스트 -->
         <div class="card">
@@ -611,7 +600,7 @@ body {
               </div>
               <div class="alloc-legend-panel">
                 <div class="alloc-legend-head">
-                  <span></span><span>자산군</span><span style="text-align:right">현재</span><span style="text-align:right">SAA</span><span style="text-align:right">편차</span>
+                  <span></span><span>자산군</span><span style="text-align:right">현재</span><span style="text-align:right">SAA</span><span style="text-align:right">TAA</span><span style="text-align:right">편차</span>
                 </div>
                 <div class="alloc-legend-list" id="donutLegend"></div>
               </div>
@@ -1816,14 +1805,12 @@ function renderDonut() {
   const svg = document.getElementById('donutSvg');
   if (svg) svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg)"/>${paths}<circle cx="${cx}" cy="${cy}" r="${r-sw}" fill="var(--surface)" stroke="var(--border)" stroke-width="1"/>`;
 
-  const largest = entries.slice().sort(function(a,b){ return b[1]-a[1]; })[0] || ['-',0];
-  const largestPct = tot ? (largest[1] / tot) * 100 : 0;
   const topPctEl = document.getElementById('donutMainPct');
   const topLabelEl = document.getElementById('donutMainLabel');
   const totalLabelEl = document.getElementById('donutTotalLabel');
-  if (topPctEl) topPctEl.textContent = largestPct.toFixed(1) + '%';
-  if (topLabelEl) topLabelEl.textContent = ASSET_LABEL_KO[largest[0]] || CLS_LABEL[largest[0]] || largest[0];
-  if (totalLabelEl) totalLabelEl.textContent = fmtF(tot).replace('₩','₩ ');
+  if (topPctEl) topPctEl.textContent = '';
+  if (topLabelEl) topLabelEl.textContent = '';
+  if (totalLabelEl) totalLabelEl.textContent = '';
 
   const legend = document.getElementById('donutLegend');
   if (legend) {
@@ -1843,6 +1830,7 @@ function renderDonut() {
         <span class="alloc-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span>
         <span class="alloc-pct">${p.toFixed(1)}%</span>
         <span class="alloc-target">${t!==undefined?t+'%':'—'}</span>
+        <span class="alloc-taa">${taa!==undefined?taa.toFixed(1)+'%':'—'}</span>
         <span class="alloc-gap ${gapClass}">${dev!=null?(dev>0?'+':'')+dev.toFixed(1):'—'}</span>
       </div>`;
     }).join('');
@@ -1936,13 +1924,14 @@ function renderDeviationList() {
     const action = isTrigger ? (dev>0?'매도':'매수') : '유지';
     const actionBg = isTrigger ? (dev>0?'var(--red-l)':'var(--green-l)') : 'var(--bg)';
     const actionColor = isTrigger ? (dev>0?'var(--red)':'var(--green)') : 'var(--text3)';
-    return `<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+    const taaVal = getAssetTarget('taa')[k] || 0;
+    return `<div style="display:grid;grid-template-columns:10px minmax(72px,1fr) 82px 64px 48px 42px;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
       <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></span>
-      <span style="flex:1;font-weight:${isTrigger?700:500}">${ASSET_LABEL_KO[k]||k}</span>
-      <span style="color:var(--text2);font-size:11px">${cur.toFixed(1)}%→SAA ${tgt}%</span>
-      ${Math.abs(getHouseViewAdj(k)) > 0.0001 ? `<span style="font-size:10px;font-weight:700;color:${getHouseViewAdj(k)>0?'var(--green)':'var(--red)'}">TAA ${((getAssetTarget('taa')[k]||0)).toFixed(1)}%</span>` : ''}
-      <span style="font-weight:700;color:${devColor};font-size:11px">${dev>0?'+':''}${dev.toFixed(1)}%</span>
-      <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${actionBg};color:${actionColor}">${action}</span>
+      <span style="font-weight:${isTrigger?700:500};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ASSET_LABEL_KO[k]||k}</span>
+      <span style="color:var(--text2);font-size:11px;text-align:right">${cur.toFixed(1)}%→${tgt}%</span>
+      <span style="font-size:10px;font-weight:800;color:var(--accent);text-align:right">TAA ${taaVal.toFixed(1)}%</span>
+      <span style="font-weight:700;color:${devColor};font-size:11px;text-align:right">${dev>0?'+':''}${dev.toFixed(1)}%</span>
+      <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${actionBg};color:${actionColor};text-align:center">${action}</span>
     </div>`;
   }).join('');
   
