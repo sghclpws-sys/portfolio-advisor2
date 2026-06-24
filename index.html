@@ -109,25 +109,9 @@ body {
 .btn-primary:hover { background: #1d4ed8; }
 .btn-sm { padding: 5px 10px; font-size: 11px; }
 
-.content { padding: 20px 24px; }
+.content { padding: 22px 32px; width: 100%; }
 .page { display: none; }
 .page.active { display: block; }
-
-/* ── HOME 전용 폭 정렬: 상태 배너와 2열 그리드 기준선 통일 ── */
-.home-shell {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(300px, 0.68fr) 640px;
-  gap: 14px;
-  align-items: start;
-}
-.home-shell > .status-banner {
-  grid-column: 1 / -1;
-  margin-bottom: 0;
-}
-.home-shell > .main-grid {
-  display: contents;
-}
 
 /* ── 상태 배너 (홈 핵심) ── */
 .status-banner {
@@ -155,20 +139,17 @@ body {
 /* ── 메인 그리드 ── */
 .main-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 0.68fr) 640px;
-  gap: 14px;
+  grid-template-columns: minmax(760px, 1fr) minmax(520px, 560px);
+  gap: 18px;
   margin-bottom: 16px;
   align-items: start;
+  width: 100%;
 }
 .left-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .right-col {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  align-self: start;
-  min-width: 0;
-  overflow: visible;
-  padding-right: 0;
+  display: flex; flex-direction: column; gap: 14px;
+  position: sticky; top: 66px; align-self: start;
+  max-height: calc(100vh - 84px); overflow: auto; padding-right: 2px;
 }
 .snapshot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .snapshot-controls { display: grid; grid-template-columns: 160px 1fr auto; gap: 10px; align-items: end; }
@@ -178,14 +159,17 @@ body {
 .snapshot-row { display:grid; grid-template-columns: 104px 1fr 64px 64px 64px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
 .snapshot-row:last-child { border-bottom:none; }
 .snapshot-macro-row { display:grid; grid-template-columns: 1fr 70px 70px 70px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
-@media (max-width: 1360px) {
-  .home-shell, .main-grid { grid-template-columns: minmax(280px, 0.64fr) 620px; }
-  .snapshot-grid { grid-template-columns: 1fr; }
+@media (max-width: 1500px) {
+  .main-grid { grid-template-columns: minmax(0, 1fr) 500px; }
 }
-@media (max-width: 1180px) {
-  .home-shell, .main-grid { grid-template-columns: 1fr; }
-  .home-shell > .status-banner { grid-column: 1; }
-  .home-shell > .main-grid { display: grid; }
+@media (max-width: 1280px) {
+  .content { padding: 20px 22px; }
+  .main-grid { grid-template-columns: minmax(0, 1fr) 460px; gap: 14px; }
+}
+@media (max-width: 1080px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .right-col { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  .snapshot-grid { grid-template-columns: 1fr; }
 }
 
 /* ── 카드 ── */
@@ -268,26 +252,44 @@ body {
 .bar-fill { height: 100%; border-radius: 2px; transition: width .7s cubic-bezier(.16,1,.3,1); }
 .bar-target-line { position: absolute; top: -2px; width: 1px; height: 8px; background: var(--text3); }
 
-/* ── 도넛 ── */
-.donut-wrap { display: flex; align-items: flex-start; gap: 18px; width: 100%; overflow: visible; }
-#donutSvg { flex: 0 0 140px; width: 140px; height: 140px; overflow: visible; }
-.donut-legend { flex:1; min-width:0; display: flex; flex-direction: column; gap: 8px; }
-.leg { display: flex; align-items: flex-start; gap: 8px; min-width:0; }
-.leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
-.leg-main { flex:1; min-width:0; }
-.leg-line1 { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
-.leg-line2 { display:flex; flex-wrap:wrap; gap:5px; margin-top:2px; font-size:10px; color:var(--text3); line-height:1.35; }
-.leg-name { flex:1; min-width:0; font-size: 12px; color: var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.leg-pct { font-size: 12px; font-weight: 700; color: var(--text); white-space:nowrap; }
-.leg-dev { font-size: 10px; font-weight: 700; }
-.dev-row { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; min-width:0; }
-.dev-row:last-child { border-bottom:none; }
-.dev-main { flex:1; min-width:0; }
-.dev-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.dev-label { font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.dev-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; color:var(--text2); font-size:10px; line-height:1.45; }
-.dev-value { font-weight:700; font-size:11px; white-space:nowrap; }
-.dev-action { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; white-space:nowrap; }
+/* ── 자산군 배분 카드 ── */
+.alloc-card-body { padding: 14px 16px 16px; }
+.alloc-visual { display: grid; grid-template-columns: 152px minmax(0, 1fr); gap: 14px; align-items: center; }
+.alloc-donut-box {
+  width: 152px; height: 152px; border-radius: 14px; border: 1px solid var(--border);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  display: flex; align-items: center; justify-content: center; position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
+.alloc-donut-box svg { width: 132px; height: 132px; display:block; }
+.alloc-center-label { position: absolute; inset: 0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; text-align:center; }
+.alloc-center-label span { font-size: 9px; color: var(--text3); font-weight: 700; letter-spacing: .2px; }
+.alloc-center-label strong { font-size: 16px; line-height: 1.05; font-weight: 850; letter-spacing: -.4px; color: var(--text); margin-top: 2px; }
+.alloc-center-label small { font-size: 9px; color: var(--text3); margin-top: 2px; }
+.alloc-legend-panel { min-width: 0; }
+.alloc-legend-head, .alloc-legend-row { display: grid; grid-template-columns: 12px minmax(72px, 1fr) 48px 46px 50px; gap: 6px; align-items: center; }
+.alloc-legend-head { font-size: 9px; font-weight: 750; color: var(--text3); padding: 0 8px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.alloc-legend-list { display:flex; flex-direction:column; gap: 4px; }
+.alloc-legend-row { padding: 6px 8px; border-radius: 8px; background: var(--bg); border: 1px solid transparent; }
+.alloc-legend-row.is-alert { background: var(--red-l); border-color: #fecaca; }
+.alloc-dot { width: 8px; height: 8px; border-radius: 50%; display:block; }
+.alloc-name { font-size: 11px; font-weight: 750; color: var(--text); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.alloc-pct { font-size: 12px; font-weight: 850; text-align:right; color: var(--text); }
+.alloc-target { font-size: 10px; text-align:right; color: var(--text3); font-weight: 700; }
+.alloc-gap { font-size: 10px; text-align:right; font-weight: 850; }
+.alloc-gap.ok { color: var(--text3); }
+.alloc-gap.over { color: var(--red); }
+.alloc-gap.under { color: var(--green); }
+.alloc-summary-strip { display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.alloc-summary-item { padding: 9px 10px; border-radius: 9px; background: var(--bg); border: 1px solid var(--border); min-width:0; }
+.alloc-summary-label { font-size: 9px; color: var(--text3); font-weight: 750; margin-bottom: 2px; }
+.alloc-summary-value { font-size: 12px; color: var(--text); font-weight: 850; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.alloc-summary-sub { font-size: 9px; color: var(--text3); margin-top: 1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media (max-width: 1280px) {
+  .alloc-visual { grid-template-columns: 138px minmax(0, 1fr); gap: 12px; }
+  .alloc-donut-box { width: 138px; height: 138px; }
+  .alloc-donut-box svg { width: 122px; height: 122px; }
+  .alloc-legend-head, .alloc-legend-row { grid-template-columns: 10px minmax(62px, 1fr) 42px 40px 46px; gap: 5px; }
+}
 
 /* ── 계좌 카드 ── */
 .acct-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
@@ -496,7 +498,6 @@ body {
 
   <!-- ══ HOME: 지금 상태 ══ -->
   <div class="content page active" id="page-home">
-    <div class="home-shell">
 
     <!-- 상태 배너 -->
     <div class="status-banner" id="statusBanner">
@@ -525,6 +526,19 @@ body {
           </div>
           <div class="card-body" id="pbHomeComment">
             <div class="empty" style="padding:20px"><div class="empty-icon">💬</div>데이터를 입력하면 코멘트가 표시됩니다</div>
+          </div>
+        </div>
+
+        <!-- 목표 버킷 (Morgan Stanley Goals Planning 방식) -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-hd">
+            <div>
+              <div class="card-title">목표 버킷</div>
+              <div class="card-sub">계좌 → 목적 기반 재분류 · 버킷별 현재 금액 · 역할 확인</div>
+            </div>
+          </div>
+          <div class="card-body" id="bucketList">
+            <div class="empty"><div class="empty-icon">🪣</div>데이터를 입력하면 버킷이 표시됩니다</div>
           </div>
         </div>
 
@@ -582,14 +596,27 @@ body {
               <div class="card-sub">SAA 기준 · TAA는 참고값 표시</div>
             </div>
           </div>
-          <div class="card-body">
-            <div class="donut-wrap">
-              <svg width="140" height="140" viewBox="0 0 118 118" id="donutSvg">
-                <circle cx="59" cy="59" r="44" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
-                <text x="59" y="59" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="var(--text3)" font-family="Pretendard">로딩</text>
-              </svg>
-              <div class="donut-legend" id="donutLegend"></div>
+          <div class="card-body alloc-card-body">
+            <div class="alloc-visual">
+              <div class="alloc-donut-box">
+                <svg viewBox="0 0 132 132" id="donutSvg" aria-label="자산군 배분 도넛 차트">
+                  <circle cx="66" cy="66" r="50" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+                  <text x="66" y="66" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="var(--text3)" font-family="Pretendard">로딩</text>
+                </svg>
+                <div class="alloc-center-label">
+                  <span id="donutTotalLabel">TOTAL</span>
+                  <strong id="donutMainPct">—</strong>
+                  <small id="donutMainLabel">자산군</small>
+                </div>
+              </div>
+              <div class="alloc-legend-panel">
+                <div class="alloc-legend-head">
+                  <span></span><span>자산군</span><span style="text-align:right">현재</span><span style="text-align:right">SAA</span><span style="text-align:right">편차</span>
+                </div>
+                <div class="alloc-legend-list" id="donutLegend"></div>
+              </div>
             </div>
+            <div class="alloc-summary-strip" id="allocSummaryStrip"></div>
           </div>
         </div>
 
@@ -616,7 +643,6 @@ body {
 
       </div>
     </div>
-    </div><!-- /home-shell -->
   </div>
 
   <!-- ══ ACCOUNTS ══ -->
@@ -738,7 +764,7 @@ body {
         <div class="card-hd">
           <div>
             <div class="card-title">월말 스냅샷 저장</div>
-            <div class="card-sub">localStorage에는 요약본·매크로·메모만 저장 · raw portfolio.json 누적 저장 안 함</div>
+            <div class="card-sub">localStorage에는 요약본·매크로·자동 판단 코멘트만 저장 · raw portfolio.json 누적 저장 안 함</div>
           </div>
           <button class="btn btn-outline btn-sm" onclick="renderSnapshotsPage()">↻</button>
         </div>
@@ -749,8 +775,8 @@ body {
               <input class="calc-input" id="snapMonth" type="month">
             </div>
             <div>
-              <div class="calc-lbl">이번 달 투자 판단 메모</div>
-              <input class="calc-input" id="snapMemo" placeholder="예: 현금 초과분은 미국채로 분할 배치. BTC는 목표 초과이나 매도 보류.">
+              <div class="calc-lbl">추가 메모(선택)</div>
+              <input class="calc-input" id="snapMemo" placeholder="예: 실제 매수/매도, 예외 판단, 다음 달 점검사항 등">
             </div>
             <button class="btn btn-primary" onclick="saveMonthlySnapshot()">스냅샷 저장</button>
           </div>
@@ -761,7 +787,7 @@ body {
             <button class="btn btn-outline btn-sm" onclick="clearSnapshots()">스냅샷 초기화</button>
           </div>
           <div id="snapshotSaveHint" style="margin-top:10px;font-size:11px;color:var(--text3);line-height:1.6">
-            저장 항목: 총자산, 자산군 비중/금액, SAA 목표, TAA 참고목표, 주요 매크로, 메모. 계좌별·종목별 raw 데이터는 누적 저장하지 않습니다.
+            저장 항목: 총자산, 자산군 비중/금액, SAA 목표, TAA 참고목표, 주요 매크로, 자동 투자판단 코멘트, 선택 메모. 계좌별·종목별 raw 데이터는 누적 저장하지 않습니다.
           </div>
         </div>
       </div>
@@ -783,7 +809,7 @@ body {
       <div class="card-hd">
         <div>
           <div class="card-title">전월 대비 스냅샷 비교</div>
-          <div class="card-sub">자산군 원형그래프 · 비중 변화 · 거시지표 변화 · 당시 판단 메모</div>
+          <div class="card-sub">자산군 원형그래프 · 비중 변화 · 거시지표 변화 · 당시 자동 판단 코멘트</div>
         </div>
         <div class="snapshot-compare-controls">
           <select class="calc-input" id="snapBase" style="width:130px" onchange="renderSnapshotCompare()"></select>
@@ -1665,6 +1691,7 @@ function getPortfolioStatus() {
 // ══════════════════════════════════════════
 function renderHome() {
   renderStatusBanner(); // Coast FIRE 배지 포함
+  renderBuckets();
   renderPBHomeComment();
   renderActionList();
   renderPortfolioSummary();
@@ -1767,42 +1794,80 @@ function renderDonut() {
   bd.cash = (P.cash?.available || 0);
   const tot = totalWithCash();
   if(!tot) return;
-  const entries = Object.entries(bd).sort((a,b)=>b[1]-a[1]);
-  const cx=59, cy=59, r=44, sw=15; let angle=-Math.PI/2, paths='';
-  entries.forEach(([cls,val]) => {
+
+  const target = getAssetTarget('current'); // SAA 기준 목표
+  const taaTarget = getAssetTarget('taa');
+  const entries = ASSET_ORDER
+    .map(function(cls) { return [cls, bd[cls] || 0]; })
+    .filter(function(row) { return row[1] > 0 || (target[row[0]] || 0) > 0; });
+
+  const cx=66, cy=66, r=50, sw=17;
+  let angle=-Math.PI/2, paths='';
+  entries.filter(function(row){ return row[1] > 0; }).forEach(function(row) {
+    const cls=row[0], val=row[1];
     const ratio=val/tot, sweep=ratio*Math.PI*2;
     const x1=cx+r*Math.cos(angle), y1=cy+r*Math.sin(angle);
     const x2=cx+r*Math.cos(angle+sweep), y2=cy+r*Math.sin(angle+sweep);
     const lg=sweep>Math.PI?1:0, col=CLS_COLOR[cls]||'#d1d5db';
-    paths+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${lg} 1 ${x2},${y2} Z" fill="${col}" opacity=".9"/>`;
+    paths+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${lg} 1 ${x2},${y2} Z" fill="${col}" opacity=".92"/>`;
     angle+=sweep;
   });
-  document.getElementById('donutSvg').innerHTML=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg)"/>${paths}<circle cx="${cx}" cy="${cy}" r="${r-sw}" fill="var(--surface)"/>`;
-  document.getElementById('donutLegend').innerHTML=entries.map(([cls,val])=>{
-    const p=((val/tot)*100), c=CLS_COLOR[cls]||'#d1d5db';
-    const target = getAssetTarget('current'); // SAA 기준 목표
-    const taaTarget = getAssetTarget('taa');
-    const t = (target[cls] !== undefined && target[cls] !== null) ? Number(target[cls]) : 0;
-    const taa = (taaTarget[cls] !== undefined && taaTarget[cls] !== null) ? Number(taaTarget[cls]) : 0;
-    const dev = p - t;
-    const taaAdj = getHouseViewAdj(cls);
-    const taaColor = taaAdj > 0 ? 'var(--green)' : taaAdj < 0 ? 'var(--red)' : 'var(--text3)';
-    const devCls = Math.abs(dev)<3 ? 'neu' : dev>0 ? 'neg' : 'pos';
-    return `<div class="leg">
-      <div class="leg-dot" style="background:${c}"></div>
-      <div class="leg-main">
-        <div class="leg-line1">
-          <span class="leg-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span>
-          <span class="leg-pct">${p.toFixed(1)}%</span>
-        </div>
-        <div class="leg-line2">
-          <span>SAA ${t.toFixed(1)}%</span>
-          <span style="color:${taaColor};font-weight:700">TAA ${taa.toFixed(1)}%</span>
-          <span class="leg-dev ${devCls}">편차 ${dev>0?'+':''}${dev.toFixed(1)}%p</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+
+  const svg = document.getElementById('donutSvg');
+  if (svg) svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg)"/>${paths}<circle cx="${cx}" cy="${cy}" r="${r-sw}" fill="var(--surface)" stroke="var(--border)" stroke-width="1"/>`;
+
+  const largest = entries.slice().sort(function(a,b){ return b[1]-a[1]; })[0] || ['-',0];
+  const largestPct = tot ? (largest[1] / tot) * 100 : 0;
+  const topPctEl = document.getElementById('donutMainPct');
+  const topLabelEl = document.getElementById('donutMainLabel');
+  const totalLabelEl = document.getElementById('donutTotalLabel');
+  if (topPctEl) topPctEl.textContent = largestPct.toFixed(1) + '%';
+  if (topLabelEl) topLabelEl.textContent = ASSET_LABEL_KO[largest[0]] || CLS_LABEL[largest[0]] || largest[0];
+  if (totalLabelEl) totalLabelEl.textContent = fmtF(tot).replace('₩','₩ ');
+
+  const legend = document.getElementById('donutLegend');
+  if (legend) {
+    legend.innerHTML = entries.map(function(row) {
+      const cls=row[0], val=row[1];
+      const p = tot ? ((val/tot)*100) : 0;
+      const c = CLS_COLOR[cls]||'#d1d5db';
+      const t = target[cls];
+      const dev = (t !== undefined && t !== null) ? p-t : null;
+      const taa = taaTarget[cls];
+      const taaAdj = getHouseViewAdj(cls);
+      const gapClass = dev == null || Math.abs(dev) < 3 ? 'ok' : dev > 0 ? 'over' : 'under';
+      const alertClass = dev != null && Math.abs(dev) >= REBALANCE_BAND ? ' is-alert' : '';
+      const taaTitle = (taa !== undefined && Math.abs(taaAdj) > 0.0001) ? ` title="TAA 참고 ${taa.toFixed(1)}%"` : '';
+      return `<div class="alloc-legend-row${alertClass}"${taaTitle}>
+        <span class="alloc-dot" style="background:${c}"></span>
+        <span class="alloc-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span>
+        <span class="alloc-pct">${p.toFixed(1)}%</span>
+        <span class="alloc-target">${t!==undefined?t+'%':'—'}</span>
+        <span class="alloc-gap ${gapClass}">${dev!=null?(dev>0?'+':'')+dev.toFixed(1):'—'}</span>
+      </div>`;
+    }).join('');
+  }
+
+  const gaps = entries.map(function(row) {
+    const cls=row[0], val=row[1];
+    const cur = tot ? (val/tot)*100 : 0;
+    const tgt = target[cls] || 0;
+    return { cls:cls, cur:cur, tgt:tgt, dev:cur-tgt, color:CLS_COLOR[cls]||'#9ca3af' };
+  });
+  const maxGap = gaps.slice().sort(function(a,b){ return Math.abs(b.dev)-Math.abs(a.dev); })[0];
+  const under = gaps.filter(function(x){ return x.dev < -REBALANCE_BAND; }).sort(function(a,b){ return a.dev-b.dev; })[0];
+  const over = gaps.filter(function(x){ return x.dev > REBALANCE_BAND; }).sort(function(a,b){ return b.dev-a.dev; })[0];
+  const strip = document.getElementById('allocSummaryStrip');
+  if (strip) {
+    function box(label, item, fallback, mode) {
+      if (!item) return `<div class="alloc-summary-item"><div class="alloc-summary-label">${label}</div><div class="alloc-summary-value">${fallback}</div><div class="alloc-summary-sub">SAA ±${REBALANCE_BAND}%p 기준</div></div>`;
+      const name = ASSET_LABEL_KO[item.cls] || CLS_LABEL[item.cls] || item.cls;
+      const devText = (item.dev>0?'+':'') + item.dev.toFixed(1) + '%p';
+      const sub = mode === 'under' ? '보강 후보' : mode === 'over' ? '비중 초과' : '최대 편차';
+      return `<div class="alloc-summary-item" style="border-color:${item.color}33;background:${item.color}0f"><div class="alloc-summary-label">${label}</div><div class="alloc-summary-value" style="color:${item.color}">${name} ${devText}</div><div class="alloc-summary-sub">${sub}</div></div>`;
+    }
+    strip.innerHTML = box('최대 편차', maxGap, '편차 없음', 'max') + box('부족 자산', under, '없음', 'under') + box('초과 자산', over, '없음', 'over');
+  }
 }
 
 function renderTaxStatus() {
@@ -1861,11 +1926,9 @@ function renderDeviationList() {
         ✓ 전 자산군 허용 밴드(±${BAND}%) 내 — 리밸런싱 불필요
        </div>`;
   
-  const taaTarget = getAssetTarget('taa');
   const rows = ORDER.map(k => {
     const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
     const tgt = target[k]||0;
-    const taa = (taaTarget[k] !== undefined && taaTarget[k] !== null) ? Number(taaTarget[k]) : 0;
     const dev = cur - tgt;
     const isTrigger = Math.abs(dev) > BAND;
     const col = CLS_COLOR[k]||'#9ca3af';
@@ -1873,22 +1936,13 @@ function renderDeviationList() {
     const action = isTrigger ? (dev>0?'매도':'매수') : '유지';
     const actionBg = isTrigger ? (dev>0?'var(--red-l)':'var(--green-l)') : 'var(--bg)';
     const actionColor = isTrigger ? (dev>0?'var(--red)':'var(--green)') : 'var(--text3)';
-    const taaAdj = getHouseViewAdj(k);
-    const taaColor = taaAdj > 0 ? 'var(--green)' : taaAdj < 0 ? 'var(--red)' : 'var(--text3)';
-    return `<div class="dev-row">
-      <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;margin-top:6px"></span>
-      <div class="dev-main">
-        <div class="dev-top">
-          <span class="dev-label" style="font-weight:${isTrigger?700:600}">${ASSET_LABEL_KO[k]||k}</span>
-          <span class="dev-action" style="background:${actionBg};color:${actionColor}">${action}</span>
-        </div>
-        <div class="dev-meta">
-          <span>현재 ${cur.toFixed(1)}%</span>
-          <span>SAA ${Number(tgt).toFixed(1)}%</span>
-          <span style="font-weight:700;color:${taaColor}">TAA ${taa.toFixed(1)}%</span>
-        </div>
-      </div>
-      <span class="dev-value" style="color:${devColor};margin-top:2px">${dev>0?'+':''}${dev.toFixed(1)}%p</span>
+    return `<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></span>
+      <span style="flex:1;font-weight:${isTrigger?700:500}">${ASSET_LABEL_KO[k]||k}</span>
+      <span style="color:var(--text2);font-size:11px">${cur.toFixed(1)}%→SAA ${tgt}%</span>
+      ${Math.abs(getHouseViewAdj(k)) > 0.0001 ? `<span style="font-size:10px;font-weight:700;color:${getHouseViewAdj(k)>0?'var(--green)':'var(--red)'}">TAA ${((getAssetTarget('taa')[k]||0)).toFixed(1)}%</span>` : ''}
+      <span style="font-weight:700;color:${devColor};font-size:11px">${dev>0?'+':''}${dev.toFixed(1)}%</span>
+      <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${actionBg};color:${actionColor}">${action}</span>
     </div>`;
   }).join('');
   
@@ -3118,9 +3172,13 @@ function buildMonthlySnapshot(snapshotId, memo) {
   if (!P) return null;
   syncTAAtoTargets();
   const allocation = getAllocationSummary();
+  const macro = getMacroSnapshot();
+  const saa = getAssetTarget('current');
+  const taa = getAssetTarget('taa');
   const hv = getHouseView();
+  const decisionProfile = buildSnapshotDecisionProfile(allocation.pct, saa, taa, macro, hv, memo || '');
   return {
-    version: 1,
+    version: 2,
     storage_policy: 'summary_only_no_raw_portfolio',
     snapshot_id: snapshotId,
     snapshot_date: snapshotId + '-01',
@@ -3132,10 +3190,10 @@ function buildMonthlySnapshot(snapshotId, memo) {
       usd_exposure_pct: +usdExposure().toFixed(2),
       asset_allocation_pct: allocation.pct,
       asset_allocation_amount: allocation.amount,
-      saa_targets: getAssetTarget('current'),
-      taa_reference: getAssetTarget('taa')
+      saa_targets: saa,
+      taa_reference: taa
     },
-    macro: getMacroSnapshot(),
+    macro: macro,
     taa_house_view: {
       updated_at: hv.updated_at,
       macro_summary: hv.macro_summary || '',
@@ -3145,9 +3203,41 @@ function buildMonthlySnapshot(snapshotId, memo) {
     },
     decision_log: {
       monthly_thesis: memo || '',
-      reason_tags: inferSnapshotReasonTags(allocation.pct, getAssetTarget('current'), getMacroSnapshot())
+      generated_summary: decisionProfile.headline,
+      generated_comment: decisionProfile.full_comment,
+      macro_judgement: decisionProfile.macro_judgement,
+      asset_comments: decisionProfile.asset_comments,
+      action_policy: decisionProfile.action_policy,
+      indicator_cards: decisionProfile.indicator_cards,
+      reason_tags: decisionProfile.reason_tags
     }
   };
+}
+
+function numOrNull(v) {
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+}
+
+function displayErpValue(v) {
+  const n = numOrNull(v);
+  if (n == null) return null;
+  // 기존 JSON은 0.0022처럼 소수로 들어간 경우가 있어 %p 표시는 100배 보정
+  return Math.abs(n) < 1 ? n * 100 : n;
+}
+
+function getSnapshotHoldingPnlPct(assetClass) {
+  let amount = 0;
+  let cost = 0;
+  getActiveAccounts().forEach(function(a) {
+    (a.assets || []).forEach(function(h) {
+      if ((h.asset_class || '') !== assetClass || h.pnl_pct == null || !h.amount) return;
+      amount += h.amount || 0;
+      cost += h.amount / (1 + h.pnl_pct / 100);
+    });
+  });
+  if (!amount || !cost) return null;
+  return (amount / cost - 1) * 100;
 }
 
 function inferSnapshotReasonTags(pctMap, target, macro) {
@@ -3158,9 +3248,150 @@ function inferSnapshotReasonTags(pctMap, target, macro) {
     if (gap < -REBALANCE_BAND) tags.push(k.toUpperCase() + '_UNDERWEIGHT');
   });
   if ((macro.us10y || 0) >= 4.5) tags.push('HIGH_US10Y');
+  if ((macro.us30y || 0) >= 4.8) tags.push('HIGH_US30Y');
   if ((macro.usd_krw || 0) >= 1500) tags.push('KRW_WEAK');
   if ((macro.cape || 0) >= 35) tags.push('US_EQUITY_VALUATION_HIGH');
+  if ((macro.vix || 0) >= 25) tags.push('VOLATILITY_ELEVATED');
+  if (displayErpValue(macro.forward_erp) != null && displayErpValue(macro.forward_erp) <= 1.0) tags.push('FORWARD_ERP_LOW');
   return Array.from(new Set(tags));
+}
+
+function buildSnapshotDecisionProfile(pctMap, target, taa, macro, houseView, memo) {
+  const tags = inferSnapshotReasonTags(pctMap, target, macro);
+  const indicatorCards = [];
+  const macroJudgement = [];
+  const assetComments = [];
+  const actionPolicy = [];
+  const cape = numOrNull(macro.cape);
+  const vix = numOrNull(macro.vix);
+  const us10y = numOrNull(macro.us10y);
+  const us30y = numOrNull(macro.us30y);
+  const usdkrw = numOrNull(macro.usd_krw);
+  const erp = displayErpValue(macro.forward_erp);
+
+  function addIndicator(label, value, status, comment) {
+    indicatorCards.push({ label: label, value: value, status: status, comment: comment });
+  }
+  function pctGap(asset) {
+    return (pctMap[asset] || 0) - (target[asset] || 0);
+  }
+  function fmtPctVal(v, digits) {
+    return v == null ? '—' : Number(v).toFixed(digits == null ? 1 : digits);
+  }
+
+  if (cape != null) {
+    if (cape >= 38) {
+      addIndicator('CAPE', cape.toFixed(1), '부담', '장기 밸류에이션 고부담. 주식 비중 확대는 강한 근거가 필요합니다.');
+      macroJudgement.push('CAPE ' + cape.toFixed(1) + '로 미국 주식 밸류에이션 부담이 높아, SAA 미달분을 한 번에 채우기보다는 분할 접근이 적절합니다.');
+    } else if (cape >= 34) {
+      addIndicator('CAPE', cape.toFixed(1), '주의', '고평가권. 주식 확대 속도 조절이 필요합니다.');
+      macroJudgement.push('CAPE가 고평가권이라 신규 주식 매수는 분할 집행이 적절합니다.');
+    } else {
+      addIndicator('CAPE', cape.toFixed(1), '중립', '밸류에이션 부담은 상대적으로 제한적입니다.');
+    }
+  }
+
+  if (erp != null) {
+    if (erp <= 1.0) {
+      addIndicator('Forward ERP', erp.toFixed(2) + '%p', '낮음', '채권 대비 주식 보상비율이 낮아 주식 확대 유인이 약합니다.');
+      macroJudgement.push('Forward ERP ' + erp.toFixed(2) + '%p로 주식 리스크 프리미엄이 낮아 주식 확대 권고 강도는 낮습니다.');
+    } else if (erp <= 2.5) {
+      addIndicator('Forward ERP', erp.toFixed(2) + '%p', '보통 이하', '주식의 상대 매력은 제한적입니다.');
+    } else {
+      addIndicator('Forward ERP', erp.toFixed(2) + '%p', '양호', '주식의 상대 보상비율이 개선된 구간입니다.');
+    }
+  }
+
+  if (vix != null) {
+    if (vix >= 25) {
+      addIndicator('VIX', vix.toFixed(1), '변동성 확대', '분할매수 외 공격적 확대는 제한합니다.');
+      macroJudgement.push('VIX ' + vix.toFixed(1) + '로 변동성이 높아 리밸런싱은 분할 집행 우선입니다.');
+    } else if (vix <= 18) {
+      addIndicator('VIX', vix.toFixed(1), '안정', '변동성은 안정권이나 밸류에이션 지표와 함께 판단해야 합니다.');
+    } else {
+      addIndicator('VIX', vix.toFixed(1), '중립', '변동성은 중립권입니다.');
+    }
+  }
+
+  if (us10y != null) {
+    if (us10y >= 4.5) {
+      addIndicator('US10Y', us10y.toFixed(2) + '%', '높음', '채권 캐리 매력은 있으나 주식 할인율 부담도 큽니다.');
+      macroJudgement.push('US10Y ' + us10y.toFixed(2) + '%로 채권 캐리 매력이 있고, 동시에 성장주 멀티플에는 부담입니다.');
+    } else {
+      addIndicator('US10Y', us10y.toFixed(2) + '%', '중립', '금리 부담은 고점권 대비 완화된 상태입니다.');
+    }
+  }
+  if (us30y != null && us30y >= 4.8) {
+    addIndicator('US30Y', us30y.toFixed(2) + '%', '높음', '장기채/스트립 보강 검토 구간입니다. 단, 듀레이션 변동성은 큽니다.');
+  }
+  if (usdkrw != null) {
+    if (usdkrw >= 1500) {
+      addIndicator('USD/KRW', Math.round(usdkrw).toLocaleString() + '원', '원화 약세', '달러자산 방어력은 유효하나 신규 환노출 확대는 속도 조절이 필요합니다.');
+      macroJudgement.push('USD/KRW ' + Math.round(usdkrw).toLocaleString() + '원으로 원화 약세 구간입니다. 달러자산 보유 효과는 있으나 신규 환노출 확대는 분할이 유리합니다.');
+    } else {
+      addIndicator('USD/KRW', Math.round(usdkrw).toLocaleString() + '원', '중립', '환율 부담은 극단 구간은 아닙니다.');
+    }
+  }
+
+  const eqGap = pctGap('equity_global');
+  const krGap = pctGap('equity_kr');
+  const bondGap = pctGap('bond_us');
+  const cryptoGap = pctGap('crypto');
+  const cashGap = pctGap('cash');
+  const goldGap = pctGap('gold');
+  const oilGap = pctGap('oil');
+  const cryptoPnl = getSnapshotHoldingPnlPct('crypto');
+
+  if (eqGap < -REBALANCE_BAND) {
+    if ((cape != null && cape >= 35) || (erp != null && erp <= 1.0)) {
+      assetComments.push('글로벌주식은 SAA 대비 ' + Math.abs(eqGap).toFixed(1) + '%p 미달이나, CAPE/ERP 부담으로 일괄 확대보다 분할매수가 적절합니다.');
+    } else {
+      assetComments.push('글로벌주식은 SAA 대비 ' + Math.abs(eqGap).toFixed(1) + '%p 미달이므로 장기 목표 복귀를 위한 분할매수 후보입니다.');
+    }
+  } else if (eqGap > REBALANCE_BAND) {
+    assetComments.push('글로벌주식은 SAA 대비 ' + eqGap.toFixed(1) + '%p 초과입니다. 신규 매수 우선순위는 낮습니다.');
+  }
+
+  if (bondGap < 0 && (us10y != null && us10y >= 4.3)) {
+    assetComments.push('미국채는 SAA 대비 ' + Math.abs(bondGap).toFixed(1) + '%p 미달이고 금리 레벨이 높아 보강 우선순위가 높습니다.');
+    actionPolicy.push('미국채: 신규자금 또는 연금/ISA 내에서 우선 보강 검토');
+  }
+  if (cryptoGap > 0) {
+    const pnlPhrase = cryptoPnl == null ? '손익 정보가 불완전하므로 원금회복 여부를 별도 확인하면서' : (cryptoPnl < 0 ? '미실현손실 구간이므로 원금회복 전까지' : '수익 구간이면 단계적 트림을 검토하되');
+    assetComments.push('BTC/크립토는 SAA 대비 +' + cryptoGap.toFixed(1) + '%p 초과입니다. 비중 확대는 제한하고, ' + pnlPhrase + ' 매도는 유예하는 원칙입니다.');
+    actionPolicy.push('BTC: 신규매수 없음 · 목표 초과 상태 관리 · 원금회복 전 매도 유예');
+  }
+  if (krGap > 0) {
+    assetComments.push('국내주식은 SAA 대비 +' + krGap.toFixed(1) + '%p 초과입니다. 추가매수보다 자연 희석이 우선입니다.');
+  }
+  if (cashGap > REBALANCE_BAND) {
+    assetComments.push('현금은 SAA 대비 +' + cashGap.toFixed(1) + '%p 초과입니다. 초과 현금은 리밸런싱 탄약으로 보되, 금리·밸류 부담을 감안해 분할 집행합니다.');
+    actionPolicy.push('현금: 일시 투입보다 미국채/목표 미달 자산군으로 분할 배분');
+  }
+  if (goldGap > -1 && goldGap < 1) {
+    assetComments.push('금은 SAA 4%에 근접합니다. 추가 확대보다 유지가 적절합니다.');
+  } else if (goldGap < -1) {
+    assetComments.push('금은 목표 대비 낮습니다. 달러·실질금리 환경을 보며 4% 목표까지 보강 후보입니다.');
+  }
+  if (oilGap < -0.5) {
+    assetComments.push('유가는 SAA 1% 대비 낮습니다. 단, 선물형 롤오버와 지정학 변동성이 커서 최대 1% 내 보강으로 제한합니다.');
+  }
+  if (!assetComments.length) assetComments.push('자산군 편차는 대체로 허용 범위 안입니다. 강한 리밸런싱보다 기존 SAA 유지가 우선입니다.');
+  if (!actionPolicy.length) actionPolicy.push('강제 리밸런싱보다는 SAA 이탈 자산군만 분할 조정합니다.');
+
+  const headline = macroJudgement.length
+    ? macroJudgement[0]
+    : '거시지표상 강한 방향성보다 SAA 유지와 편차 관리가 우선입니다.';
+  const fullComment = macroJudgement.concat(assetComments).slice(0, 7).join(' ');
+  return {
+    headline: headline,
+    full_comment: fullComment,
+    macro_judgement: macroJudgement,
+    asset_comments: assetComments,
+    action_policy: actionPolicy,
+    indicator_cards: indicatorCards,
+    reason_tags: tags
+  };
 }
 
 function saveMonthlySnapshot() {
@@ -3254,7 +3485,8 @@ function renderSnapshotList() {
   }
   el.innerHTML = rows.map(function(snap) {
     const s = snap.summary || {};
-    const memo = snap.decision_log?.monthly_thesis || '';
+    const generated = snap.decision_log?.generated_summary || snap.decision_log?.generated_comment || '자동 판단 코멘트 없음';
+    const tags = (snap.decision_log?.reason_tags || []).slice(0, 4);
     return `<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:12px">
       <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
         <div>
@@ -3263,7 +3495,8 @@ function renderSnapshotList() {
         </div>
         <button class="btn btn-outline btn-sm" onclick="deleteSnapshot('${escapeHtml(snap.snapshot_id)}')">삭제</button>
       </div>
-      ${memo ? `<div style="margin-top:6px;padding:7px 9px;background:var(--bg);border-radius:7px;color:var(--text2);line-height:1.5">${escapeHtml(memo)}</div>` : ''}
+      <div style="margin-top:6px;padding:7px 9px;background:var(--accent-l);border-radius:7px;color:var(--accent);line-height:1.5;font-weight:600">${escapeHtml(generated)}</div>
+      ${tags.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${tags.map(function(t){ return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;background:var(--bg);color:var(--text3)">' + escapeHtml(t) + '</span>'; }).join('')}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -3309,6 +3542,39 @@ function fmtDelta(n, suffix) {
   return sign + Number(n).toFixed(1) + (suffix || '');
 }
 
+function renderSnapshotDecisionCard(snap) {
+  const log = snap.decision_log || {};
+  const macro = snap.macro || {};
+  const cards = log.indicator_cards || [];
+  const macroLines = log.macro_judgement || [];
+  const assetLines = log.asset_comments || [];
+  const policyLines = log.action_policy || [];
+  const memo = log.monthly_thesis || '';
+  const cardHtml = cards.slice(0, 6).map(function(c) {
+    const statusColor = c.status === '부담' || c.status === '낮음' || c.status === '높음' || c.status === '원화 약세' ? 'var(--red)' : c.status === '주의' || c.status === '변동성 확대' ? 'var(--yellow)' : 'var(--green)';
+    const statusBg = c.status === '부담' || c.status === '낮음' || c.status === '높음' || c.status === '원화 약세' ? 'var(--red-l)' : c.status === '주의' || c.status === '변동성 확대' ? 'var(--yellow-l)' : 'var(--green-l)';
+    return `<div style="padding:8px 9px;background:var(--bg);border-radius:8px">
+      <div style="display:flex;justify-content:space-between;gap:6px;align-items:center;margin-bottom:2px"><span style="font-size:10px;font-weight:700;color:var(--text3)">${escapeHtml(c.label)}</span><span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;background:${statusBg};color:${statusColor}">${escapeHtml(c.status)}</span></div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:2px">${escapeHtml(c.value)}</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.5">${escapeHtml(c.comment)}</div>
+    </div>`;
+  }).join('');
+  const mainComment = log.generated_comment || log.generated_summary || macro.note || '자동 판단 코멘트가 저장되지 않은 구버전 스냅샷입니다.';
+  const assetHtml = assetLines.length ? assetLines.map(function(t){ return '<div style="margin-bottom:5px">• ' + escapeHtml(t) + '</div>'; }).join('') : '<div style="color:var(--text3)">자산군별 코멘트 없음</div>';
+  const policyHtml = policyLines.length ? policyLines.map(function(t){ return '<span style="display:inline-flex;margin:0 4px 4px 0;font-size:10px;font-weight:700;padding:3px 7px;border-radius:10px;background:var(--accent-l);color:var(--accent)">' + escapeHtml(t) + '</span>'; }).join('') : '';
+  return `<div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px">
+      <div><div style="font-size:13px;font-weight:800">${escapeHtml(snap.snapshot_id)} 당시 판단</div><div style="font-size:10px;color:var(--text3)">macro 기준일 ${escapeHtml(macro.updated_at || snap.portfolio_updated_at || '—')}</div></div>
+      <span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:var(--bg);color:var(--text2)">자동 생성</span>
+    </div>
+    ${cardHtml ? `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px">${cardHtml}</div>` : ''}
+    <div style="padding:9px 10px;background:var(--yellow-l);border-radius:8px;color:var(--yellow);font-size:12px;line-height:1.7;font-weight:600;margin-bottom:8px">${escapeHtml(mainComment)}</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.7">${assetHtml}</div>
+    ${policyHtml ? `<div style="margin-top:8px">${policyHtml}</div>` : ''}
+    ${memo ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.6"><b>추가 메모</b> · ${escapeHtml(memo)}</div>` : ''}
+  </div>`;
+}
+
 function renderSnapshotCompare() {
   const el = document.getElementById('snapshotCompareBody');
   if (!el) return;
@@ -3352,7 +3618,7 @@ function renderSnapshotCompare() {
     const bv = Number(b.macro?.[k]);
     if (isNaN(av) && isNaN(bv)) return '';
     const d = (isNaN(bv)?0:bv) - (isNaN(av)?0:av);
-    const val = function(v) { return isNaN(v) ? '—' : (suffix === '원' ? Math.round(v).toLocaleString() : Number(v).toFixed(k==='usd_krw'?0:2)) + suffix; };
+    const val = function(v) { if (isNaN(v)) return '—'; const vv = k === 'forward_erp' ? displayErpValue(v) : v; return (suffix === '원' ? Math.round(vv).toLocaleString() : Number(vv).toFixed(k==='usd_krw'?0:2)) + suffix; };
     return `<div class="snapshot-macro-row">
       <div style="font-weight:600">${label}</div>
       <div style="text-align:right;color:var(--text2)">${val(av)}</div>
@@ -3361,8 +3627,6 @@ function renderSnapshotCompare() {
     </div>`;
   }).join('');
 
-  const memoA = a.decision_log?.monthly_thesis || '메모 없음';
-  const memoB = b.decision_log?.monthly_thesis || '메모 없음';
   el.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
       <div style="padding:12px;background:var(--bg);border-radius:8px"><div style="font-size:10px;color:var(--text3);font-weight:700">기준월 총자산</div><div style="font-size:18px;font-weight:800">${fmtF(a.summary?.total_assets || 0)}</div></div>
@@ -3385,8 +3649,8 @@ function renderSnapshotCompare() {
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
-      <div style="padding:10px 12px;background:var(--bg);border-radius:8px"><div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:4px">${escapeHtml(a.snapshot_id)} 판단 메모</div><div style="font-size:12px;color:var(--text2);line-height:1.7">${escapeHtml(memoA)}</div></div>
-      <div style="padding:10px 12px;background:var(--bg);border-radius:8px"><div style="font-size:10px;font-weight:700;color:var(--text3);margin-bottom:4px">${escapeHtml(b.snapshot_id)} 판단 메모</div><div style="font-size:12px;color:var(--text2);line-height:1.7">${escapeHtml(memoB)}</div></div>
+      ${renderSnapshotDecisionCard(a)}
+      ${renderSnapshotDecisionCard(b)}
     </div>`;
 }
 
