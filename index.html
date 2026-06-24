@@ -113,6 +113,22 @@ body {
 .page { display: none; }
 .page.active { display: block; }
 
+/* ── HOME 전용 폭 정렬: 상태 배너와 2열 그리드 기준선 통일 ── */
+.home-shell {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(300px, 0.68fr) 640px;
+  gap: 14px;
+  align-items: start;
+}
+.home-shell > .status-banner {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+.home-shell > .main-grid {
+  display: contents;
+}
+
 /* ── 상태 배너 (홈 핵심) ── */
 .status-banner {
   background: var(--surface);
@@ -139,7 +155,7 @@ body {
 /* ── 메인 그리드 ── */
 .main-grid {
   display: grid;
-  grid-template-columns: minmax(360px, 0.82fr) 600px;
+  grid-template-columns: minmax(300px, 0.68fr) 640px;
   gap: 14px;
   margin-bottom: 16px;
   align-items: start;
@@ -162,12 +178,14 @@ body {
 .snapshot-row { display:grid; grid-template-columns: 104px 1fr 64px 64px 64px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
 .snapshot-row:last-child { border-bottom:none; }
 .snapshot-macro-row { display:grid; grid-template-columns: 1fr 70px 70px 70px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
-@media (max-width: 1280px) {
-  .main-grid { grid-template-columns: minmax(340px, 0.78fr) 560px; }
+@media (max-width: 1360px) {
+  .home-shell, .main-grid { grid-template-columns: minmax(280px, 0.64fr) 620px; }
   .snapshot-grid { grid-template-columns: 1fr; }
 }
-@media (max-width: 1080px) {
-  .main-grid { grid-template-columns: 1fr; }
+@media (max-width: 1180px) {
+  .home-shell, .main-grid { grid-template-columns: 1fr; }
+  .home-shell > .status-banner { grid-column: 1; }
+  .home-shell > .main-grid { display: grid; }
 }
 
 /* ── 카드 ── */
@@ -478,6 +496,7 @@ body {
 
   <!-- ══ HOME: 지금 상태 ══ -->
   <div class="content page active" id="page-home">
+    <div class="home-shell">
 
     <!-- 상태 배너 -->
     <div class="status-banner" id="statusBanner">
@@ -506,19 +525,6 @@ body {
           </div>
           <div class="card-body" id="pbHomeComment">
             <div class="empty" style="padding:20px"><div class="empty-icon">💬</div>데이터를 입력하면 코멘트가 표시됩니다</div>
-          </div>
-        </div>
-
-        <!-- 목표 버킷 (Morgan Stanley Goals Planning 방식) -->
-        <div class="card" style="margin-bottom:0">
-          <div class="card-hd">
-            <div>
-              <div class="card-title">목표 버킷</div>
-              <div class="card-sub">계좌 → 목적 기반 재분류 · 버킷별 현재 금액 · 역할 확인</div>
-            </div>
-          </div>
-          <div class="card-body" id="bucketList">
-            <div class="empty"><div class="empty-icon">🪣</div>데이터를 입력하면 버킷이 표시됩니다</div>
           </div>
         </div>
 
@@ -610,6 +616,7 @@ body {
 
       </div>
     </div>
+    </div><!-- /home-shell -->
   </div>
 
   <!-- ══ ACCOUNTS ══ -->
@@ -1658,7 +1665,6 @@ function getPortfolioStatus() {
 // ══════════════════════════════════════════
 function renderHome() {
   renderStatusBanner(); // Coast FIRE 배지 포함
-  renderBuckets();
   renderPBHomeComment();
   renderActionList();
   renderPortfolioSummary();
