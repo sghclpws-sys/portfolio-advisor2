@@ -139,7 +139,7 @@ body {
 /* ── 메인 그리드 ── */
 .main-grid {
   display: grid;
-  grid-template-columns: minmax(780px, 1fr) minmax(560px, 600px);
+  grid-template-columns: minmax(760px, 1fr) minmax(520px, 560px);
   gap: 18px;
   margin-bottom: 16px;
   align-items: start;
@@ -149,7 +149,7 @@ body {
 .right-col {
   display: flex; flex-direction: column; gap: 14px;
   position: sticky; top: 66px; align-self: start;
-  overflow: visible; padding-right: 2px;
+  max-height: calc(100vh - 84px); overflow: auto; padding-right: 2px;
 }
 .snapshot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .snapshot-controls { display: grid; grid-template-columns: 160px 1fr auto; gap: 10px; align-items: end; }
@@ -159,16 +159,32 @@ body {
 .snapshot-row { display:grid; grid-template-columns: 104px 1fr 64px 64px 64px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
 .snapshot-row:last-child { border-bottom:none; }
 .snapshot-macro-row { display:grid; grid-template-columns: 1fr 70px 70px 70px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
+
+.snapshot-allocation-compare { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 14px; align-items: stretch; margin-bottom: 14px; }
+.snapshot-donut-pair { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.snapshot-donut-card { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.snapshot-alloc-panel { padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; min-width: 0; }
+.snapshot-alloc-head, .snapshot-alloc-row { display:grid; grid-template-columns: 12px minmax(86px,1fr) 64px 58px 64px; gap:8px; align-items:center; }
+.snapshot-alloc-head { font-size:10px; font-weight:800; color:var(--text3); padding:0 6px 7px; border-bottom:1px solid var(--border); }
+.snapshot-alloc-row { font-size:12px; padding:7px 6px; border-bottom:1px solid var(--border); }
+.snapshot-alloc-row:last-child { border-bottom:none; }
+.snapshot-dot { width:8px; height:8px; border-radius:50%; display:block; }
+.snapshot-judge-section { margin-top:8px; }
+.snapshot-judge-title { font-size:10px; color:var(--text3); font-weight:800; text-transform:uppercase; letter-spacing:.4px; margin:8px 0 5px; }
+.snapshot-judge-row { display:grid; grid-template-columns:18px minmax(0,1fr); gap:7px; padding:7px 8px; border:1px solid var(--border); border-radius:8px; background:var(--bg); font-size:11px; line-height:1.55; color:var(--text2); margin-bottom:5px; }
+.snapshot-judge-num { width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--surface); color:var(--text3); font-size:9px; font-weight:800; }
+@media (max-width: 1280px) { .snapshot-allocation-compare { grid-template-columns: 1fr; } .snapshot-donut-pair { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 760px) { .snapshot-donut-pair { grid-template-columns: 1fr; } .snapshot-alloc-head, .snapshot-alloc-row { grid-template-columns: 10px minmax(70px,1fr) 52px 48px 52px; gap:5px; } }
 @media (max-width: 1500px) {
-  .main-grid { grid-template-columns: minmax(0, 1fr) 540px; }
+  .main-grid { grid-template-columns: minmax(0, 1fr) 500px; }
 }
 @media (max-width: 1280px) {
   .content { padding: 20px 22px; }
-  .main-grid { grid-template-columns: minmax(0, 1fr) 500px; gap: 14px; }
+  .main-grid { grid-template-columns: minmax(0, 1fr) 460px; gap: 14px; }
 }
 @media (max-width: 1080px) {
   .main-grid { grid-template-columns: 1fr; }
-  .right-col { position: static; overflow: visible; padding-right: 0; }
+  .right-col { position: static; max-height: none; overflow: visible; padding-right: 0; }
   .snapshot-grid { grid-template-columns: 1fr; }
 }
 
@@ -261,21 +277,20 @@ body {
   display: flex; align-items: center; justify-content: center; position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
 }
 .alloc-donut-box svg { width: 132px; height: 132px; display:block; }
-.alloc-center-label { display:none; }
+.alloc-center-label { position: absolute; inset: 0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; text-align:center; }
 .alloc-center-label span { font-size: 9px; color: var(--text3); font-weight: 700; letter-spacing: .2px; }
 .alloc-center-label strong { font-size: 16px; line-height: 1.05; font-weight: 850; letter-spacing: -.4px; color: var(--text); margin-top: 2px; }
 .alloc-center-label small { font-size: 9px; color: var(--text3); margin-top: 2px; }
 .alloc-legend-panel { min-width: 0; }
-.alloc-legend-head, .alloc-legend-row { display: grid; grid-template-columns: 12px minmax(78px, 1fr) 48px 42px 46px 50px; gap: 6px; align-items: center; }
+.alloc-legend-head, .alloc-legend-row { display: grid; grid-template-columns: 12px minmax(72px, 1fr) 48px 46px 50px; gap: 6px; align-items: center; }
 .alloc-legend-head { font-size: 9px; font-weight: 750; color: var(--text3); padding: 0 8px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
 .alloc-legend-list { display:flex; flex-direction:column; gap: 4px; }
-.alloc-legend-row { padding: 5px 8px; border-radius: 8px; background: var(--bg); border: 1px solid transparent; }
+.alloc-legend-row { padding: 6px 8px; border-radius: 8px; background: var(--bg); border: 1px solid transparent; }
 .alloc-legend-row.is-alert { background: var(--red-l); border-color: #fecaca; }
 .alloc-dot { width: 8px; height: 8px; border-radius: 50%; display:block; }
 .alloc-name { font-size: 11px; font-weight: 750; color: var(--text); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .alloc-pct { font-size: 12px; font-weight: 850; text-align:right; color: var(--text); }
 .alloc-target { font-size: 10px; text-align:right; color: var(--text3); font-weight: 700; }
-.alloc-taa { font-size: 10px; text-align:right; color: var(--accent); font-weight: 800; }
 .alloc-gap { font-size: 10px; text-align:right; font-weight: 850; }
 .alloc-gap.ok { color: var(--text3); }
 .alloc-gap.over { color: var(--red); }
@@ -289,7 +304,7 @@ body {
   .alloc-visual { grid-template-columns: 138px minmax(0, 1fr); gap: 12px; }
   .alloc-donut-box { width: 138px; height: 138px; }
   .alloc-donut-box svg { width: 122px; height: 122px; }
-  .alloc-legend-head, .alloc-legend-row { grid-template-columns: 10px minmax(68px, 1fr) 42px 36px 42px 44px; gap: 5px; }
+  .alloc-legend-head, .alloc-legend-row { grid-template-columns: 10px minmax(62px, 1fr) 42px 40px 46px; gap: 5px; }
 }
 
 /* ── 계좌 카드 ── */
@@ -530,6 +545,18 @@ body {
           </div>
         </div>
 
+        <!-- 목표 버킷 (Morgan Stanley Goals Planning 방식) -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-hd">
+            <div>
+              <div class="card-title">목표 버킷</div>
+              <div class="card-sub">계좌 → 목적 기반 재분류 · 버킷별 현재 금액 · 역할 확인</div>
+            </div>
+          </div>
+          <div class="card-body" id="bucketList">
+            <div class="empty"><div class="empty-icon">🪣</div>데이터를 입력하면 버킷이 표시됩니다</div>
+          </div>
+        </div>
 
         <!-- 액션 리스트 -->
         <div class="card">
@@ -600,27 +627,14 @@ body {
               </div>
               <div class="alloc-legend-panel">
                 <div class="alloc-legend-head">
-                  <span></span><span>자산군</span><span style="text-align:right">현재</span><span style="text-align:right">SAA</span><span style="text-align:right">TAA</span><span style="text-align:right">편차</span>
+                  <span></span><span>자산군</span><span style="text-align:right">현재</span><span style="text-align:right">SAA</span><span style="text-align:right">편차</span>
                 </div>
                 <div class="alloc-legend-list" id="donutLegend"></div>
               </div>
             </div>
-            <div class="alloc-summary-strip" id="allocSummaryStrip"></div>
           </div>
         </div>
 
-        <!-- 리밸런싱 트리거 -->
-        <div class="card">
-          <div class="card-hd">
-            <div>
-              <div class="card-title">리밸런싱 트리거</div>
-              <div class="card-sub">SAA ±5%p 이탈 기준 · TAA는 참고</div>
-            </div>
-          </div>
-          <div class="card-body" id="deviationList">
-            <div class="empty" style="padding:20px"><div class="empty-icon">⇌</div>데이터 로딩 중</div>
-          </div>
-        </div>
 
         <!-- 납입 현황 -->
         <div class="card">
@@ -1411,12 +1425,24 @@ function pct(n) { if(n==null) return '—'; return (n>=0?'+':'') + n.toFixed(2) 
 // ══════════════════════════════════════════
 function acctVal(a) { return (a.assets||[]).reduce((s,h) => s+(h.amount||0), 0); }
 function totalWithCash() { return getActiveAccounts().reduce((s,a) => s+acctVal(a), 0) + (P?.cash?.available||0); }
-function totalPnL() {
-  let p = 0;
+function totalPnLStats() {
+  let pnl = 0, cost = 0, amount = 0, covered = 0, total = 0;
   getActiveAccounts().forEach(a => (a.assets||[]).forEach(h => {
-    if(h.pnl_pct != null && h.amount) p += h.amount - h.amount/(1+h.pnl_pct/100);
+    total += 1;
+    const amt = Number(h.amount || 0);
+    if (!amt) return;
+    if (h.cost_basis != null && !isNaN(Number(h.cost_basis)) && Number(h.cost_basis) > 0) {
+      const cb = Number(h.cost_basis);
+      amount += amt; cost += cb; pnl += amt - cb; covered += 1;
+    } else if (h.pnl_pct != null && !isNaN(Number(h.pnl_pct))) {
+      const cb = amt / (1 + Number(h.pnl_pct) / 100);
+      amount += amt; cost += cb; pnl += amt - cb; covered += 1;
+    }
   }));
-  return p;
+  return { pnl:pnl, cost:cost, amount:amount, covered:covered, total:total, hasData:covered > 0, coverage: total ? covered / total : 0 };
+}
+function totalPnL() {
+  return totalPnLStats().pnl;
 }
 function usdExposure() {
   const tot = totalWithCash(); if(!tot) return 0;
@@ -1686,7 +1712,6 @@ function renderHome() {
   renderPortfolioSummary();
   renderDonut();
   renderTaxStatus();
-  renderDeviationList();
 }
 
 function renderStatusBanner() {
@@ -1747,10 +1772,20 @@ function renderActionList() {
 
 function renderPortfolioSummary() {
   if(!P) return;
-  const tot = totalWithCash(), pnl = totalPnL(), pnlPct = tot ? (pnl/(tot-pnl))*100 : 0;
+  const tot = totalWithCash();
+  const pnlStats = totalPnLStats();
+  const pnl = pnlStats.pnl;
+  const pnlPct = pnlStats.cost ? (pnl / pnlStats.cost) * 100 : null;
   document.getElementById('ov-total').textContent = fmtF(tot);
-  const pnlEl = document.getElementById('ov-pnl'); pnlEl.textContent = (pnl>=0?'+':'')+fmtF(pnl); pnlEl.className = pnl>=0?'pos':'neg';
-  const pnlPEl = document.getElementById('ov-pnl-pct'); pnlPEl.textContent = pct(pnlPct); pnlPEl.className = pnlPct>=0?'pos':'neg';
+  const pnlEl = document.getElementById('ov-pnl');
+  const pnlPEl = document.getElementById('ov-pnl-pct');
+  if (!pnlStats.hasData) {
+    pnlEl.textContent = '—'; pnlEl.className = '';
+    pnlPEl.textContent = '원가/손익 데이터 없음'; pnlPEl.className = '';
+  } else {
+    pnlEl.textContent = (pnl>=0?'+':'')+fmtF(pnl); pnlEl.className = pnl>=0?'pos':'neg';
+    pnlPEl.textContent = pct(pnlPct); pnlPEl.className = pnlPct>=0?'pos':'neg';
+  }
   document.getElementById('ov-usd').textContent = usdExposure().toFixed(1)+'%';
 
   // 계좌 바
@@ -1772,8 +1807,15 @@ function renderPortfolioSummary() {
   // accounts 페이지 KPI
   document.getElementById('a-total').textContent = fmtF(tot);
   document.getElementById('a-count').textContent = `${getActiveAccounts().length}개 계좌 · ${getActiveAccounts().reduce((s,a)=>s+(a.assets||[]).length,0)}개 종목`;
-  const aPnl = document.getElementById('a-pnl'); aPnl.textContent = (pnl>=0?'+':'')+fmtF(pnl); aPnl.className = 'kpi-value '+(pnl>=0?'pos':'neg');
-  document.getElementById('a-pnl-pct').textContent = pct(pnlPct);
+  const aPnl = document.getElementById('a-pnl');
+  const aPnlPct = document.getElementById('a-pnl-pct');
+  if (!pnlStats.hasData) {
+    aPnl.textContent = '—'; aPnl.className = 'kpi-value';
+    aPnlPct.textContent = '원가/손익 데이터 없음';
+  } else {
+    aPnl.textContent = (pnl>=0?'+':'')+fmtF(pnl); aPnl.className = 'kpi-value '+(pnl>=0?'pos':'neg');
+    aPnlPct.textContent = pct(pnlPct);
+  }
   document.getElementById('a-usd').textContent = usdExposure().toFixed(1)+'%';
 }
 
@@ -1805,12 +1847,14 @@ function renderDonut() {
   const svg = document.getElementById('donutSvg');
   if (svg) svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--bg)"/>${paths}<circle cx="${cx}" cy="${cy}" r="${r-sw}" fill="var(--surface)" stroke="var(--border)" stroke-width="1"/>`;
 
+  const largest = entries.slice().sort(function(a,b){ return b[1]-a[1]; })[0] || ['-',0];
+  const largestPct = tot ? (largest[1] / tot) * 100 : 0;
   const topPctEl = document.getElementById('donutMainPct');
   const topLabelEl = document.getElementById('donutMainLabel');
   const totalLabelEl = document.getElementById('donutTotalLabel');
-  if (topPctEl) topPctEl.textContent = '';
-  if (topLabelEl) topLabelEl.textContent = '';
-  if (totalLabelEl) totalLabelEl.textContent = '';
+  if (topPctEl) topPctEl.textContent = largestPct.toFixed(1) + '%';
+  if (topLabelEl) topLabelEl.textContent = ASSET_LABEL_KO[largest[0]] || CLS_LABEL[largest[0]] || largest[0];
+  if (totalLabelEl) totalLabelEl.textContent = fmtF(tot).replace('₩','₩ ');
 
   const legend = document.getElementById('donutLegend');
   if (legend) {
@@ -1830,32 +1874,12 @@ function renderDonut() {
         <span class="alloc-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span>
         <span class="alloc-pct">${p.toFixed(1)}%</span>
         <span class="alloc-target">${t!==undefined?t+'%':'—'}</span>
-        <span class="alloc-taa">${taa!==undefined?taa.toFixed(1)+'%':'—'}</span>
         <span class="alloc-gap ${gapClass}">${dev!=null?(dev>0?'+':'')+dev.toFixed(1):'—'}</span>
       </div>`;
     }).join('');
   }
 
-  const gaps = entries.map(function(row) {
-    const cls=row[0], val=row[1];
-    const cur = tot ? (val/tot)*100 : 0;
-    const tgt = target[cls] || 0;
-    return { cls:cls, cur:cur, tgt:tgt, dev:cur-tgt, color:CLS_COLOR[cls]||'#9ca3af' };
-  });
-  const maxGap = gaps.slice().sort(function(a,b){ return Math.abs(b.dev)-Math.abs(a.dev); })[0];
-  const under = gaps.filter(function(x){ return x.dev < -REBALANCE_BAND; }).sort(function(a,b){ return a.dev-b.dev; })[0];
-  const over = gaps.filter(function(x){ return x.dev > REBALANCE_BAND; }).sort(function(a,b){ return b.dev-a.dev; })[0];
-  const strip = document.getElementById('allocSummaryStrip');
-  if (strip) {
-    function box(label, item, fallback, mode) {
-      if (!item) return `<div class="alloc-summary-item"><div class="alloc-summary-label">${label}</div><div class="alloc-summary-value">${fallback}</div><div class="alloc-summary-sub">SAA ±${REBALANCE_BAND}%p 기준</div></div>`;
-      const name = ASSET_LABEL_KO[item.cls] || CLS_LABEL[item.cls] || item.cls;
-      const devText = (item.dev>0?'+':'') + item.dev.toFixed(1) + '%p';
-      const sub = mode === 'under' ? '보강 후보' : mode === 'over' ? '비중 초과' : '최대 편차';
-      return `<div class="alloc-summary-item" style="border-color:${item.color}33;background:${item.color}0f"><div class="alloc-summary-label">${label}</div><div class="alloc-summary-value" style="color:${item.color}">${name} ${devText}</div><div class="alloc-summary-sub">${sub}</div></div>`;
-    }
-    strip.innerHTML = box('최대 편차', maxGap, '편차 없음', 'max') + box('부족 자산', under, '없음', 'under') + box('초과 자산', over, '없음', 'over');
-  }
+
 }
 
 function renderTaxStatus() {
@@ -1924,14 +1948,13 @@ function renderDeviationList() {
     const action = isTrigger ? (dev>0?'매도':'매수') : '유지';
     const actionBg = isTrigger ? (dev>0?'var(--red-l)':'var(--green-l)') : 'var(--bg)';
     const actionColor = isTrigger ? (dev>0?'var(--red)':'var(--green)') : 'var(--text3)';
-    const taaVal = getAssetTarget('taa')[k] || 0;
-    return `<div style="display:grid;grid-template-columns:10px minmax(72px,1fr) 82px 64px 48px 42px;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+    return `<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
       <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></span>
-      <span style="font-weight:${isTrigger?700:500};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ASSET_LABEL_KO[k]||k}</span>
-      <span style="color:var(--text2);font-size:11px;text-align:right">${cur.toFixed(1)}%→${tgt}%</span>
-      <span style="font-size:10px;font-weight:800;color:var(--accent);text-align:right">TAA ${taaVal.toFixed(1)}%</span>
-      <span style="font-weight:700;color:${devColor};font-size:11px;text-align:right">${dev>0?'+':''}${dev.toFixed(1)}%</span>
-      <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${actionBg};color:${actionColor};text-align:center">${action}</span>
+      <span style="flex:1;font-weight:${isTrigger?700:500}">${ASSET_LABEL_KO[k]||k}</span>
+      <span style="color:var(--text2);font-size:11px">${cur.toFixed(1)}%→SAA ${tgt}%</span>
+      ${Math.abs(getHouseViewAdj(k)) > 0.0001 ? `<span style="font-size:10px;font-weight:700;color:${getHouseViewAdj(k)>0?'var(--green)':'var(--red)'}">TAA ${((getAssetTarget('taa')[k]||0)).toFixed(1)}%</span>` : ''}
+      <span style="font-weight:700;color:${devColor};font-size:11px">${dev>0?'+':''}${dev.toFixed(1)}%</span>
+      <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${actionBg};color:${actionColor}">${action}</span>
     </div>`;
   }).join('');
   
@@ -3175,7 +3198,7 @@ function buildMonthlySnapshot(snapshotId, memo) {
     portfolio_updated_at: P.updated_at || null,
     summary: {
       total_assets: Math.round(totalWithCash()),
-      total_pnl: Math.round(totalPnL()),
+      total_pnl: totalPnLStats().hasData ? Math.round(totalPnLStats().pnl) : null,
       usd_exposure_pct: +usdExposure().toFixed(2),
       asset_allocation_pct: allocation.pct,
       asset_allocation_amount: allocation.amount,
@@ -3531,11 +3554,81 @@ function fmtDelta(n, suffix) {
   return sign + Number(n).toFixed(1) + (suffix || '');
 }
 
+function indicatorStatusMeta(label, value) {
+  const key = String(label || '').toLowerCase();
+  const n = numOrNull(value);
+  if (key.includes('cape')) {
+    if (n != null && n >= 38) return ['부담', '장기 밸류에이션 고부담. 주식 비중 확대는 강한 근거가 필요합니다.'];
+    if (n != null && n >= 34) return ['주의', '고평가권. 주식 확대 속도 조절이 필요합니다.'];
+    return ['중립', '밸류에이션 부담은 상대적으로 제한적입니다.'];
+  }
+  if (key.includes('vix')) {
+    if (n != null && n >= 25) return ['변동성 확대', '분할매수 외 공격적 확대는 제한합니다.'];
+    if (n != null && n <= 18) return ['안정', '변동성은 안정권이나 밸류에이션 지표와 함께 판단해야 합니다.'];
+    return ['중립', '변동성은 중립권입니다.'];
+  }
+  if (key.includes('erp')) {
+    if (n != null && n <= 1.0) return ['낮음', '채권 대비 주식 보상비율이 낮아 주식 확대 유인이 약합니다.'];
+    if (n != null && n <= 2.5) return ['보통 이하', '주식의 상대 매력은 제한적입니다.'];
+    return ['양호', '주식의 상대 보상비율이 개선된 구간입니다.'];
+  }
+  if (key.includes('10y') || key.includes('30y')) {
+    if (n != null && n >= 4.5) return ['높음', key.includes('30y') ? '장기채/스트립 보강 검토 구간입니다. 단, 듀레이션 변동성은 큽니다.' : '채권 캐리 매력은 있으나 주식 할인율 부담도 큽니다.'];
+    return ['중립', '금리 부담은 고점권 대비 완화된 상태입니다.'];
+  }
+  if (key.includes('usd')) {
+    if (n != null && n >= 1500) return ['원화 약세', '달러자산 방어력은 유효하나 신규 환노출 확대는 속도 조절이 필요합니다.'];
+    return ['중립', '환율 부담은 극단 구간은 아닙니다.'];
+  }
+  return ['중립', '저장된 당시 지표입니다.'];
+}
+
+function getSnapshotIndicatorCards(snap) {
+  const macro = snap.macro || {};
+  const src = ((snap.decision_log || {}).indicator_cards || []).slice();
+  const out = [];
+  const seen = new Set();
+  function add(label, value, status, comment) {
+    if (value == null || value === '—' || value === '') return;
+    const key = String(label).toLowerCase().replace(/[^a-z0-9가-힣]/g,'');
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ label: label, value: String(value), status: status, comment: comment });
+  }
+  src.forEach(function(c) { add(c.label, c.value, c.status, c.comment); });
+  function addMacro(label, raw, fmt) {
+    const n = label === 'Forward ERP' ? displayErpValue(raw) : numOrNull(raw);
+    if (n == null) return;
+    const meta = indicatorStatusMeta(label, n);
+    add(label, fmt(n), meta[0], meta[1]);
+  }
+  addMacro('CAPE', macro.cape, function(n){ return n.toFixed(1); });
+  addMacro('VIX', macro.vix, function(n){ return n.toFixed(1); });
+  addMacro('US10Y', macro.us10y, function(n){ return n.toFixed(2) + '%'; });
+  addMacro('US30Y', macro.us30y, function(n){ return n.toFixed(2) + '%'; });
+  addMacro('USD/KRW', macro.usd_krw, function(n){ return Math.round(n).toLocaleString() + '원'; });
+  addMacro('Forward ERP', macro.forward_erp, function(n){ return n.toFixed(2) + '%p'; });
+  return out;
+}
+
+function getSnapshotMacroJudgementLines(snap) {
+  const log = snap.decision_log || {};
+  const macro = snap.macro || {};
+  const lines = (log.macro_judgement || []).slice();
+  const joined = lines.join(' ').toLowerCase();
+  const erp = displayErpValue(macro.forward_erp);
+  if (erp != null && !joined.includes('erp')) {
+    if (erp <= 1.0) lines.push('Forward ERP ' + erp.toFixed(2) + '%p로 주식 리스크 프리미엄이 낮아 주식 확대 권고 강도는 낮습니다.');
+    else lines.push('Forward ERP ' + erp.toFixed(2) + '%p로 당시 주식의 채권 대비 보상비율을 점검했습니다.');
+  }
+  return lines;
+}
+
 function renderSnapshotDecisionCard(snap) {
   const log = snap.decision_log || {};
   const macro = snap.macro || {};
-  const cards = log.indicator_cards || [];
-  const macroLines = log.macro_judgement || [];
+  const cards = getSnapshotIndicatorCards(snap);
+  const macroLines = getSnapshotMacroJudgementLines(snap);
   const assetLines = log.asset_comments || [];
   const policyLines = log.action_policy || [];
   const memo = log.monthly_thesis || '';
@@ -3548,8 +3641,8 @@ function renderSnapshotDecisionCard(snap) {
       <div style="font-size:10px;color:var(--text2);line-height:1.5">${escapeHtml(c.comment)}</div>
     </div>`;
   }).join('');
-  const mainComment = log.generated_comment || log.generated_summary || macro.note || '자동 판단 코멘트가 저장되지 않은 구버전 스냅샷입니다.';
-  const assetHtml = assetLines.length ? assetLines.map(function(t){ return '<div style="margin-bottom:5px">• ' + escapeHtml(t) + '</div>'; }).join('') : '<div style="color:var(--text3)">자산군별 코멘트 없음</div>';
+  const macroHtml = macroLines.length ? macroLines.map(function(t,i){ return '<div class="snapshot-judge-row"><span class="snapshot-judge-num">' + (i+1) + '</span><span>' + escapeHtml(t) + '</span></div>'; }).join('') : '<div style="color:var(--text3);font-size:11px">Macro 판단 코멘트 없음</div>';
+  const assetHtml = assetLines.length ? assetLines.map(function(t,i){ return '<div class="snapshot-judge-row"><span class="snapshot-judge-num">' + (i+1) + '</span><span>' + escapeHtml(t) + '</span></div>'; }).join('') : '<div style="color:var(--text3);font-size:11px">자산군별 코멘트 없음</div>';
   const policyHtml = policyLines.length ? policyLines.map(function(t){ return '<span style="display:inline-flex;margin:0 4px 4px 0;font-size:10px;font-weight:700;padding:3px 7px;border-radius:10px;background:var(--accent-l);color:var(--accent)">' + escapeHtml(t) + '</span>'; }).join('') : '';
   return `<div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px">
@@ -3557,8 +3650,8 @@ function renderSnapshotDecisionCard(snap) {
       <span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:var(--bg);color:var(--text2)">자동 생성</span>
     </div>
     ${cardHtml ? `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px">${cardHtml}</div>` : ''}
-    <div style="padding:9px 10px;background:var(--yellow-l);border-radius:8px;color:var(--yellow);font-size:12px;line-height:1.7;font-weight:600;margin-bottom:8px">${escapeHtml(mainComment)}</div>
-    <div style="font-size:12px;color:var(--text2);line-height:1.7">${assetHtml}</div>
+    <div class="snapshot-judge-section"><div class="snapshot-judge-title">Macro 판단</div>${macroHtml}</div>
+    <div class="snapshot-judge-section"><div class="snapshot-judge-title">자산군 판단</div>${assetHtml}</div>
     ${policyHtml ? `<div style="margin-top:8px">${policyHtml}</div>` : ''}
     ${memo ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.6"><b>추가 메모</b> · ${escapeHtml(memo)}</div>` : ''}
   </div>`;
@@ -3588,12 +3681,12 @@ function renderSnapshotCompare() {
   const allocRows = ASSET_ORDER.map(function(k) {
     const av = ap[k] || 0, bv = bp[k] || 0, d = bv - av;
     const col = CLS_COLOR[k] || '#9ca3af';
-    return `<div class="snapshot-row">
-      <div style="display:flex;align-items:center;gap:6px;font-weight:700"><span style="width:7px;height:7px;border-radius:50%;background:${col}"></span>${ASSET_LABEL_KO[k]||k}</div>
-      <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden"><div style="height:100%;width:${Math.min(bv,100)}%;background:${col};border-radius:3px"></div></div>
-      <div style="text-align:right;color:var(--text2)">${av.toFixed(1)}%</div>
-      <div style="text-align:right;font-weight:700">${bv.toFixed(1)}%</div>
-      <div style="text-align:right;font-weight:700;color:${d>0?'var(--green)':d<0?'var(--red)':'var(--text3)'}">${fmtDelta(d, '%p')}</div>
+    return `<div class="snapshot-alloc-row">
+      <span class="snapshot-dot" style="background:${col}"></span>
+      <div style="font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ASSET_LABEL_KO[k]||k}</div>
+      <div style="text-align:right;color:var(--text2);font-weight:700">${av.toFixed(1)}%</div>
+      <div style="text-align:right;font-weight:850;color:${d>0?'var(--green)':d<0?'var(--red)':'var(--text3)'}">${fmtDelta(d, '%p')}</div>
+      <div style="text-align:right;font-weight:850">${bv.toFixed(1)}%</div>
     </div>`;
   }).join('');
 
@@ -3606,7 +3699,9 @@ function renderSnapshotCompare() {
     const av = Number(a.macro?.[k]);
     const bv = Number(b.macro?.[k]);
     if (isNaN(av) && isNaN(bv)) return '';
-    const d = (isNaN(bv)?0:bv) - (isNaN(av)?0:av);
+    const avd = k === 'forward_erp' ? displayErpValue(av) : av;
+    const bvd = k === 'forward_erp' ? displayErpValue(bv) : bv;
+    const d = (isNaN(bvd)?0:bvd) - (isNaN(avd)?0:avd);
     const val = function(v) { if (isNaN(v)) return '—'; const vv = k === 'forward_erp' ? displayErpValue(v) : v; return (suffix === '원' ? Math.round(vv).toLocaleString() : Number(vv).toFixed(k==='usd_krw'?0:2)) + suffix; };
     return `<div class="snapshot-macro-row">
       <div style="font-weight:600">${label}</div>
@@ -3623,19 +3718,23 @@ function renderSnapshotCompare() {
       <div style="padding:12px;background:${totalDelta>=0?'var(--green-l)':'var(--red-l)'};border-radius:8px"><div style="font-size:10px;color:var(--text3);font-weight:700">총자산 변화</div><div style="font-size:18px;font-weight:800;color:${totalDelta>=0?'var(--green)':'var(--red)'}">${totalDelta>=0?'+':''}${fmtF(totalDelta)}</div></div>
       <div style="padding:12px;background:var(--accent-l);border-radius:8px"><div style="font-size:10px;color:var(--text3);font-weight:700">변화율</div><div style="font-size:18px;font-weight:800;color:var(--accent)">${fmtDelta(totalDeltaPct, '%')}</div></div>
     </div>
-    <div class="snapshot-donut-grid" style="margin-bottom:14px">
-      <div class="snapshot-mini-donut"><div>${snapshotDonutSvg(ap, 116)}</div><div><div style="font-size:13px;font-weight:800;margin-bottom:4px">${escapeHtml(a.snapshot_id)}</div><div style="font-size:11px;color:var(--text2);line-height:1.6">${fmtF(a.summary?.total_assets || 0)}<br>USD ${(a.summary?.usd_exposure_pct || 0).toFixed(1)}%</div></div></div>
-      <div class="snapshot-mini-donut"><div>${snapshotDonutSvg(bp, 116)}</div><div><div style="font-size:13px;font-weight:800;margin-bottom:4px">${escapeHtml(b.snapshot_id)}</div><div style="font-size:11px;color:var(--text2);line-height:1.6">${fmtF(b.summary?.total_assets || 0)}<br>USD ${(b.summary?.usd_exposure_pct || 0).toFixed(1)}%</div></div></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:14px;align-items:start">
-      <div>
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">자산군 비중 변화</div>
+    <div class="snapshot-allocation-compare">
+      <div class="snapshot-donut-pair">
+        <div class="snapshot-donut-card"><div>${snapshotDonutSvg(ap, 108)}</div><div><div style="font-size:13px;font-weight:800;margin-bottom:4px">${escapeHtml(a.snapshot_id)}</div><div style="font-size:11px;color:var(--text2);line-height:1.6">${fmtF(a.summary?.total_assets || 0)}<br>USD ${(a.summary?.usd_exposure_pct || 0).toFixed(1)}%</div></div></div>
+        <div class="snapshot-donut-card"><div>${snapshotDonutSvg(bp, 108)}</div><div><div style="font-size:13px;font-weight:800;margin-bottom:4px">${escapeHtml(b.snapshot_id)}</div><div style="font-size:11px;color:var(--text2);line-height:1.6">${fmtF(b.summary?.total_assets || 0)}<br>USD ${(b.summary?.usd_exposure_pct || 0).toFixed(1)}%</div></div></div>
+      </div>
+      <div class="snapshot-alloc-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:800">자산군 비중 변화</div>
+          <div style="font-size:10px;color:var(--text3)">${escapeHtml(a.snapshot_id)} → ${escapeHtml(b.snapshot_id)}</div>
+        </div>
+        <div class="snapshot-alloc-head"><span></span><span>자산군</span><span style="text-align:right">${escapeHtml(a.snapshot_id)}</span><span style="text-align:right">변화</span><span style="text-align:right">${escapeHtml(b.snapshot_id)}</span></div>
         <div>${allocRows}</div>
       </div>
-      <div>
-        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">거시 지표 변화</div>
-        <div>${macroRows || '<div style="font-size:12px;color:var(--text3);padding:12px;background:var(--bg);border-radius:8px">저장된 거시지표가 없습니다</div>'}</div>
-      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">거시 지표 변화</div>
+      <div>${macroRows || '<div style="font-size:12px;color:var(--text3);padding:12px;background:var(--bg);border-radius:8px">저장된 거시지표가 없습니다</div>'}</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
       ${renderSnapshotDecisionCard(a)}
