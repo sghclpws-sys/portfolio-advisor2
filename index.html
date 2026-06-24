@@ -139,16 +139,20 @@ body {
 /* ── 메인 그리드 ── */
 .main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 460px;
+  grid-template-columns: minmax(360px, 0.82fr) 600px;
   gap: 14px;
   margin-bottom: 16px;
   align-items: start;
 }
 .left-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .right-col {
-  display: flex; flex-direction: column; gap: 14px;
-  position: sticky; top: 66px; align-self: start;
-  max-height: calc(100vh - 84px); overflow: auto; padding-right: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-self: start;
+  min-width: 0;
+  overflow: visible;
+  padding-right: 0;
 }
 .snapshot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
 .snapshot-controls { display: grid; grid-template-columns: 160px 1fr auto; gap: 10px; align-items: end; }
@@ -158,9 +162,12 @@ body {
 .snapshot-row { display:grid; grid-template-columns: 104px 1fr 64px 64px 64px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
 .snapshot-row:last-child { border-bottom:none; }
 .snapshot-macro-row { display:grid; grid-template-columns: 1fr 70px 70px 70px; gap:8px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:12px; }
-@media (max-width: 1180px) {
-  .main-grid { grid-template-columns: minmax(0, 1fr) 430px; }
+@media (max-width: 1280px) {
+  .main-grid { grid-template-columns: minmax(340px, 0.78fr) 560px; }
   .snapshot-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 1080px) {
+  .main-grid { grid-template-columns: 1fr; }
 }
 
 /* ── 카드 ── */
@@ -244,13 +251,25 @@ body {
 .bar-target-line { position: absolute; top: -2px; width: 1px; height: 8px; background: var(--text3); }
 
 /* ── 도넛 ── */
-.donut-wrap { display: flex; align-items: center; gap: 16px; }
-.donut-legend { flex:1; display: flex; flex-direction: column; gap: 7px; }
-.leg { display: flex; align-items: center; gap: 8px; }
-.leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.leg-name { flex:1; font-size: 12px; color: var(--text2); }
-.leg-pct { font-size: 12px; font-weight: 600; color: var(--text); }
-.leg-dev { font-size: 10px; font-weight: 600; }
+.donut-wrap { display: flex; align-items: flex-start; gap: 18px; width: 100%; overflow: visible; }
+#donutSvg { flex: 0 0 140px; width: 140px; height: 140px; overflow: visible; }
+.donut-legend { flex:1; min-width:0; display: flex; flex-direction: column; gap: 8px; }
+.leg { display: flex; align-items: flex-start; gap: 8px; min-width:0; }
+.leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.leg-main { flex:1; min-width:0; }
+.leg-line1 { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+.leg-line2 { display:flex; flex-wrap:wrap; gap:5px; margin-top:2px; font-size:10px; color:var(--text3); line-height:1.35; }
+.leg-name { flex:1; min-width:0; font-size: 12px; color: var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.leg-pct { font-size: 12px; font-weight: 700; color: var(--text); white-space:nowrap; }
+.leg-dev { font-size: 10px; font-weight: 700; }
+.dev-row { display:flex; align-items:flex-start; gap:8px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; min-width:0; }
+.dev-row:last-child { border-bottom:none; }
+.dev-main { flex:1; min-width:0; }
+.dev-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.dev-label { font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dev-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; color:var(--text2); font-size:10px; line-height:1.45; }
+.dev-value { font-weight:700; font-size:11px; white-space:nowrap; }
+.dev-action { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; white-space:nowrap; }
 
 /* ── 계좌 카드 ── */
 .acct-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
@@ -559,7 +578,7 @@ body {
           </div>
           <div class="card-body">
             <div class="donut-wrap">
-              <svg width="118" height="118" id="donutSvg">
+              <svg width="140" height="140" viewBox="0 0 118 118" id="donutSvg">
                 <circle cx="59" cy="59" r="44" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
                 <text x="59" y="59" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="var(--text3)" font-family="Pretendard">로딩</text>
               </svg>
@@ -1757,13 +1776,26 @@ function renderDonut() {
     const p=((val/tot)*100), c=CLS_COLOR[cls]||'#d1d5db';
     const target = getAssetTarget('current'); // SAA 기준 목표
     const taaTarget = getAssetTarget('taa');
-    const t = target[cls]; const dev = (t !== undefined && t !== null) ? p-t : null;
-    const taa = taaTarget[cls];
+    const t = (target[cls] !== undefined && target[cls] !== null) ? Number(target[cls]) : 0;
+    const taa = (taaTarget[cls] !== undefined && taaTarget[cls] !== null) ? Number(taaTarget[cls]) : 0;
+    const dev = p - t;
     const taaAdj = getHouseViewAdj(cls);
-    const taaHtml = (taa !== undefined && Math.abs(taaAdj) > 0.0001)
-      ? `<span style="font-size:9px;color:${taaAdj>0?'var(--green)':'var(--red)'};font-weight:700;margin-left:2px">TAA ${taa.toFixed(1)}%</span>`
-      : '';
-    return `<div class="leg"><div class="leg-dot" style="background:${c}"></div><span class="leg-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span><span class="leg-pct">${p.toFixed(1)}%</span>${dev!=null?`<span class="leg-dev ${Math.abs(dev)<3?'neu':dev>0?'neg':'pos'}">${dev>0?'+':''}${dev.toFixed(1)}</span>`:''}${t!==undefined?`<span style="font-size:9px;color:var(--text3);margin-left:2px">SAA ${t}%</span>`:''}${taaHtml}</div>`;
+    const taaColor = taaAdj > 0 ? 'var(--green)' : taaAdj < 0 ? 'var(--red)' : 'var(--text3)';
+    const devCls = Math.abs(dev)<3 ? 'neu' : dev>0 ? 'neg' : 'pos';
+    return `<div class="leg">
+      <div class="leg-dot" style="background:${c}"></div>
+      <div class="leg-main">
+        <div class="leg-line1">
+          <span class="leg-name">${ASSET_LABEL_KO[cls]||CLS_LABEL[cls]||cls}</span>
+          <span class="leg-pct">${p.toFixed(1)}%</span>
+        </div>
+        <div class="leg-line2">
+          <span>SAA ${t.toFixed(1)}%</span>
+          <span style="color:${taaColor};font-weight:700">TAA ${taa.toFixed(1)}%</span>
+          <span class="leg-dev ${devCls}">편차 ${dev>0?'+':''}${dev.toFixed(1)}%p</span>
+        </div>
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -1823,9 +1855,11 @@ function renderDeviationList() {
         ✓ 전 자산군 허용 밴드(±${BAND}%) 내 — 리밸런싱 불필요
        </div>`;
   
+  const taaTarget = getAssetTarget('taa');
   const rows = ORDER.map(k => {
     const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
     const tgt = target[k]||0;
+    const taa = (taaTarget[k] !== undefined && taaTarget[k] !== null) ? Number(taaTarget[k]) : 0;
     const dev = cur - tgt;
     const isTrigger = Math.abs(dev) > BAND;
     const col = CLS_COLOR[k]||'#9ca3af';
@@ -1833,13 +1867,22 @@ function renderDeviationList() {
     const action = isTrigger ? (dev>0?'매도':'매수') : '유지';
     const actionBg = isTrigger ? (dev>0?'var(--red-l)':'var(--green-l)') : 'var(--bg)';
     const actionColor = isTrigger ? (dev>0?'var(--red)':'var(--green)') : 'var(--text3)';
-    return `<div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
-      <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0"></span>
-      <span style="flex:1;font-weight:${isTrigger?700:500}">${ASSET_LABEL_KO[k]||k}</span>
-      <span style="color:var(--text2);font-size:11px">${cur.toFixed(1)}%→SAA ${tgt}%</span>
-      ${Math.abs(getHouseViewAdj(k)) > 0.0001 ? `<span style="font-size:10px;font-weight:700;color:${getHouseViewAdj(k)>0?'var(--green)':'var(--red)'}">TAA ${((getAssetTarget('taa')[k]||0)).toFixed(1)}%</span>` : ''}
-      <span style="font-weight:700;color:${devColor};font-size:11px">${dev>0?'+':''}${dev.toFixed(1)}%</span>
-      <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${actionBg};color:${actionColor}">${action}</span>
+    const taaAdj = getHouseViewAdj(k);
+    const taaColor = taaAdj > 0 ? 'var(--green)' : taaAdj < 0 ? 'var(--red)' : 'var(--text3)';
+    return `<div class="dev-row">
+      <span style="width:7px;height:7px;border-radius:50%;background:${col};flex-shrink:0;margin-top:6px"></span>
+      <div class="dev-main">
+        <div class="dev-top">
+          <span class="dev-label" style="font-weight:${isTrigger?700:600}">${ASSET_LABEL_KO[k]||k}</span>
+          <span class="dev-action" style="background:${actionBg};color:${actionColor}">${action}</span>
+        </div>
+        <div class="dev-meta">
+          <span>현재 ${cur.toFixed(1)}%</span>
+          <span>SAA ${Number(tgt).toFixed(1)}%</span>
+          <span style="font-weight:700;color:${taaColor}">TAA ${taa.toFixed(1)}%</span>
+        </div>
+      </div>
+      <span class="dev-value" style="color:${devColor};margin-top:2px">${dev>0?'+':''}${dev.toFixed(1)}%p</span>
     </div>`;
   }).join('');
   
