@@ -562,41 +562,50 @@ body {
   <!-- ══ HOME: 지금 상태 ══ -->
   <div class="content page active" id="page-home">
 
-    <!-- 상태 배너 -->
-    <div class="status-banner" id="statusBanner">
-      <div class="status-score" id="statusScore" style="background:var(--border);color:var(--text3)">—</div>
-      <div class="status-text">
-        <div class="status-label" id="statusLabel">데이터를 입력해주세요</div>
-        <div class="status-desc" id="statusDesc">좌측 하단 "데이터 업데이트" 버튼을 눌러 portfolio.json을 붙여넣으세요</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-        <div class="status-updated" id="statusTime" style="color:var(--text3)">—</div>
-        <div id="coast-fire-badge" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;background:var(--bg);color:var(--text3)">Coast FIRE —</div>
-      </div>
-    </div>
+    <!-- 통합 상태 헤더: SAA 상태 + KPI 4개 -->
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;gap:0;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden">
 
-    <!-- KPI 요약 행 (총자산·SAA이탈·USD·BTC 라이브) -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
-      <div class="kpi">
+      <!-- 포트폴리오 상태 (왼쪽 컬럼) -->
+      <div id="statusBanner" style="display:flex;flex-direction:column;justify-content:center;padding:16px 20px;border-right:1px solid var(--border);min-width:200px;gap:4px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="status-score" id="statusScore" style="width:28px;height:28px;font-size:13px;background:var(--border);color:var(--text3)">—</div>
+          <div class="status-label" id="statusLabel" style="font-size:13px;font-weight:700">데이터를 입력해주세요</div>
+        </div>
+        <div class="status-desc" id="statusDesc" style="font-size:11px;color:var(--text2);line-height:1.5"></div>
+        <div style="display:flex;gap:6px;margin-top:2px;align-items:center">
+          <div class="status-updated" id="statusTime" style="font-size:10px;color:var(--text3)">—</div>
+          <div id="coast-fire-badge" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--bg);color:var(--text3)">Coast FIRE —</div>
+        </div>
+      </div>
+
+      <!-- KPI 1: 총자산 -->
+      <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
         <div class="kpi-label">총 투자자산</div>
         <div class="kpi-value" id="ov-total" style="font-size:18px">—</div>
         <div class="kpi-sub" id="ov-acct-count">—</div>
       </div>
-      <div class="kpi">
-        <div class="kpi-label">SAA 이탈 자산군</div>
+
+      <!-- KPI 2: SAA 이탈 -->
+      <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
+        <div class="kpi-label">SAA 이탈</div>
         <div class="kpi-value" id="ov-drift-count" style="font-size:18px">—</div>
         <div class="kpi-sub" id="ov-drift-desc">±5%p 초과 기준</div>
       </div>
-      <div class="kpi">
+
+      <!-- KPI 3: USD 익스포저 -->
+      <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
         <div class="kpi-label">USD 익스포저</div>
         <div class="kpi-value" id="ov-usd" style="font-size:18px">—</div>
         <div class="kpi-sub">해외자산 비중</div>
       </div>
-      <div class="kpi">
+
+      <!-- KPI 4: BTC -->
+      <div class="kpi" style="border-radius:0;border:none;box-shadow:none">
         <div class="kpi-label">Bitcoin <span class="live-tag" style="font-size:8px"><span class="live-dot"></span>LIVE</span></div>
         <div class="kpi-value" id="home-btc" style="font-size:16px;color:#d97706">—</div>
         <div class="kpi-sub" id="home-btc-chg">—</div>
       </div>
+
     </div>
 
     <!-- 메인 그리드: 좌(자산배분+할일) / 우(PB코멘트+세제한도+계좌현황) -->
@@ -1753,14 +1762,16 @@ function renderHome() {
 function renderStatusBanner() {
   const s = getPortfolioStatus();
   const scoreEl = document.getElementById('statusScore');
-  scoreEl.textContent = s.score;
-  scoreEl.style.background = s.bg;
-  scoreEl.style.color = s.color;
-  document.getElementById('statusLabel').textContent = s.label;
-  document.getElementById('statusLabel').style.color = s.color;
-  document.getElementById('statusDesc').textContent = s.desc;
-  document.getElementById('statusTime').textContent = P ? `기준일: ${P.updated_at||'—'}` : '—';
-  // Coast FIRE 배지 업데이트
+  if(scoreEl) { scoreEl.textContent = s.score; scoreEl.style.background = s.bg; scoreEl.style.color = s.color; }
+  const labelEl = document.getElementById('statusLabel');
+  if(labelEl) { labelEl.textContent = s.label; labelEl.style.color = s.color; }
+  const descEl = document.getElementById('statusDesc');
+  if(descEl) descEl.textContent = s.desc;
+  const timeEl = document.getElementById('statusTime');
+  if(timeEl) timeEl.textContent = P ? `기준일: ${P.updated_at||'—'}` : '—';
+  // 상태에 따라 왼쪽 컬럼 배경 색상 반영
+  const bannerEl = document.getElementById('statusBanner');
+  if(bannerEl) bannerEl.style.background = s.bg ? s.bg.replace('var(--','rgba(').replace(')',',0.35)') : '';
   updateCoastFireBadge();
 }
 
@@ -3498,36 +3509,41 @@ function renderSnapshotList() {
   if (!el) return;
   const rows = getSnapshotStore().slice().sort(function(a,b){ return String(b.snapshot_id).localeCompare(String(a.snapshot_id)); });
   if (!rows.length) {
-    el.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-icon">▣</div>저장된 스냅샷이 없습니다</div>';
+    el.innerHTML = '<div class="empty" style="padding:16px"><div class="empty-icon">▣</div>저장된 스냅샷이 없습니다</div>';
     return;
   }
   el.innerHTML = rows.map(function(snap, idx) {
     const s = snap.summary || {};
     const generated = snap.decision_log?.generated_summary || snap.decision_log?.generated_comment || '—';
-    const tags = (snap.decision_log?.reason_tags || []).slice(0, 3);
+    const tags = (snap.decision_log?.reason_tags || []).slice(0, 4);
     const pctMap = s.asset_allocation_pct || {};
     const topAsset = ASSET_ORDER.map(function(k){ return [k, pctMap[k]||0]; }).sort(function(a,b){ return b[1]-a[1]; })[0] || ['—',0];
-    return `<div style="border-bottom:1px solid var(--border);padding:10px 0" id="snap-row-${idx}">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
-            <span style="font-size:13px;font-weight:800">${escapeHtml(snap.snapshot_id)}</span>
-            <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--bg);color:var(--text3)">${escapeHtml(ASSET_LABEL_KO[topAsset[0]]||topAsset[0])} ${Number(topAsset[1]).toFixed(0)}%</span>
-          </div>
-          <div style="font-size:11px;color:var(--text2);font-weight:600">${fmtF(s.total_assets || 0)}</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:1px">USD ${(s.usd_exposure_pct || 0).toFixed(1)}% · ${escapeHtml(snap.portfolio_updated_at || '—')}</div>
-          ${tags.length ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:5px">${tags.map(function(t){ return '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--accent-l);color:var(--accent)">' + escapeHtml(t) + '</span>'; }).join('')}</div>` : ''}
-        </div>
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
-          <button class="btn btn-outline btn-sm" onclick="toggleSnapshotDetail(${idx})" style="font-size:10px;padding:3px 8px">상세</button>
-          <button class="btn btn-sm" onclick="deleteSnapshot('${escapeHtml(snap.snapshot_id)}')" style="font-size:10px;padding:3px 8px;color:var(--red);background:var(--red-l);border:none">삭제</button>
-        </div>
+    const tagsHtml = tags.length
+      ? tags.map(function(t){ return '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;background:var(--accent-l);color:var(--accent);white-space:nowrap">' + escapeHtml(t) + '</span>'; }).join('')
+      : '';
+    return `<div style="display:grid;grid-template-columns:90px 1fr auto auto;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)" id="snap-row-${idx}">
+      <!-- 월 + 최대비중 -->
+      <div>
+        <div style="font-size:13px;font-weight:800;line-height:1.2">${escapeHtml(snap.snapshot_id)}</div>
+        <div style="font-size:9px;font-weight:700;margin-top:3px;padding:2px 5px;border-radius:6px;background:var(--bg);color:var(--text3);display:inline-block">${escapeHtml(ASSET_LABEL_KO[topAsset[0]]||topAsset[0])} ${Number(topAsset[1]).toFixed(0)}%</div>
       </div>
-      <div id="snap-detail-${idx}" style="display:none;margin-top:8px;padding:8px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
-        <div style="font-weight:700;color:var(--text);margin-bottom:4px">판단 코멘트</div>
-        <div>${escapeHtml(generated)}</div>
-        ${snap.decision_log?.monthly_thesis ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><span style="font-weight:700">메모:</span> ${escapeHtml(snap.decision_log.monthly_thesis)}</div>` : ''}
+      <!-- 총자산 + 태그 (한 줄) -->
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <div style="flex-shrink:0">
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${fmtF(s.total_assets || 0)}</div>
+          <div style="font-size:10px;color:var(--text3)">USD ${(s.usd_exposure_pct || 0).toFixed(1)}% · ${escapeHtml(snap.portfolio_updated_at || '—')}</div>
+        </div>
+        <div style="display:flex;gap:3px;flex-wrap:wrap;min-width:0">${tagsHtml}</div>
       </div>
+      <!-- 상세 버튼 -->
+      <button class="btn btn-outline btn-sm" onclick="toggleSnapshotDetail(${idx})" style="font-size:10px;padding:3px 10px;white-space:nowrap">상세</button>
+      <!-- 삭제 버튼 -->
+      <button class="btn btn-sm" onclick="deleteSnapshot('${escapeHtml(snap.snapshot_id)}')" style="font-size:10px;padding:3px 10px;color:var(--red);background:var(--red-l);border:none;white-space:nowrap">삭제</button>
+    </div>
+    <div id="snap-detail-${idx}" style="display:none;padding:8px 0 10px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);line-height:1.7">
+      <div style="font-weight:700;color:var(--text);margin-bottom:3px">판단 코멘트</div>
+      <div>${escapeHtml(generated)}</div>
+      ${snap.decision_log?.monthly_thesis ? `<div style="margin-top:5px;padding-top:5px;border-top:1px solid var(--border)"><span style="font-weight:700">메모:</span> ${escapeHtml(snap.decision_log.monthly_thesis)}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -3823,11 +3839,11 @@ function renderSnapshotCompare() {
     <div style="padding:10px 12px;background:var(--accent-l);border-radius:8px"><div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">증감률</div><div style="font-size:16px;font-weight:800;color:var(--accent)">${fmtDelta(totalDeltaPct, '%')}</div></div>
   </div>`;
 
-  // 자산군 배분 비교 (3열: 전월 | 비중변화 | 현재)
-  const allocHtml = `<div style="display:grid;grid-template-columns:1fr 180px 1fr;gap:10px;margin-bottom:14px">
+  // 자산군 배분 비교 (3열: 전월 | 현재 | 비중변화)
+  const allocHtml = `<div style="display:grid;grid-template-columns:1fr 1fr 150px;gap:10px;margin-bottom:14px">
     ${renderSnapshotAllocationCard(a, escapeHtml(a.snapshot_id))}
-    ${renderSnapshotChangeCard(a, b)}
     ${renderSnapshotAllocationCard(b, escapeHtml(b.snapshot_id))}
+    ${renderSnapshotChangeCard(a, b)}
   </div>`;
 
   // 판단 코멘트 (2열)
