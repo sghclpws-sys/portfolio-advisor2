@@ -533,6 +533,72 @@ body {
 @media (max-width:1380px){ #page-home .main-grid{ grid-template-columns:minmax(400px,.76fr) minmax(680px,1.24fr) !important; } }
 @media (max-width:1180px){ #page-home .main-grid{ grid-template-columns:1fr !important; } }
 
+
+
+/* ── 2026-06 균등 레이아웃 최종 보정: 자산군배분 ↔ 코멘트/세제한도 1:1 ── */
+#page-home .main-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 18px !important;
+  align-items: start !important;
+}
+#page-home .left-col,
+#page-home .right-col {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+#page-home .home-top-card,
+#page-home .right-top-stack {
+  min-height: 430px !important;
+}
+#page-home .home-top-card .card-body {
+  min-height: 364px !important;
+}
+#page-home .right-top-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+}
+#page-home .right-top-stack .card:first-child {
+  flex: 1 1 auto !important;
+}
+#page-home .right-top-stack .card:last-child {
+  flex: 0 0 auto !important;
+}
+#page-home .alloc-card-body {
+  justify-content: center !important;
+}
+#page-home .alloc-visual {
+  max-width: 100% !important;
+  width: 100% !important;
+  grid-template-columns: 156px minmax(0, 1fr) !important;
+  gap: 14px !important;
+  align-items: center !important;
+}
+#page-home .alloc-donut-box {
+  width: 156px !important;
+  min-width: 156px !important;
+}
+#page-home #donutSvg {
+  width: 150px !important;
+  height: 150px !important;
+}
+#page-home .alloc-legend-panel {
+  min-width: 0 !important;
+}
+#page-home .alloc-center-label {
+  display: none !important;
+}
+@media (max-width: 1280px) {
+  #page-home .main-grid { grid-template-columns: 1fr !important; }
+  #page-home .home-top-card,
+  #page-home .right-top-stack { min-height: auto !important; }
+  #page-home .home-top-card .card-body { min-height: auto !important; }
+}
+@media (max-width: 760px) {
+  #page-home .alloc-visual { grid-template-columns: 1fr !important; }
+  #page-home .alloc-donut-box { margin: 0 auto !important; }
+}
+
 </style>
 </head>
 <body>
