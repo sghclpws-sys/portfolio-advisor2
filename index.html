@@ -139,10 +139,10 @@ body {
 /* ── 메인 그리드 ── */
 .main-grid {
   display: grid;
-  grid-template-columns: minmax(430px, .78fr) minmax(760px, 1.22fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
   margin-bottom: 16px;
-  align-items: stretch;
+  align-items: start;
   width: 100%;
 }
 .left-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
@@ -152,11 +152,11 @@ body {
   max-height: none; overflow: visible; padding-right: 0;
   min-width: 0;
 }
-.home-top-card { min-height: 430px; }
-.home-top-card .card-body { min-height: 364px; display:flex; align-items:center; width:100%; }
-.right-top-stack { display:flex; flex-direction:column; gap:14px; min-height:430px; }
+.home-top-card { }
+.home-top-card .card-body { display:flex; align-items:flex-start; width:100%; }
+.right-top-stack { display:flex; flex-direction:column; gap:14px; }
 .right-top-stack .card:first-child { flex:1 1 auto; }
-.right-top-stack .card:first-child .card-body { min-height:180px; }
+.right-top-stack .card:first-child .card-body { min-height:160px; }
 .right-top-stack .card:last-child { flex:0 0 auto; }
 .portfolio-status-card { min-height: 0; }
 .snapshot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
@@ -220,17 +220,13 @@ body {
 @media (max-width: 1180px) { .snapshot-compare-layout { grid-template-columns: 1fr; } .snapshot-change-card { grid-column:auto; } }
 @media (max-width: 980px) { .snapshot-alloc-card-body { grid-template-columns: 118px minmax(0, 1fr); } }
 @media (max-width: 560px) { .snapshot-alloc-card-body { grid-template-columns: 1fr; } .snapshot-donut-box-v3 { margin:0 auto; } .snapshot-macro-head-v3, .snapshot-macro-row-v3 { grid-template-columns: minmax(78px,1fr) 64px 64px 62px; gap:5px; } }
+/* 스냅샷 목록+비교 2단 반응형 */
+.snap-two-col { display:grid; grid-template-columns:280px 1fr; gap:14px; align-items:start; margin-bottom:14px; }
+@media (max-width: 900px) { .snap-two-col { grid-template-columns: 1fr; } }
 
-@media (max-width: 1500px) {
-  .main-grid { grid-template-columns: minmax(0, .78fr) 620px; }
-  .home-top-card, .right-top-stack { min-height: 410px; }
-  .home-top-card .card-body { min-height:344px; }
-}
 @media (max-width: 1280px) {
   .content { padding: 20px 22px; }
-  .main-grid { grid-template-columns: minmax(0, .82fr) 560px; gap: 14px; }
-  .home-top-card, .right-top-stack { min-height: 390px; }
-  .home-top-card .card-body { min-height:324px; }
+  .main-grid { gap: 14px; }
 }
 @media (max-width: 1080px) {
   .main-grid { grid-template-columns: 1fr; }
@@ -520,84 +516,8 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
-/* ── 2026-06 레이아웃 안정화: sticky 제거 · 그리드 폭 통일 · 도넛 내부 라벨 제거 ── */
-#page-home .status-banner, #page-home .main-grid { width: 100%; box-sizing: border-box; }
-#page-home .main-grid { grid-template-columns: minmax(430px, .78fr) minmax(760px, 1.22fr) !important; align-items: stretch; }
-#page-home .left-col, #page-home .right-col { min-width: 0; }
-#page-home .right-col { position: static !important; max-height: none !important; overflow: visible !important; padding-right:0 !important; }
-#page-home .alloc-center-label, #page-snapshots .snapshot-donut-center-v3 { display: none !important; }
-#page-home .alloc-visual { width:100%; justify-self:stretch; }
-#page-home .alloc-legend-panel { width:100%; }
-#page-home .home-top-card .card-body { justify-content:stretch; }
-@media (min-width:1600px){ #page-home .main-grid{ grid-template-columns:minmax(480px,.72fr) minmax(860px,1.28fr) !important; } }
-@media (max-width:1380px){ #page-home .main-grid{ grid-template-columns:minmax(400px,.76fr) minmax(680px,1.24fr) !important; } }
-@media (max-width:1180px){ #page-home .main-grid{ grid-template-columns:1fr !important; } }
-
-
-
-/* ── 2026-06 균등 레이아웃 최종 보정: 자산군배분 ↔ 코멘트/세제한도 1:1 ── */
-#page-home .main-grid {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-  gap: 18px !important;
-  align-items: start !important;
-}
-#page-home .left-col,
-#page-home .right-col {
-  width: 100% !important;
-  min-width: 0 !important;
-}
-#page-home .home-top-card,
-#page-home .right-top-stack {
-  min-height: 430px !important;
-}
-#page-home .home-top-card .card-body {
-  min-height: 364px !important;
-}
-#page-home .right-top-stack {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 14px !important;
-}
-#page-home .right-top-stack .card:first-child {
-  flex: 1 1 auto !important;
-}
-#page-home .right-top-stack .card:last-child {
-  flex: 0 0 auto !important;
-}
-#page-home .alloc-card-body {
-  justify-content: center !important;
-}
-#page-home .alloc-visual {
-  max-width: 100% !important;
-  width: 100% !important;
-  grid-template-columns: 156px minmax(0, 1fr) !important;
-  gap: 14px !important;
-  align-items: center !important;
-}
-#page-home .alloc-donut-box {
-  width: 156px !important;
-  min-width: 156px !important;
-}
-#page-home #donutSvg {
-  width: 150px !important;
-  height: 150px !important;
-}
-#page-home .alloc-legend-panel {
-  min-width: 0 !important;
-}
-#page-home .alloc-center-label {
-  display: none !important;
-}
-@media (max-width: 1280px) {
-  #page-home .main-grid { grid-template-columns: 1fr !important; }
-  #page-home .home-top-card,
-  #page-home .right-top-stack { min-height: auto !important; }
-  #page-home .home-top-card .card-body { min-height: auto !important; }
-}
-@media (max-width: 760px) {
-  #page-home .alloc-visual { grid-template-columns: 1fr !important; }
-  #page-home .alloc-donut-box { margin: 0 auto !important; }
-}
+/* ── 2026-06 홈 레이아웃 정리 ── */
+#page-snapshots .snapshot-donut-center-v3 { display: none !important; }
 
 </style>
 </head>
@@ -655,7 +575,31 @@ body {
       </div>
     </div>
 
-    <!-- 메인 그리드 -->
+    <!-- KPI 요약 행 (총자산·손익·USD·BTC 라이브) -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+      <div class="kpi">
+        <div class="kpi-label">총 투자자산</div>
+        <div class="kpi-value" id="ov-total" style="font-size:18px">—</div>
+        <div class="kpi-sub" id="ov-acct-count">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">총 손익</div>
+        <div class="kpi-value" id="ov-pnl" style="font-size:18px">—</div>
+        <div class="kpi-sub" id="ov-pnl-pct">—</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">USD 익스포저</div>
+        <div class="kpi-value" id="ov-usd" style="font-size:18px">—</div>
+        <div class="kpi-sub">해외자산 비중</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Bitcoin <span class="live-tag" style="font-size:8px"><span class="live-dot"></span>LIVE</span></div>
+        <div class="kpi-value" id="home-btc" style="font-size:16px;color:#d97706">—</div>
+        <div class="kpi-sub" id="home-btc-chg">—</div>
+      </div>
+    </div>
+
+    <!-- 메인 그리드: 좌(자산배분+할일) / 우(PB코멘트+세제한도+계좌현황) -->
     <div class="main-grid">
       <div class="left-col">
 
@@ -726,34 +670,22 @@ body {
           <div class="card">
             <div class="card-hd"><div class="card-title">세제 한도 현황</div></div>
             <div class="card-body" id="taxStatus">
-              <div class="empty" style="padding:20px"><div class="empty-icon">💰</div>데이터 로딩 중</div>
+              <div class="empty" style="padding:16px"><div class="empty-icon">💰</div>데이터 로딩 중</div>
             </div>
           </div>
         </div>
 
-        <!-- 포트폴리오 현황 요약 -->
-        <div class="card portfolio-status-card">
-          <div class="card-hd"><div class="card-title">포트폴리오 현황</div><span style="font-size:10px;color:var(--text3)">계좌별 목표 대비</span></div>
+        <!-- 계좌별 비중 바 -->
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">계좌별 비중</div>
+            <span style="font-size:10px;color:var(--text3)">총자산 대비</span>
+          </div>
           <div class="card-body">
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
-              <div>
-                <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">총자산</div>
-                <div style="font-size:20px;font-weight:700;letter-spacing:-.4px" id="ov-total">—</div>
-              </div>
-              <div>
-                <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">총 손익</div>
-                <div style="font-size:20px;font-weight:700;letter-spacing:-.4px" id="ov-pnl">—</div>
-                <div style="font-size:11px;font-weight:600;margin-top:2px" id="ov-pnl-pct">—</div>
-              </div>
-              <div>
-                <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">USD 익스포저</div>
-                <div style="font-size:20px;font-weight:700;letter-spacing:-.4px" id="ov-usd">—</div>
-              </div>
-            </div>
             <div class="bar-list" id="barList">
-              <div class="skel" style="height:36px"></div>
-              <div class="skel" style="height:36px;margin-top:6px"></div>
-              <div class="skel" style="height:36px;margin-top:6px"></div>
+              <div class="skel" style="height:32px"></div>
+              <div class="skel" style="height:32px;margin-top:6px"></div>
+              <div class="skel" style="height:32px;margin-top:6px"></div>
             </div>
           </div>
         </div>
@@ -875,67 +807,72 @@ body {
 
   <!-- ══ SNAPSHOTS ══ -->
   <div class="content page" id="page-snapshots">
-    <div class="snapshot-grid" style="margin-bottom:14px">
-      <div class="card">
-        <div class="card-hd">
-          <div>
-            <div class="card-title">월말 스냅샷 저장</div>
-            <div class="card-sub">localStorage에는 요약본·매크로·거시지표 코멘트만 저장 · raw portfolio.json 누적 저장 안 함</div>
-          </div>
-          <button class="btn btn-outline btn-sm" onclick="renderSnapshotsPage()">↻</button>
-        </div>
-        <div class="card-body">
-          <div class="snapshot-controls">
-            <div>
-              <div class="calc-lbl">스냅샷 월</div>
-              <input class="calc-input" id="snapMonth" type="month">
-            </div>
-            <div>
-              <div class="calc-lbl">추가 메모(선택)</div>
-              <input class="calc-input" id="snapMemo" placeholder="예: 실제 매수/매도, 예외 판단, 다음 달 점검사항 등">
-            </div>
-            <button class="btn btn-primary" onclick="saveMonthlySnapshot()">스냅샷 저장</button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-            <button class="btn btn-outline btn-sm" onclick="exportSnapshots()">스냅샷 내보내기</button>
-            <button class="btn btn-outline btn-sm" onclick="document.getElementById('snapshotImportFile').click()">스냅샷 가져오기</button>
-            <input id="snapshotImportFile" type="file" accept="application/json,.json" style="display:none" onchange="importSnapshots(event)">
-            <button class="btn btn-outline btn-sm" onclick="clearSnapshots()">스냅샷 초기화</button>
-          </div>
-          <div id="snapshotSaveHint" style="margin-top:10px;font-size:11px;color:var(--text3);line-height:1.6">
-            저장 항목: 총자산, 자산군 비중/금액, SAA 목표, TAA 참고목표, 주요 매크로, 자동 투자판단 코멘트, 선택 메모. 계좌별·종목별 raw 데이터는 누적 저장하지 않습니다.
-          </div>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="card-hd">
-          <div>
-            <div class="card-title">스냅샷 목록</div>
-            <div class="card-sub">월말 포트폴리오 구조 기록</div>
-          </div>
+    <!-- 저장 컨트롤 (풀폭 배너) -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-hd">
+        <div>
+          <div class="card-title">월말 스냅샷 저장</div>
+          <div class="card-sub">총자산·자산군 비중·SAA·매크로·자동 코멘트 저장 · raw portfolio.json 누적 저장 안 함</div>
         </div>
-        <div class="card-body" id="snapshotList">
-          <div class="empty" style="padding:20px"><div class="empty-icon">▣</div>저장된 스냅샷이 없습니다</div>
+        <button class="btn btn-outline btn-sm" onclick="renderSnapshotsPage()">↻</button>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:160px 1fr auto;gap:10px;align-items:end;margin-bottom:10px">
+          <div>
+            <div class="calc-lbl">스냅샷 월</div>
+            <input class="calc-input" id="snapMonth" type="month">
+          </div>
+          <div>
+            <div class="calc-lbl">추가 메모 (선택)</div>
+            <input class="calc-input" id="snapMemo" placeholder="예: 실제 매수/매도, 예외 판단, 다음 달 점검사항 등">
+          </div>
+          <button class="btn btn-primary" onclick="saveMonthlySnapshot()" style="height:38px">스냅샷 저장</button>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-outline btn-sm" onclick="exportSnapshots()">⬇ 내보내기</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('snapshotImportFile').click()">⬆ 가져오기</button>
+          <input id="snapshotImportFile" type="file" accept="application/json,.json" style="display:none" onchange="importSnapshots(event)">
+          <button class="btn btn-outline btn-sm" onclick="clearSnapshots()" style="color:var(--red);border-color:var(--red)">전체 초기화</button>
+          <span style="font-size:11px;color:var(--text3);margin-left:4px">저장 항목: 총자산·자산군 비중/금액·SAA목표·주요 매크로·자동 투자판단 코멘트·선택 메모</span>
         </div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-hd">
-        <div>
-          <div class="card-title">전월 대비 스냅샷 비교</div>
-          <div class="card-sub">전월 자산군배분 · 현재 자산군배분 · 비중변화%p · 월별 거시지표</div>
+    <!-- 목록 + 비교 선택기 (2단) -->
+    <div class="snap-two-col">
+
+      <!-- 스냅샷 목록 -->
+      <div class="card">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">저장된 스냅샷</div>
+            <div class="card-sub">월말 포트폴리오 기록</div>
+          </div>
         </div>
-        <div class="snapshot-compare-controls">
-          <select class="calc-input" id="snapBase" style="width:130px" onchange="renderSnapshotCompare()"></select>
-          <span style="font-size:12px;color:var(--text3)">vs</span>
-          <select class="calc-input" id="snapCompare" style="width:130px" onchange="renderSnapshotCompare()"></select>
+        <div class="card-body" style="padding:8px 12px" id="snapshotList">
+          <div class="empty" style="padding:20px"><div class="empty-icon">▣</div>저장된 스냅샷이 없습니다</div>
         </div>
       </div>
-      <div class="card-body" id="snapshotCompareBody">
-        <div class="empty" style="padding:28px"><div class="empty-icon">◌</div>스냅샷을 2개 이상 저장하면 비교가 표시됩니다</div>
+
+      <!-- 비교 선택기 + 요약 -->
+      <div class="card">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">전월 대비 비교</div>
+            <div class="card-sub">자산군배분 변화 · 비중 변동 · 거시지표</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select class="calc-input" id="snapBase" style="width:110px;font-size:12px;padding:5px 8px" onchange="renderSnapshotCompare()"></select>
+            <span style="font-size:11px;color:var(--text3)">→</span>
+            <select class="calc-input" id="snapCompare" style="width:110px;font-size:12px;padding:5px 8px" onchange="renderSnapshotCompare()"></select>
+          </div>
+        </div>
+        <div class="card-body" id="snapshotCompareBody">
+          <div class="empty" style="padding:28px"><div class="empty-icon">◌</div>스냅샷을 2개 이상 저장하면 비교가 표시됩니다</div>
+        </div>
       </div>
+
     </div>
   </div>
 
@@ -1888,47 +1825,67 @@ function renderPortfolioSummary() {
   const pnlStats = totalPnLStats();
   const pnl = pnlStats.pnl;
   const pnlPct = pnlStats.cost ? (pnl / pnlStats.cost) * 100 : null;
-  document.getElementById('ov-total').textContent = fmtF(tot);
+
+  // KPI 행 (홈 상단)
+  const ovTotal = document.getElementById('ov-total');
+  if (ovTotal) ovTotal.textContent = fmtF(tot);
+  const ovCount = document.getElementById('ov-acct-count');
+  if (ovCount) ovCount.textContent = `${getActiveAccounts().length}개 계좌 · ${getActiveAccounts().reduce((s,a)=>s+(a.assets||[]).length,0)}종목`;
   const pnlEl = document.getElementById('ov-pnl');
   const pnlPEl = document.getElementById('ov-pnl-pct');
   if (!pnlStats.hasData) {
-    pnlEl.textContent = '—'; pnlEl.className = '';
-    pnlPEl.textContent = '원가/손익 데이터 없음'; pnlPEl.className = '';
+    if(pnlEl){ pnlEl.textContent = '—'; pnlEl.className = 'kpi-value'; }
+    if(pnlPEl){ pnlPEl.textContent = '원가/손익 데이터 없음'; pnlPEl.className = 'kpi-sub'; }
   } else {
-    pnlEl.textContent = (pnl>=0?'+':'')+fmtF(pnl); pnlEl.className = pnl>=0?'pos':'neg';
-    pnlPEl.textContent = pct(pnlPct); pnlPEl.className = pnlPct>=0?'pos':'neg';
+    if(pnlEl){ pnlEl.textContent = (pnl>=0?'+':'')+fmtF(pnl); pnlEl.className = 'kpi-value '+(pnl>=0?'pos':'neg'); }
+    if(pnlPEl){ pnlPEl.textContent = pct(pnlPct); pnlPEl.className = 'kpi-sub '+(pnlPct>=0?'pos':'neg'); }
   }
-  document.getElementById('ov-usd').textContent = usdExposure().toFixed(1)+'%';
+  const ovUsd = document.getElementById('ov-usd');
+  if(ovUsd) ovUsd.textContent = usdExposure().toFixed(1)+'%';
 
-  // 계좌 바
-  document.getElementById('barList').innerHTML = getActiveAccounts().map((a,i) => {
-    const v = acctVal(a), r = tot?(v/tot)*100:0;
-    const c = COLORS[i%COLORS.length];
-    const roleLabel = getAccountRole(a);
-    return `<div class="bar-row">
-      <div class="bar-top">
-        <span class="bar-name">${a.name}</span>
-        <span class="bar-meta"><span class="bar-val">${fmt(v)}</span><span class="bar-pct">${r.toFixed(1)}%</span><span style="font-size:10px;color:var(--text3);margin-left:4px">${roleLabel}</span></span>
-      </div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width:${r}%;background:${c}"></div>
-      </div>
-    </div>`;
-  }).join('');
+  // BTC 라이브 (홈 KPI)
+  const homeBtc = document.getElementById('home-btc');
+  const homeBtcChg = document.getElementById('home-btc-chg');
+  if(homeBtc && M.btc?.krw) {
+    homeBtc.textContent = fmt(M.btc.krw);
+    if(homeBtcChg){ const chg = M.btc.krw_24h_change||0; homeBtcChg.textContent = (chg>=0?'+':'')+chg.toFixed(2)+'%'; homeBtcChg.className = 'kpi-sub '+(chg>=0?'pos':'neg'); }
+  }
+
+  // 계좌 바 (오른쪽 하단 카드)
+  const barListEl = document.getElementById('barList');
+  if(barListEl) {
+    barListEl.innerHTML = getActiveAccounts().map((a,i) => {
+      const v = acctVal(a), r = tot?(v/tot)*100:0;
+      const c = COLORS[i%COLORS.length];
+      const roleLabel = getAccountRole(a);
+      return `<div class="bar-row">
+        <div class="bar-top">
+          <span class="bar-name">${a.name}</span>
+          <span class="bar-meta"><span class="bar-val">${fmt(v)}</span><span class="bar-pct">${r.toFixed(1)}%</span><span style="font-size:10px;color:var(--text3);margin-left:4px">${roleLabel}</span></span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${r}%;background:${c}"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   // accounts 페이지 KPI
-  document.getElementById('a-total').textContent = fmtF(tot);
-  document.getElementById('a-count').textContent = `${getActiveAccounts().length}개 계좌 · ${getActiveAccounts().reduce((s,a)=>s+(a.assets||[]).length,0)}개 종목`;
+  const aTotalEl = document.getElementById('a-total');
+  if(aTotalEl) aTotalEl.textContent = fmtF(tot);
+  const aCountEl = document.getElementById('a-count');
+  if(aCountEl) aCountEl.textContent = `${getActiveAccounts().length}개 계좌 · ${getActiveAccounts().reduce((s,a)=>s+(a.assets||[]).length,0)}개 종목`;
   const aPnl = document.getElementById('a-pnl');
   const aPnlPct = document.getElementById('a-pnl-pct');
   if (!pnlStats.hasData) {
-    aPnl.textContent = '—'; aPnl.className = 'kpi-value';
-    aPnlPct.textContent = '원가/손익 데이터 없음';
+    if(aPnl){ aPnl.textContent = '—'; aPnl.className = 'kpi-value'; }
+    if(aPnlPct) aPnlPct.textContent = '원가/손익 데이터 없음';
   } else {
-    aPnl.textContent = (pnl>=0?'+':'')+fmtF(pnl); aPnl.className = 'kpi-value '+(pnl>=0?'pos':'neg');
-    aPnlPct.textContent = pct(pnlPct);
+    if(aPnl){ aPnl.textContent = (pnl>=0?'+':'')+fmtF(pnl); aPnl.className = 'kpi-value '+(pnl>=0?'pos':'neg'); }
+    if(aPnlPct) aPnlPct.textContent = pct(pnlPct);
   }
-  document.getElementById('a-usd').textContent = usdExposure().toFixed(1)+'%';
+  const aUsd = document.getElementById('a-usd');
+  if(aUsd) aUsd.textContent = usdExposure().toFixed(1)+'%';
 }
 
 function renderDonut() {
@@ -3548,22 +3505,41 @@ function renderSnapshotList() {
     el.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-icon">▣</div>저장된 스냅샷이 없습니다</div>';
     return;
   }
-  el.innerHTML = rows.map(function(snap) {
+  el.innerHTML = rows.map(function(snap, idx) {
     const s = snap.summary || {};
-    const generated = snap.decision_log?.generated_summary || snap.decision_log?.generated_comment || '거시지표 코멘트 없음';
-    const tags = (snap.decision_log?.reason_tags || []).slice(0, 4);
-    return `<div style="padding:10px 0;border-bottom:1px solid var(--border);font-size:12px">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center">
-        <div>
-          <div style="font-size:13px;font-weight:800">${escapeHtml(snap.snapshot_id)}</div>
-          <div style="font-size:10px;color:var(--text3)">총자산 ${fmtF(s.total_assets || 0)} · USD ${(s.usd_exposure_pct || 0).toFixed(1)}% · 기준 ${escapeHtml(snap.portfolio_updated_at || '—')}</div>
+    const generated = snap.decision_log?.generated_summary || snap.decision_log?.generated_comment || '—';
+    const tags = (snap.decision_log?.reason_tags || []).slice(0, 3);
+    const pctMap = s.asset_allocation_pct || {};
+    const topAsset = ASSET_ORDER.map(function(k){ return [k, pctMap[k]||0]; }).sort(function(a,b){ return b[1]-a[1]; })[0] || ['—',0];
+    return `<div style="border-bottom:1px solid var(--border);padding:10px 0" id="snap-row-${idx}">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+            <span style="font-size:13px;font-weight:800">${escapeHtml(snap.snapshot_id)}</span>
+            <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--bg);color:var(--text3)">${escapeHtml(ASSET_LABEL_KO[topAsset[0]]||topAsset[0])} ${Number(topAsset[1]).toFixed(0)}%</span>
+          </div>
+          <div style="font-size:11px;color:var(--text2);font-weight:600">${fmtF(s.total_assets || 0)}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:1px">USD ${(s.usd_exposure_pct || 0).toFixed(1)}% · ${escapeHtml(snap.portfolio_updated_at || '—')}</div>
+          ${tags.length ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:5px">${tags.map(function(t){ return '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--accent-l);color:var(--accent)">' + escapeHtml(t) + '</span>'; }).join('')}</div>` : ''}
         </div>
-        <button class="btn btn-outline btn-sm" onclick="deleteSnapshot('${escapeHtml(snap.snapshot_id)}')">삭제</button>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">
+          <button class="btn btn-outline btn-sm" onclick="toggleSnapshotDetail(${idx})" style="font-size:10px;padding:3px 8px">상세</button>
+          <button class="btn btn-sm" onclick="deleteSnapshot('${escapeHtml(snap.snapshot_id)}')" style="font-size:10px;padding:3px 8px;color:var(--red);background:var(--red-l);border:none">삭제</button>
+        </div>
       </div>
-      <div style="margin-top:6px;padding:7px 9px;background:var(--accent-l);border-radius:7px;color:var(--accent);line-height:1.5;font-weight:600">${escapeHtml(generated)}</div>
-      ${tags.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${tags.map(function(t){ return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;background:var(--bg);color:var(--text3)">' + escapeHtml(t) + '</span>'; }).join('')}</div>` : ''}
+      <div id="snap-detail-${idx}" style="display:none;margin-top:8px;padding:8px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7">
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px">판단 코멘트</div>
+        <div>${escapeHtml(generated)}</div>
+        ${snap.decision_log?.monthly_thesis ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><span style="font-weight:700">메모:</span> ${escapeHtml(snap.decision_log.monthly_thesis)}</div>` : ''}
+      </div>
     </div>`;
   }).join('');
+}
+
+function toggleSnapshotDetail(idx) {
+  const el = document.getElementById('snap-detail-' + idx);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function renderSnapshotSelects() {
@@ -3798,8 +3774,8 @@ function renderSnapshotDecisionCard(snap, prevSnap) {
   const cardHtml = cards.slice(0, 6).map(function(c) {
     const statusColor = c.status === '부담' || c.status === '낮음' || c.status === '높음' || c.status === '원화 약세' ? 'var(--red)' : c.status === '주의' || c.status === '변동성 확대' ? 'var(--yellow)' : 'var(--green)';
     const statusBg = c.status === '부담' || c.status === '낮음' || c.status === '높음' || c.status === '원화 약세' ? 'var(--red-l)' : c.status === '주의' || c.status === '변동성 확대' ? 'var(--yellow-l)' : 'var(--green-l)';
-    const d = macroDeltaForDisplay(macroKeyFromLabel(c.label), prevSnap, snap);
-    const deltaHtml = d ? `<span class="snapshot-macro-delta ${d.delta>0?'pos':d.delta<0?'neg':'flat'}">전월대비 ${escapeHtml(d.text)}</span>` : '';
+    const d = prevSnap ? macroDeltaForDisplay(macroKeyFromLabel(c.label), prevSnap, snap) : null;
+    const deltaHtml = d ? `<span class="snapshot-macro-delta ${d.delta>0?'pos':d.delta<0?'neg':'flat'}">전월대비 ${escapeHtml(d.text)}</span>` : (prevSnap ? '' : '<span style="font-size:9px;color:var(--text3)">(기준월)</span>');
     return `<div style="padding:8px 9px;background:var(--bg);border-radius:8px">
       <div style="display:flex;justify-content:space-between;gap:6px;align-items:center;margin-bottom:2px"><span style="font-size:10px;font-weight:700;color:var(--text3)">${escapeHtml(c.label)}</span><span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;background:${statusBg};color:${statusColor}">${escapeHtml(c.status)}</span></div>
       <div style="display:flex;align-items:baseline;gap:2px;flex-wrap:wrap;margin-bottom:2px"><span style="font-size:15px;font-weight:800">${escapeHtml(c.value)}</span>${deltaHtml}</div>
@@ -3809,9 +3785,10 @@ function renderSnapshotDecisionCard(snap, prevSnap) {
   const macroHtml = macroLines.length ? macroLines.map(function(t,i){ return '<div class="snapshot-judge-row"><span class="snapshot-judge-num">' + (i+1) + '</span><span>' + escapeHtml(t) + '</span></div>'; }).join('') : '<div style="color:var(--text3);font-size:11px">Macro 판단 코멘트 없음</div>';
   const assetHtml = assetLines.length ? assetLines.map(function(t,i){ return '<div class="snapshot-judge-row"><span class="snapshot-judge-num">' + (i+1) + '</span><span>' + escapeHtml(t) + '</span></div>'; }).join('') : '<div style="color:var(--text3);font-size:11px">자산군별 코멘트 없음</div>';
   const policyHtml = policyLines.length ? policyLines.map(function(t){ return '<span style="display:inline-flex;margin:0 4px 4px 0;font-size:10px;font-weight:700;padding:3px 7px;border-radius:10px;background:var(--accent-l);color:var(--accent)">' + escapeHtml(t) + '</span>'; }).join('') : '';
+  const prevBadge = prevSnap ? '' : '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:var(--bg);color:var(--text3);margin-left:6px">기준월</span>';
   return `<div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px">
-      <div><div style="font-size:13px;font-weight:800">${escapeHtml(snap.snapshot_id)} 거시지표</div><div style="font-size:10px;color:var(--text3)">macro 기준일 ${escapeHtml(macro.updated_at || snap.portfolio_updated_at || '—')}</div></div>
+      <div><div style="font-size:13px;font-weight:800">${escapeHtml(snap.snapshot_id)} 거시지표${prevBadge}</div><div style="font-size:10px;color:var(--text3)">macro 기준일 ${escapeHtml(macro.updated_at || snap.portfolio_updated_at || '—')}</div></div>
       <span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:var(--bg);color:var(--text2)">자동 생성</span>
     </div>
     ${cardHtml ? `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:10px">${cardHtml}</div>` : ''}
@@ -3842,24 +3819,31 @@ function renderSnapshotCompare() {
   const totalDelta = (b.summary?.total_assets || 0) - (a.summary?.total_assets || 0);
   const totalDeltaPct = (a.summary?.total_assets || 0) ? totalDelta / (a.summary.total_assets || 1) * 100 : 0;
 
-  el.innerHTML = `
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-      <div style="padding:12px;background:var(--bg);border-radius:8px"><div style="font-size:10px;color:var(--text3);font-weight:700">전월 총자산</div><div style="font-size:18px;font-weight:800">${fmtF(a.summary?.total_assets || 0)}</div></div>
-      <div style="padding:12px;background:var(--bg);border-radius:8px"><div style="font-size:10px;color:var(--text3);font-weight:700">현재월 총자산</div><div style="font-size:18px;font-weight:800">${fmtF(b.summary?.total_assets || 0)}</div></div>
-      <div style="padding:12px;background:${totalDelta>=0?'var(--green-l)':'var(--red-l)'};border-radius:8px"><div style="font-size:10px;color:var(--text3);font-weight:700">총자산 증감</div><div style="font-size:18px;font-weight:800;color:${totalDelta>=0?'var(--green)':'var(--red)'}">${totalDelta>=0?'+':''}${fmtF(totalDelta)}</div></div>
-      <div style="padding:12px;background:var(--accent-l);border-radius:8px"><div style="font-size:10px;color:var(--text3);font-weight:700">증감률</div><div style="font-size:18px;font-weight:800;color:var(--accent)">${fmtDelta(totalDeltaPct, '%')}</div></div>
-    </div>
+  // 총자산 KPI 스트립
+  const kpiHtml = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+    <div style="padding:10px 12px;background:var(--bg);border-radius:8px"><div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${escapeHtml(a.snapshot_id)}</div><div style="font-size:16px;font-weight:800">${fmtF(a.summary?.total_assets || 0)}</div></div>
+    <div style="padding:10px 12px;background:var(--bg);border-radius:8px"><div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${escapeHtml(b.snapshot_id)}</div><div style="font-size:16px;font-weight:800">${fmtF(b.summary?.total_assets || 0)}</div></div>
+    <div style="padding:10px 12px;background:${totalDelta>=0?'var(--green-l)':'var(--red-l)'};border-radius:8px"><div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">총자산 증감</div><div style="font-size:16px;font-weight:800;color:${totalDelta>=0?'var(--green)':'var(--red)'}">${totalDelta>=0?'+':''}${fmtF(totalDelta)}</div></div>
+    <div style="padding:10px 12px;background:var(--accent-l);border-radius:8px"><div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">증감률</div><div style="font-size:16px;font-weight:800;color:var(--accent)">${fmtDelta(totalDeltaPct, '%')}</div></div>
+  </div>`;
 
-    <div class="snapshot-compare-layout">
-      ${renderSnapshotAllocationCard(a, '전월 자산군 배분')}
-      ${renderSnapshotAllocationCard(b, '현재월 자산군 배분')}
-      ${renderSnapshotChangeCard(a, b)}
-    </div>
+  // 자산군 배분 비교 (3열: 전월 | 비중변화 | 현재)
+  const allocHtml = `<div style="display:grid;grid-template-columns:1fr 180px 1fr;gap:10px;margin-bottom:14px">
+    ${renderSnapshotAllocationCard(a, escapeHtml(a.snapshot_id))}
+    ${renderSnapshotChangeCard(a, b)}
+    ${renderSnapshotAllocationCard(b, escapeHtml(b.snapshot_id))}
+  </div>`;
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
-      ${renderSnapshotDecisionCard(a, null)}
-      ${renderSnapshotDecisionCard(b, a)}
-    </div>`;
+  // 거시지표 비교
+  const macroHtml = renderSnapshotMacroTable(a, b);
+
+  // 판단 코멘트 (2열)
+  const decisionHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+    ${renderSnapshotDecisionCard(a, null)}
+    ${renderSnapshotDecisionCard(b, a)}
+  </div>`;
+
+  el.innerHTML = kpiHtml + allocHtml + macroHtml + decisionHtml;
 }
 
 // ══════════════════════════════════════════
@@ -5106,8 +5090,8 @@ function updateBTC() {
   const p=M.btc.krw, c=M.btc.krw_24h_change||0;
   const pStr = p>=1e8?'₩'+(p/1e8).toFixed(2)+'억':'₩'+Math.round(p/1e4)+'만';
   const cStr = pct(c)+' (24h)';
-  ['m-btc','a-btc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=pStr;});
-  ['m-btc-chg','a-btc-chg'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=cStr;el.className='kpi-sub '+(c>=0?'pos':'neg');}});
+  ['m-btc','a-btc','home-btc'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=pStr;});
+  ['m-btc-chg','a-btc-chg','home-btc-chg'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent=cStr;el.className='kpi-sub '+(c>=0?'pos':'neg');}});
 }
 
 function updateFXDisplay() {
