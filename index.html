@@ -575,7 +575,7 @@ body {
       </div>
     </div>
 
-    <!-- KPI 요약 행 (총자산·손익·USD·BTC 라이브) -->
+    <!-- KPI 요약 행 (총자산·SAA이탈·USD·BTC 라이브) -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
       <div class="kpi">
         <div class="kpi-label">총 투자자산</div>
@@ -583,9 +583,9 @@ body {
         <div class="kpi-sub" id="ov-acct-count">—</div>
       </div>
       <div class="kpi">
-        <div class="kpi-label">총 손익</div>
-        <div class="kpi-value" id="ov-pnl" style="font-size:18px">—</div>
-        <div class="kpi-sub" id="ov-pnl-pct">—</div>
+        <div class="kpi-label">SAA 이탈 자산군</div>
+        <div class="kpi-value" id="ov-drift-count" style="font-size:18px">—</div>
+        <div class="kpi-sub" id="ov-drift-desc">±5%p 초과 기준</div>
       </div>
       <div class="kpi">
         <div class="kpi-label">USD 익스포저</div>
@@ -808,7 +808,7 @@ body {
   <!-- ══ SNAPSHOTS ══ -->
   <div class="content page" id="page-snapshots">
 
-    <!-- 저장 컨트롤 (풀폭 배너) -->
+    <!-- 저장 컨트롤 + 목록 (풀폭 카드) -->
     <div class="card" style="margin-bottom:14px">
       <div class="card-hd">
         <div>
@@ -829,51 +829,38 @@ body {
           </div>
           <button class="btn btn-primary" onclick="saveMonthlySnapshot()" style="height:38px">스냅샷 저장</button>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:12px">
           <button class="btn btn-outline btn-sm" onclick="exportSnapshots()">⬇ 내보내기</button>
           <button class="btn btn-outline btn-sm" onclick="document.getElementById('snapshotImportFile').click()">⬆ 가져오기</button>
           <input id="snapshotImportFile" type="file" accept="application/json,.json" style="display:none" onchange="importSnapshots(event)">
           <button class="btn btn-outline btn-sm" onclick="clearSnapshots()" style="color:var(--red);border-color:var(--red)">전체 초기화</button>
           <span style="font-size:11px;color:var(--text3);margin-left:4px">저장 항목: 총자산·자산군 비중/금액·SAA목표·주요 매크로·자동 투자판단 코멘트·선택 메모</span>
         </div>
+        <!-- 저장된 스냅샷 목록 (인라인) -->
+        <div id="snapshotList">
+          <div class="empty" style="padding:16px"><div class="empty-icon">▣</div>저장된 스냅샷이 없습니다</div>
+        </div>
       </div>
     </div>
 
-    <!-- 목록 + 비교 선택기 (2단) -->
-    <div class="snap-two-col">
-
-      <!-- 스냅샷 목록 -->
-      <div class="card">
-        <div class="card-hd">
-          <div>
-            <div class="card-title">저장된 스냅샷</div>
-            <div class="card-sub">월말 포트폴리오 기록</div>
-          </div>
+    <!-- 비교 카드 -->
+    <div class="card">
+      <div class="card-hd">
+        <div>
+          <div class="card-title">전월 대비 비교</div>
+          <div class="card-sub">자산군배분 변화 · 비중 변동</div>
         </div>
-        <div class="card-body" style="padding:8px 12px" id="snapshotList">
-          <div class="empty" style="padding:20px"><div class="empty-icon">▣</div>저장된 스냅샷이 없습니다</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select class="calc-input" id="snapBase" style="width:110px;font-size:12px;padding:5px 8px" onchange="renderSnapshotCompare()"></select>
+          <span style="font-size:11px;color:var(--text3)">→</span>
+          <select class="calc-input" id="snapCompare" style="width:110px;font-size:12px;padding:5px 8px" onchange="renderSnapshotCompare()"></select>
         </div>
       </div>
-
-      <!-- 비교 선택기 + 요약 -->
-      <div class="card">
-        <div class="card-hd">
-          <div>
-            <div class="card-title">전월 대비 비교</div>
-            <div class="card-sub">자산군배분 변화 · 비중 변동 · 거시지표</div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <select class="calc-input" id="snapBase" style="width:110px;font-size:12px;padding:5px 8px" onchange="renderSnapshotCompare()"></select>
-            <span style="font-size:11px;color:var(--text3)">→</span>
-            <select class="calc-input" id="snapCompare" style="width:110px;font-size:12px;padding:5px 8px" onchange="renderSnapshotCompare()"></select>
-          </div>
-        </div>
-        <div class="card-body" id="snapshotCompareBody">
-          <div class="empty" style="padding:28px"><div class="empty-icon">◌</div>스냅샷을 2개 이상 저장하면 비교가 표시됩니다</div>
-        </div>
+      <div class="card-body" id="snapshotCompareBody">
+        <div class="empty" style="padding:28px"><div class="empty-icon">◌</div>스냅샷을 2개 이상 저장하면 비교가 표시됩니다</div>
       </div>
-
     </div>
+
   </div>
 
   <!-- ══ MACRO ══ -->
@@ -1831,15 +1818,24 @@ function renderPortfolioSummary() {
   if (ovTotal) ovTotal.textContent = fmtF(tot);
   const ovCount = document.getElementById('ov-acct-count');
   if (ovCount) ovCount.textContent = `${getActiveAccounts().length}개 계좌 · ${getActiveAccounts().reduce((s,a)=>s+(a.assets||[]).length,0)}종목`;
-  const pnlEl = document.getElementById('ov-pnl');
-  const pnlPEl = document.getElementById('ov-pnl-pct');
-  if (!pnlStats.hasData) {
-    if(pnlEl){ pnlEl.textContent = '—'; pnlEl.className = 'kpi-value'; }
-    if(pnlPEl){ pnlPEl.textContent = '원가/손익 데이터 없음'; pnlPEl.className = 'kpi-sub'; }
-  } else {
-    if(pnlEl){ pnlEl.textContent = (pnl>=0?'+':'')+fmtF(pnl); pnlEl.className = 'kpi-value '+(pnl>=0?'pos':'neg'); }
-    if(pnlPEl){ pnlPEl.textContent = pct(pnlPct); pnlPEl.className = 'kpi-sub '+(pnlPct>=0?'pos':'neg'); }
+
+  // SAA 이탈 KPI
+  const driftCountEl = document.getElementById('ov-drift-count');
+  const driftDescEl = document.getElementById('ov-drift-desc');
+  if (driftCountEl && tot) {
+    const bd = Object.assign({}, classBreakdown()); bd.cash = P?.cash?.available || 0;
+    const target = getAssetTarget('current');
+    const drifted = ASSET_ORDER.filter(function(k){
+      const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
+      return Math.abs(cur - (target[k]||0)) >= REBALANCE_BAND;
+    });
+    driftCountEl.textContent = drifted.length === 0 ? '없음' : drifted.length + '개';
+    driftCountEl.style.color = drifted.length === 0 ? 'var(--green)' : drifted.length >= 3 ? 'var(--red)' : 'var(--yellow)';
+    if (driftDescEl) driftDescEl.textContent = drifted.length === 0
+      ? 'SAA 허용밴드 이내'
+      : drifted.map(function(k){ return ASSET_LABEL_KO[k]||k; }).join(' · ');
   }
+
   const ovUsd = document.getElementById('ov-usd');
   if(ovUsd) ovUsd.textContent = usdExposure().toFixed(1)+'%';
 
@@ -3834,16 +3830,13 @@ function renderSnapshotCompare() {
     ${renderSnapshotAllocationCard(b, escapeHtml(b.snapshot_id))}
   </div>`;
 
-  // 거시지표 비교
-  const macroHtml = renderSnapshotMacroTable(a, b);
-
   // 판단 코멘트 (2열)
   const decisionHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
     ${renderSnapshotDecisionCard(a, null)}
     ${renderSnapshotDecisionCard(b, a)}
   </div>`;
 
-  el.innerHTML = kpiHtml + allocHtml + macroHtml + decisionHtml;
+  el.innerHTML = kpiHtml + allocHtml + decisionHtml;
 }
 
 // ══════════════════════════════════════════
