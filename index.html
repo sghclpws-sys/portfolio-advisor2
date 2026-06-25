@@ -186,31 +186,31 @@ body {
 
 /* ── 스냅샷 비교 v3: 포트폴리오 자산군배분과 동일한 카드형 ── */
 .snapshot-compare-layout { display:grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 220px; gap: 12px; align-items: stretch; margin-bottom: 14px; }
-.snapshot-alloc-card-v3 { padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; min-width:0; }
-.snapshot-alloc-card-title { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px; }
-.snapshot-alloc-title-main { font-size:13px; font-weight:850; color:var(--text); }
+.snapshot-alloc-card-v3 { padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; min-width:0; }
+.snapshot-alloc-card-title { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px; }
+.snapshot-alloc-title-main { font-size:12px; font-weight:850; color:var(--text); }
 .snapshot-alloc-title-sub { font-size:10px; color:var(--text3); margin-top:2px; line-height:1.4; }
-.snapshot-alloc-card-body { display:grid; grid-template-columns: 118px minmax(0, 1fr); gap: 10px; align-items:center; }
-.snapshot-donut-box-v3 { width:118px; height:118px; border-radius:12px; border:1px solid var(--border); background:linear-gradient(180deg,#fff 0%,#f8fafc 100%); display:flex; align-items:center; justify-content:center; position:relative; }
-.snapshot-donut-box-v3 svg { width:104px; height:104px; display:block; }
+.snapshot-alloc-card-body { display:grid; grid-template-columns: 82px minmax(0, 1fr); gap: 8px; align-items:center; }
+.snapshot-donut-box-v3 { width:82px; height:82px; border-radius:10px; border:1px solid var(--border); background:linear-gradient(180deg,#fff 0%,#f8fafc 100%); display:flex; align-items:center; justify-content:center; position:relative; }
+.snapshot-donut-box-v3 svg { width:72px; height:72px; display:block; }
 .snapshot-donut-center-v3 { display:none !important; }
 .snapshot-donut-center-v3 span { font-size:8px; color:var(--text3); font-weight:800; }
 .snapshot-donut-center-v3 strong { font-size:13px; color:var(--text); font-weight:850; line-height:1.1; }
 .snapshot-donut-center-v3 small { font-size:8px; color:var(--text3); margin-top:1px; }
-.snapshot-asset-list-v3 { min-width:0; display:flex; flex-direction:column; gap:4px; }
-.snapshot-asset-row-v3 { display:grid; grid-template-columns: 10px minmax(66px,1fr) 48px; gap:6px; align-items:center; padding:5px 6px; border-radius:8px; background:var(--surface); border:1px solid transparent; font-size:11px; }
+.snapshot-asset-list-v3 { min-width:0; display:flex; flex-direction:column; gap:3px; }
+.snapshot-asset-row-v3 { display:grid; grid-template-columns: 8px minmax(0,1fr) 42px; gap:5px; align-items:center; padding:3px 5px; border-radius:6px; background:var(--surface); border:1px solid transparent; font-size:10px; }
 .snapshot-asset-row-v3.is-alert { background:var(--red-l); border-color:#fecaca; }
 .snapshot-asset-name-v3 { font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
 .snapshot-asset-pct-v3 { text-align:right; font-weight:850; color:var(--text); }
-.snapshot-change-card { padding:12px; background:var(--bg); border:1px solid var(--border); border-radius:12px; min-width:0; }
-.snapshot-change-list-v4 { display:flex; flex-direction:column; gap:4px; }
+.snapshot-change-card { padding:10px 12px; background:var(--bg); border:1px solid var(--border); border-radius:12px; min-width:0; }
+.snapshot-change-list-v4 { display:flex; flex-direction:column; gap:3px; }
 .snapshot-macro-delta { font-size:10px; font-weight:800; margin-left:6px; white-space:nowrap; }
 .snapshot-macro-delta.pos { color:var(--green); }
 .snapshot-macro-delta.neg { color:var(--red); }
 .snapshot-macro-delta.flat { color:var(--text3); }
-.snapshot-change-head, .snapshot-change-row { display:grid; grid-template-columns: 12px minmax(72px,1fr) 58px; gap:8px; align-items:center; }
-.snapshot-change-head { font-size:10px; font-weight:850; color:var(--text3); padding:0 6px 7px; border-bottom:1px solid var(--border); margin-bottom:4px; }
-.snapshot-change-row { padding:5px 6px; min-height:28px; border-bottom:1px solid transparent; border-radius:8px; background:var(--surface); font-size:12px; }
+.snapshot-change-head, .snapshot-change-row { display:grid; grid-template-columns: 8px minmax(0,1fr) 52px; gap:6px; align-items:center; }
+.snapshot-change-head { font-size:10px; font-weight:850; color:var(--text3); padding:0 5px 6px; border-bottom:1px solid var(--border); margin-bottom:3px; }
+.snapshot-change-row { padding:3px 5px; min-height:24px; border-bottom:1px solid transparent; border-radius:6px; background:var(--surface); font-size:11px; }
 
 .snapshot-macro-table-v3 { background:var(--bg); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:14px; }
 .snapshot-macro-head-v3, .snapshot-macro-row-v3 { display:grid; grid-template-columns: minmax(94px,1fr) 86px 86px 76px; gap:8px; align-items:center; }
@@ -3691,11 +3691,10 @@ function renderSnapshotAllocationCard(snap, title) {
   return `<div class="snapshot-alloc-card-v3">
     <div class="snapshot-alloc-card-title">
       <div><div class="snapshot-alloc-title-main">${escapeHtml(title || snap.snapshot_id)}</div><div class="snapshot-alloc-title-sub">${fmtF(total)} · USD ${(snap.summary?.usd_exposure_pct || 0).toFixed(1)}%</div></div>
-      <span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:var(--surface);color:var(--text3)">${escapeHtml(snap.snapshot_id || '')}</span>
     </div>
     <div class="snapshot-alloc-card-body">
       <div class="snapshot-donut-box-v3">
-        ${snapshotDonutSvg(pctMap, 104)}
+        ${snapshotDonutSvg(pctMap, 72)}
         <div class="snapshot-donut-center-v3"><span>최대</span><strong>${Number(top[1] || 0).toFixed(1)}%</strong><small>${escapeHtml(ASSET_LABEL_KO[top[0]] || top[0])}</small></div>
       </div>
       <div class="snapshot-asset-list-v3">${list}</div>
@@ -3769,12 +3768,64 @@ function renderSnapshotMacroTable(a, b) {
       <span style="text-align:right;font-weight:850;color:${d>0?'var(--green)':d<0?'var(--red)':'var(--text3)'}">${deltaText}</span>
     </div>`;
   }).join('');
-  return `<div style="margin-bottom:14px">
-    <div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">거시지표</div>
-    <div class="snapshot-macro-table-v3">
-      <div class="snapshot-macro-head-v3"><span>지표</span><span style="text-align:right">${escapeHtml(a.snapshot_id)}</span><span style="text-align:right">${escapeHtml(b.snapshot_id)}</span><span style="text-align:right">변동</span></div>
-      ${rows}
+  return `<div class="snapshot-macro-table-v3">
+    <div class="snapshot-macro-head-v3"><span>지표</span><span style="text-align:right">${escapeHtml(a.snapshot_id)}</span><span style="text-align:right">${escapeHtml(b.snapshot_id)}</span><span style="text-align:right">변동</span></div>
+    ${rows}
+  </div>`;
+}
+
+// 거시지표 단일 월 카드 (비중변화 레이아웃과 동일 3열 구조)
+function renderSnapshotMacroCard(snap, title) {
+  const macro = snap.macro || {};
+  const MACRO_KEYS = [
+    ['cape','CAPE'], ['vix','VIX'], ['us10y','US10Y'], ['us30y','US30Y'], ['usd_krw','USD/KRW'], ['forward_erp','Forward ERP']
+  ];
+  const rows = MACRO_KEYS.map(function(row) {
+    const key = row[0], label = row[1];
+    const mv = macroValueForDisplay(key, macro[key]);
+    if (mv.n == null) return '';
+    const meta = indicatorStatusMeta(label, mv.n);
+    const statusColor = meta[0] === '부담' || meta[0] === '낮음' || meta[0] === '높음' || meta[0] === '원화 약세'
+      ? 'var(--red)' : meta[0] === '주의' || meta[0] === '변동성 확대' ? 'var(--yellow)' : 'var(--text3)';
+    return `<div class="snapshot-change-row" style="grid-template-columns:minmax(0,1fr) 54px;gap:6px">
+      <span style="font-weight:750;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${label}</span>
+      <span style="text-align:right;font-weight:850;font-size:11px;color:${statusColor}">${mv.text}</span>
+    </div>`;
+  }).filter(Boolean).join('');
+  return `<div class="snapshot-change-card">
+    <div class="snapshot-alloc-card-title" style="margin-bottom:6px">
+      <div><div class="snapshot-alloc-title-main">${escapeHtml(title)}</div><div class="snapshot-alloc-title-sub">거시지표</div></div>
     </div>
+    <div class="snapshot-change-head" style="grid-template-columns:1fr 54px;gap:6px"><span>지표</span><span style="text-align:right">수치</span></div>
+    <div class="snapshot-change-list-v4">${rows}</div>
+  </div>`;
+}
+
+// 매크로 수치변화 컬럼 (비중변화 %p 카드와 동일 양식)
+function renderMacroChangeCard(a, b) {
+  const MACRO_KEYS = [
+    ['cape','CAPE'], ['vix','VIX'], ['us10y','US10Y'], ['us30y','US30Y'], ['usd_krw','USD/KRW'], ['forward_erp','Forward ERP']
+  ];
+  const rows = MACRO_KEYS.map(function(row) {
+    const key = row[0], label = row[1];
+    const av = macroValueForDisplay(key, a.macro?.[key]);
+    const bv = macroValueForDisplay(key, b.macro?.[key]);
+    if (av.n == null || bv.n == null) return '';
+    const d = bv.n - av.n;
+    const deltaText = key === 'usd_krw' ? fmtDelta(d, '원') : key === 'cape' || key === 'vix' ? fmtDelta(d, '') : fmtDelta(d, key === 'forward_erp' ? '%p' : '%');
+    const col = d > 0 ? 'var(--green)' : d < 0 ? 'var(--red)' : 'var(--text3)';
+    return `<div class="snapshot-change-row">
+      <span class="snapshot-dot" style="background:${col};width:6px;height:6px"></span>
+      <span style="font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px">${label}</span>
+      <span style="text-align:right;font-weight:850;color:${col};font-size:11px">${deltaText}</span>
+    </div>`;
+  }).filter(Boolean).join('');
+  return `<div class="snapshot-change-card">
+    <div class="snapshot-alloc-card-title" style="margin-bottom:6px">
+      <div><div class="snapshot-alloc-title-main">수치변화</div><div class="snapshot-alloc-title-sub">${escapeHtml(a.snapshot_id)} → ${escapeHtml(b.snapshot_id)}</div></div>
+    </div>
+    <div class="snapshot-change-head"><span></span><span>지표</span><span style="text-align:right">변동</span></div>
+    <div class="snapshot-change-list-v4">${rows}</div>
   </div>`;
 }
 
@@ -3842,11 +3893,18 @@ function renderSnapshotCompare() {
     <div style="padding:10px 12px;background:var(--accent-l);border-radius:8px"><div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">증감률</div><div style="font-size:16px;font-weight:800;color:var(--accent)">${fmtDelta(totalDeltaPct, '%')}</div></div>
   </div>`;
 
-  // 자산군 배분 비교 (3열: 전월 | 현재 | 비중변화)
-  const allocHtml = `<div style="display:grid;grid-template-columns:1fr 1fr 150px;gap:10px;margin-bottom:14px">
+  // 자산군 배분 비교 — 전월 | 현재 | 비중변화(맨우측)
+  const allocHtml = `<div style="display:grid;grid-template-columns:1fr 1fr 180px;gap:10px;margin-bottom:10px">
     ${renderSnapshotAllocationCard(a, escapeHtml(a.snapshot_id))}
     ${renderSnapshotAllocationCard(b, escapeHtml(b.snapshot_id))}
     ${renderSnapshotChangeCard(a, b)}
+  </div>`;
+
+  // 거시지표 — 전월 | 현재 | 수치변화(맨우측, 비중변화와 동일 양식)
+  const macroHtml = `<div style="display:grid;grid-template-columns:1fr 1fr 180px;gap:10px;margin-bottom:14px">
+    ${renderSnapshotMacroCard(a, escapeHtml(a.snapshot_id))}
+    ${renderSnapshotMacroCard(b, escapeHtml(b.snapshot_id))}
+    ${renderMacroChangeCard(a, b)}
   </div>`;
 
   // 판단 코멘트 (2열)
@@ -3855,7 +3913,7 @@ function renderSnapshotCompare() {
     ${renderSnapshotDecisionCard(b, a)}
   </div>`;
 
-  el.innerHTML = kpiHtml + allocHtml + decisionHtml;
+  el.innerHTML = kpiHtml + allocHtml + macroHtml + decisionHtml;
 }
 
 // ══════════════════════════════════════════
