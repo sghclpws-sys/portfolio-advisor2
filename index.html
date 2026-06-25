@@ -3801,7 +3801,7 @@ function renderSnapshotMacroCard(snap, title) {
   </div>`;
 }
 
-// 매크로 수치변화 컬럼 (비중변화 %p 카드와 동일 양식)
+// 매크로 수치변화 컬럼 — 자동생성 카드 우측에 나란히 배치
 function renderMacroChangeCard(a, b) {
   const MACRO_KEYS = [
     ['cape','CAPE'], ['vix','VIX'], ['us10y','US10Y'], ['us30y','US30Y'], ['usd_krw','USD/KRW'], ['forward_erp','Forward ERP']
@@ -3815,16 +3815,16 @@ function renderMacroChangeCard(a, b) {
     const deltaText = key === 'usd_krw' ? fmtDelta(d, '원') : key === 'cape' || key === 'vix' ? fmtDelta(d, '') : fmtDelta(d, key === 'forward_erp' ? '%p' : '%');
     const col = d > 0 ? 'var(--green)' : d < 0 ? 'var(--red)' : 'var(--text3)';
     return `<div class="snapshot-change-row">
-      <span class="snapshot-dot" style="background:${col};width:6px;height:6px"></span>
-      <span style="font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px">${label}</span>
-      <span style="text-align:right;font-weight:850;color:${col};font-size:11px">${deltaText}</span>
+      <span class="snapshot-dot" style="background:${col};width:6px;height:6px;flex-shrink:0"></span>
+      <span style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px">${label}</span>
+      <span style="text-align:right;font-weight:850;color:${col};font-size:12px">${deltaText}</span>
     </div>`;
   }).filter(Boolean).join('');
-  return `<div class="snapshot-change-card">
-    <div class="snapshot-alloc-card-title" style="margin-bottom:6px">
-      <div><div class="snapshot-alloc-title-main">수치변화</div><div class="snapshot-alloc-title-sub">${escapeHtml(a.snapshot_id)} → ${escapeHtml(b.snapshot_id)}</div></div>
+  return `<div style="padding:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px">
+      <div><div style="font-size:13px;font-weight:800">거시지표 수치변화</div><div style="font-size:10px;color:var(--text3)">${escapeHtml(a.snapshot_id)} → ${escapeHtml(b.snapshot_id)}</div></div>
     </div>
-    <div class="snapshot-change-head"><span></span><span>지표</span><span style="text-align:right">변동</span></div>
+    <div class="snapshot-change-head" style="margin-bottom:4px"><span></span><span>지표</span><span style="text-align:right">변동</span></div>
     <div class="snapshot-change-list-v4">${rows}</div>
   </div>`;
 }
@@ -3893,27 +3893,21 @@ function renderSnapshotCompare() {
     <div style="padding:10px 12px;background:var(--accent-l);border-radius:8px"><div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">증감률</div><div style="font-size:16px;font-weight:800;color:var(--accent)">${fmtDelta(totalDeltaPct, '%')}</div></div>
   </div>`;
 
-  // 자산군 배분 비교 — 전월 | 현재 | 비중변화(맨우측)
-  const allocHtml = `<div style="display:grid;grid-template-columns:1fr 1fr 180px;gap:10px;margin-bottom:10px">
+  // 자산군 배분 비교 — 전월 | 현재 | 비중변화(맨우측 고정폭)
+  const allocHtml = `<div style="display:grid;grid-template-columns:1fr 1fr 220px;gap:10px;margin-bottom:10px">
     ${renderSnapshotAllocationCard(a, escapeHtml(a.snapshot_id))}
     ${renderSnapshotAllocationCard(b, escapeHtml(b.snapshot_id))}
     ${renderSnapshotChangeCard(a, b)}
   </div>`;
 
-  // 거시지표 — 전월 | 현재 | 수치변화(맨우측, 비중변화와 동일 양식)
-  const macroHtml = `<div style="display:grid;grid-template-columns:1fr 1fr 180px;gap:10px;margin-bottom:14px">
-    ${renderSnapshotMacroCard(a, escapeHtml(a.snapshot_id))}
-    ${renderSnapshotMacroCard(b, escapeHtml(b.snapshot_id))}
+  // 판단 코멘트(자동생성) — 전월 | 현재 | 수치변화(맨우측 고정폭)
+  const decisionHtml = `<div style="display:grid;grid-template-columns:1fr 1fr 220px;gap:10px;margin-top:10px">
+    ${renderSnapshotDecisionCard(a, null)}
+    ${renderSnapshotDecisionCard(b, a)}
     ${renderMacroChangeCard(a, b)}
   </div>`;
 
-  // 판단 코멘트 (2열)
-  const decisionHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
-    ${renderSnapshotDecisionCard(a, null)}
-    ${renderSnapshotDecisionCard(b, a)}
-  </div>`;
-
-  el.innerHTML = kpiHtml + allocHtml + macroHtml + decisionHtml;
+  el.innerHTML = kpiHtml + allocHtml + decisionHtml;
 }
 
 // ══════════════════════════════════════════
