@@ -562,45 +562,44 @@ body {
   <!-- ══ HOME: 지금 상태 ══ -->
   <div class="content page active" id="page-home">
 
-    <!-- KPI 헤더 5개 (SAA 이탈 · 총자산 · USD · BTC · Coast FIRE) -->
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden">
+    <!-- KPI 헤더 5개 균등 -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden">
 
       <!-- KPI 1: SAA 이탈 -->
-      <div class="kpi" id="statusBanner" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
+      <div id="statusBanner" style="padding:14px 16px;border-right:1px solid var(--border)">
         <div class="kpi-label">SAA 이탈 <span id="statusScore" style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;background:var(--border);color:var(--text3)">—</span></div>
         <div class="kpi-value" id="ov-drift-count" style="font-size:18px">—</div>
         <div class="kpi-sub" id="ov-drift-desc">±5%p 초과 기준</div>
         <div style="display:none" id="statusLabel"></div>
         <div style="display:none" id="statusDesc"></div>
-        <div style="display:none" id="statusTime"></div>
       </div>
 
       <!-- KPI 2: 총자산 -->
-      <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
+      <div style="padding:14px 16px;border-right:1px solid var(--border)">
         <div class="kpi-label">총 투자자산</div>
         <div class="kpi-value" id="ov-total" style="font-size:18px">—</div>
         <div class="kpi-sub" id="ov-acct-count">—</div>
       </div>
 
       <!-- KPI 3: USD 익스포저 -->
-      <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
+      <div style="padding:14px 16px;border-right:1px solid var(--border)">
         <div class="kpi-label">USD 익스포저</div>
         <div class="kpi-value" id="ov-usd" style="font-size:18px">—</div>
         <div class="kpi-sub">해외자산 비중</div>
       </div>
 
       <!-- KPI 4: BTC -->
-      <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
+      <div style="padding:14px 16px;border-right:1px solid var(--border)">
         <div class="kpi-label">Bitcoin <span class="live-tag" style="font-size:8px"><span class="live-dot"></span>LIVE</span></div>
         <div class="kpi-value" id="home-btc" style="font-size:16px;color:#d97706">—</div>
         <div class="kpi-sub" id="home-btc-chg">—</div>
       </div>
 
       <!-- KPI 5: Coast FIRE -->
-      <div class="kpi" style="border-radius:0;border:none;box-shadow:none">
+      <div style="padding:14px 16px">
         <div class="kpi-label">Coast FIRE</div>
         <div class="kpi-value" id="coast-fire-badge" style="font-size:14px;font-weight:700;color:var(--text3)">—</div>
-        <div class="kpi-sub" id="statusTime" style="font-size:10px">기준일 —</div>
+        <div class="kpi-sub" id="statusTime">기준일 —</div>
       </div>
 
     </div>
