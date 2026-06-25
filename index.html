@@ -562,34 +562,24 @@ body {
   <!-- ══ HOME: 지금 상태 ══ -->
   <div class="content page active" id="page-home">
 
-    <!-- 통합 상태 헤더: SAA 상태 + KPI 4개 -->
-    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;gap:0;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden">
+    <!-- KPI 헤더 5개 (SAA 이탈 · 총자산 · USD · BTC · Coast FIRE) -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin-bottom:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden">
 
-      <!-- 포트폴리오 상태 (왼쪽 컬럼) -->
-      <div id="statusBanner" style="display:flex;flex-direction:column;justify-content:center;padding:16px 20px;border-right:1px solid var(--border);min-width:200px;gap:4px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="status-score" id="statusScore" style="width:28px;height:28px;font-size:13px;background:var(--border);color:var(--text3)">—</div>
-          <div class="status-label" id="statusLabel" style="font-size:13px;font-weight:700">데이터를 입력해주세요</div>
-        </div>
-        <div class="status-desc" id="statusDesc" style="font-size:11px;color:var(--text2);line-height:1.5"></div>
-        <div style="display:flex;gap:6px;margin-top:2px;align-items:center">
-          <div class="status-updated" id="statusTime" style="font-size:10px;color:var(--text3)">—</div>
-          <div id="coast-fire-badge" style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--bg);color:var(--text3)">Coast FIRE —</div>
-        </div>
+      <!-- KPI 1: SAA 이탈 -->
+      <div class="kpi" id="statusBanner" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
+        <div class="kpi-label">SAA 이탈 <span id="statusScore" style="font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;background:var(--border);color:var(--text3)">—</span></div>
+        <div class="kpi-value" id="ov-drift-count" style="font-size:18px">—</div>
+        <div class="kpi-sub" id="ov-drift-desc">±5%p 초과 기준</div>
+        <div style="display:none" id="statusLabel"></div>
+        <div style="display:none" id="statusDesc"></div>
+        <div style="display:none" id="statusTime"></div>
       </div>
 
-      <!-- KPI 1: 총자산 -->
+      <!-- KPI 2: 총자산 -->
       <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
         <div class="kpi-label">총 투자자산</div>
         <div class="kpi-value" id="ov-total" style="font-size:18px">—</div>
         <div class="kpi-sub" id="ov-acct-count">—</div>
-      </div>
-
-      <!-- KPI 2: SAA 이탈 -->
-      <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
-        <div class="kpi-label">SAA 이탈</div>
-        <div class="kpi-value" id="ov-drift-count" style="font-size:18px">—</div>
-        <div class="kpi-sub" id="ov-drift-desc">±5%p 초과 기준</div>
       </div>
 
       <!-- KPI 3: USD 익스포저 -->
@@ -600,10 +590,17 @@ body {
       </div>
 
       <!-- KPI 4: BTC -->
-      <div class="kpi" style="border-radius:0;border:none;box-shadow:none">
+      <div class="kpi" style="border-radius:0;border:none;border-right:1px solid var(--border);box-shadow:none">
         <div class="kpi-label">Bitcoin <span class="live-tag" style="font-size:8px"><span class="live-dot"></span>LIVE</span></div>
         <div class="kpi-value" id="home-btc" style="font-size:16px;color:#d97706">—</div>
         <div class="kpi-sub" id="home-btc-chg">—</div>
+      </div>
+
+      <!-- KPI 5: Coast FIRE -->
+      <div class="kpi" style="border-radius:0;border:none;box-shadow:none">
+        <div class="kpi-label">Coast FIRE</div>
+        <div class="kpi-value" id="coast-fire-badge" style="font-size:14px;font-weight:700;color:var(--text3)">—</div>
+        <div class="kpi-sub" id="statusTime" style="font-size:10px">기준일 —</div>
       </div>
 
     </div>
@@ -1707,44 +1704,43 @@ function getSignals() {
 }
 
 function getPortfolioStatus() {
-  if(!P) return { score:'?', label:'데이터 없음', desc:'포트폴리오 데이터를 입력해주세요', color:'var(--border2)', bg:'var(--bg)' };
+  if(!P) return { score:'?', label:'데이터 없음', desc:'포트폴리오 데이터를 입력해주세요', color:'var(--border2)', bg:'var(--bg)', drifted:[] };
 
-  // 상태 배너는 시장 심리지표(Fear & Greed)나 BTC 단기 등락이 아니라
-  // 포트폴리오 구조 자체의 SAA 이탈 여부만 기준으로 판단한다.
   const tot = totalWithCash();
   const bd = Object.assign({}, classBreakdown());
   bd.cash = P?.cash?.available || 0;
-  const target = getAssetTarget('current'); // SAA 기준
-  const severe = [];
-  const drift = [];
+  const target = getAssetTarget('current');
 
+  // severe(10%p↑)와 drift(5%p↑) 구분 없이 REBALANCE_BAND 초과를 모두 이탈로 통일
+  const drifted = [];
   ASSET_ORDER.forEach(function(k) {
     const cur = tot ? ((bd[k] || 0) / tot) * 100 : 0;
     const tgt = target[k] || 0;
     const gap = cur - tgt;
-    if (Math.abs(gap) >= 10) severe.push({ k, gap });
-    else if (Math.abs(gap) > REBALANCE_BAND) drift.push({ k, gap });
+    if (Math.abs(gap) >= REBALANCE_BAND) drifted.push({ k, gap });
   });
 
-  if (severe.length > 0) {
+  if (drifted.length === 0) {
     return {
-      score:'!',
-      label:'구조 점검 필요',
-      desc:`SAA 대비 10%p 이상 이탈: ${severe.map(x => (ASSET_LABEL_KO[x.k]||x.k) + ' ' + (x.gap>0?'+':'') + x.gap.toFixed(1) + '%p').join(' · ')}`,
-      color:'var(--yellow)',
-      bg:'var(--yellow-l)'
+      score: '✓', label: 'SAA 정상',
+      desc: `전 자산군 SAA 허용밴드 ±${REBALANCE_BAND}%p 이내`,
+      color: 'var(--green)', bg: 'var(--green-l)', drifted: []
     };
   }
-  if (drift.length > 0) {
-    return {
-      score:'→',
-      label:'리밸런싱 점검',
-      desc:`SAA 허용밴드 ±${REBALANCE_BAND}%p 이탈: ${drift.map(x => ASSET_LABEL_KO[x.k]||x.k).join(' · ')} — 매도보다 신규자금/계좌 내 전환 우선`,
-      color:'var(--accent)',
-      bg:'var(--accent-l)'
-    };
-  }
-  return { score:'✓', label:'안정', desc:`전 자산군이 SAA 허용밴드 ±${REBALANCE_BAND}%p 내에 있습니다. TAA는 참고 의견으로만 표시됩니다.`, color:'var(--green)', bg:'var(--green-l)' };
+
+  const listStr = drifted.map(function(x) {
+    return (ASSET_LABEL_KO[x.k]||x.k) + ' ' + (x.gap>0?'+':'') + x.gap.toFixed(1) + '%p';
+  }).join(' · ');
+
+  const hasSevere = drifted.some(function(x){ return Math.abs(x.gap) >= 10; });
+  return {
+    score: hasSevere ? '!' : '→',
+    label: `SAA 이탈 ${drifted.length}개`,
+    desc: listStr + (hasSevere ? ' — 신규자금 우선 투입' : ' — 추가자금 방향 조정'),
+    color: hasSevere ? 'var(--yellow)' : 'var(--accent)',
+    bg: hasSevere ? 'var(--yellow-l)' : 'var(--accent-l)',
+    drifted: drifted
+  };
 }
 
 // ══════════════════════════════════════════
@@ -1761,17 +1757,40 @@ function renderHome() {
 
 function renderStatusBanner() {
   const s = getPortfolioStatus();
-  const scoreEl = document.getElementById('statusScore');
-  if(scoreEl) { scoreEl.textContent = s.score; scoreEl.style.background = s.bg; scoreEl.style.color = s.color; }
+
+  // SAA 이탈 KPI
+  const driftCountEl = document.getElementById('ov-drift-count');
+  const driftDescEl  = document.getElementById('ov-drift-desc');
+  const scoreEl      = document.getElementById('statusScore');
+  const bannerEl     = document.getElementById('statusBanner');
+
+  const cnt = s.drifted?.length || 0;
+  if(driftCountEl) {
+    driftCountEl.textContent = cnt === 0 ? '없음' : cnt + '개';
+    driftCountEl.style.color = cnt === 0 ? 'var(--green)' : s.color;
+  }
+  if(driftDescEl) {
+    driftDescEl.textContent = cnt
+      ? s.drifted.map(function(x){ return ASSET_LABEL_KO[x.k]||x.k; }).join(' · ')
+      : '허용밴드 이내';
+  }
+  if(scoreEl) {
+    scoreEl.textContent = s.score;
+    scoreEl.style.background = s.bg;
+    scoreEl.style.color = s.color;
+  }
+  if(bannerEl) bannerEl.style.background = cnt === 0 ? '' : s.bg;
+
+  // 기준일 표시 (Coast FIRE KPI 아래)
+  const timeEl = document.getElementById('statusTime');
+  if(timeEl) timeEl.textContent = P ? `기준일 ${P.updated_at||'—'}` : '기준일 —';
+
+  // hidden 요소 (다른 함수가 참조할 수 있으므로 값만 채움)
   const labelEl = document.getElementById('statusLabel');
-  if(labelEl) { labelEl.textContent = s.label; labelEl.style.color = s.color; }
+  if(labelEl) labelEl.textContent = s.label;
   const descEl = document.getElementById('statusDesc');
   if(descEl) descEl.textContent = s.desc;
-  const timeEl = document.getElementById('statusTime');
-  if(timeEl) timeEl.textContent = P ? `기준일: ${P.updated_at||'—'}` : '—';
-  // 상태에 따라 왼쪽 컬럼 배경 색상 반영
-  const bannerEl = document.getElementById('statusBanner');
-  if(bannerEl) bannerEl.style.background = s.bg ? s.bg.replace('var(--','rgba(').replace(')',',0.35)') : '';
+
   updateCoastFireBadge();
 }
 
@@ -1795,10 +1814,10 @@ function updateCoastFireBadge() {
   var reached     = current >= coastNumber;
   var gap         = coastNumber - current;
   badge.textContent = reached
-    ? '🏄 Coast FIRE 달성'
-    : 'Coast FIRE -' + (gap >= 1e8 ? (gap/1e8).toFixed(1)+'억' : Math.round(gap/1e4)+'만');
-  badge.style.background = reached ? 'var(--green-l)' : 'var(--yellow-l)';
-  badge.style.color      = reached ? 'var(--green)'   : 'var(--yellow)';
+    ? '달성 🏄'
+    : '-' + (gap >= 1e8 ? (gap/1e8).toFixed(1)+'억' : Math.round(gap/1e4)+'만');
+  badge.style.color = reached ? 'var(--green)' : 'var(--yellow)';
+  badge.style.background = '';
 }
 
 function renderActionList() {
@@ -1830,22 +1849,7 @@ function renderPortfolioSummary() {
   const ovCount = document.getElementById('ov-acct-count');
   if (ovCount) ovCount.textContent = `${getActiveAccounts().length}개 계좌 · ${getActiveAccounts().reduce((s,a)=>s+(a.assets||[]).length,0)}종목`;
 
-  // SAA 이탈 KPI
-  const driftCountEl = document.getElementById('ov-drift-count');
-  const driftDescEl = document.getElementById('ov-drift-desc');
-  if (driftCountEl && tot) {
-    const bd = Object.assign({}, classBreakdown()); bd.cash = P?.cash?.available || 0;
-    const target = getAssetTarget('current');
-    const drifted = ASSET_ORDER.filter(function(k){
-      const cur = tot ? ((bd[k]||0)/tot)*100 : 0;
-      return Math.abs(cur - (target[k]||0)) >= REBALANCE_BAND;
-    });
-    driftCountEl.textContent = drifted.length === 0 ? '없음' : drifted.length + '개';
-    driftCountEl.style.color = drifted.length === 0 ? 'var(--green)' : drifted.length >= 3 ? 'var(--red)' : 'var(--yellow)';
-    if (driftDescEl) driftDescEl.textContent = drifted.length === 0
-      ? 'SAA 허용밴드 이내'
-      : drifted.map(function(k){ return ASSET_LABEL_KO[k]||k; }).join(' · ');
-  }
+  // SAA 이탈 KPI는 renderStatusBanner에서 처리 (getPortfolioStatus 단일 소스)
 
   const ovUsd = document.getElementById('ov-usd');
   if(ovUsd) ovUsd.textContent = usdExposure().toFixed(1)+'%';
